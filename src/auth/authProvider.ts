@@ -2,74 +2,80 @@ import type { AuthProvider } from 'react-admin';
 import { supabase } from '../lib/supabaseClient';
 
 type LoginParams = {
-  email: string;
-  password: string;
+    email: string;
+    password: string;
 };
 
 export const authProvider: AuthProvider = {
-  /* ================= LOGIN ================= */
-  login: async ({ email, password }: LoginParams) => {
-    if (!email || !password) {
-      throw new Error('Email e senha são obrigatórios');
-    }
+    /* ================= LOGIN ================= */
+    login: async ({ email, password }: LoginParams) => {
+        if (!email || !password) {
+            throw new Error('Email e senha são obrigatórios');
+        }
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+        const { error } = await supabase.auth.signInWithPassword({
+            email,
+            password,
+        });
 
-    if (error) {
-      throw new Error(error.message);
-    }
+        if (error) {
+            throw new Error(error.message);
+        }
 
-    return Promise.resolve();
-  },
+        return Promise.resolve();
+    },
 
-  /* ================= LOGOUT ================= */
-  logout: async () => {
-    await supabase.auth.signOut();
-    return Promise.resolve();
-  },
+    /* ================= LOGOUT ================= */
+    logout: async () => {
+        await supabase.auth.signOut();
+        return Promise.resolve();
+    },
 
-  /* ================= CHECK AUTH ================= */
-  checkAuth: async () => {
-    const { data } = await supabase.auth.getSession();
+    /* ================= CHECK AUTH ================= */
+    checkAuth: async () => {
+        const { data } = await supabase.auth.getSession();
 
-    if (!data.session) {
-      return Promise.reject();
-    }
+        if (!data.session) {
+            return Promise.reject();
+        }
 
-    return Promise.resolve();
-  },
+        return Promise.resolve();
+    },
 
-  /* ================= CHECK ERROR ================= */
-  checkError: async (error) => {
-    const status = error?.status;
+    /* ================= CHECK ERROR ================= */
+    checkError: async (error) => {
+        const status = error?.status;
 
-    if (status === 401 || status === 403) {
-      await supabase.auth.signOut();
-      return Promise.reject();
-    }
+        if (status === 401 || status === 403) {
+            await supabase.auth.signOut();
+            return Promise.reject();
+        }
 
-    return Promise.resolve();
-  },
+        return Promise.resolve();
+    },
 
-  /* ================= IDENTITY ================= */
-  getIdentity: async () => {
-    const { data } = await supabase.auth.getUser();
+    /* ================= IDENTITY ================= */
+    getIdentity: async () => {
+        const { data } = await supabase.auth.getUser();
 
-    if (!data.user) {
-      return Promise.reject();
-    }
+        if (!data.user) {
+            return Promise.reject();
+        }
 
-    return {
-      id: data.user.id,
-      fullName: data.user.email ?? '',
-    };
-  },
+        return {
+            id: data.user.id,
+            fullName: data.user.email ?? '',
+        };
+    },
 
-  /* ================= PERMISSIONS ================= */
-  getPermissions: async () => {
-    return [];
-  },
+    /* ================= PERMISSIONS ================= */
+    getPermissions: async () => {
+        const { data, error } = await supabase
+            .from('vw_usuario_permissoes')
+            .select('*');
+
+        if (error) throw error;
+        return data;
+    },
+
 };

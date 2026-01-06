@@ -14,7 +14,9 @@ import {
   ReferenceField,
   SelectInput,
   required,
+  FunctionField,
 } from 'react-admin';
+import { formatBRL } from '../utils/formatters';
 
 /* ================= LIST ================= */
 export const ItemPdvList = () => (
@@ -36,10 +38,10 @@ export const ItemPdvList = () => (
         <TextField source="nome" />
       </ReferenceField>
 
-      <NumberField
+      <FunctionField
         source="preco"
         label="Preço no PDV"
-        options={{ style: 'currency', currency: 'BRL' }}
+        render={(record) => formatBRL(record.preco)}
       />
 
       <BooleanField source="ativo" label="Ativo" />
@@ -55,17 +57,16 @@ export const ItemPdvCreate = () => (
       <ReferenceInput
         source="pdv_id"
         reference="pontos_de_venda"
-        validate={required()}
+
       >
-        <SelectInput optionText="nome" label="PDV" />
+        <SelectInput optionText="nome" label="PDV" validate={required()} />
       </ReferenceInput>
 
       <ReferenceInput
         source="item_id"
         reference="itens"
-        validate={required()}
       >
-        <SelectInput optionText="nome" label="Item" />
+        <SelectInput optionText="nome" label="Item" validate={required()} />
       </ReferenceInput>
 
       <NumberInput
@@ -73,6 +74,13 @@ export const ItemPdvCreate = () => (
         label="Preço no PDV"
         validate={required()}
         min={0}
+        parse={(v) => Number(v)}
+        format={(v) =>
+          new Intl.NumberFormat('pt-BR', {
+            style: 'currency',
+            currency: 'BRL',
+          }).format(v ?? 0)
+        }
       />
 
       <BooleanInput
@@ -106,6 +114,13 @@ export const ItemPdvEdit = () => (
         source="preco"
         label="Preço no PDV"
         min={0}
+        parse={(v) => Number(v)}
+        format={(v) =>
+          new Intl.NumberFormat('pt-BR', {
+            style: 'currency',
+            currency: 'BRL',
+          }).format(v ?? 0)
+        }
       />
 
       <BooleanInput source="ativo" label="Ativo" />

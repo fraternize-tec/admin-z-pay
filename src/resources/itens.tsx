@@ -15,7 +15,9 @@ import {
     ReferenceField,
     SelectInput,
     required,
+    FunctionField,
 } from 'react-admin';
+import { formatBRL } from '../utils/formatters';
 
 /* ================= LIST ================= */
 export const ItemList = () => (
@@ -31,10 +33,10 @@ export const ItemList = () => (
                 <TextField source="nome" />
             </ReferenceField>
 
-            <NumberField
+            <FunctionField
                 source="preco_padrao"
                 label="Preço padrão"
-                options={{ style: 'currency', currency: 'BRL' }}
+                render={(record) => formatBRL(record.preco_padrao)}
             />
 
             <BooleanField source="ativo" label="Ativo" />
@@ -70,6 +72,13 @@ export const ItemCreate = () => (
                 label="Preço padrão"
                 validate={required()}
                 min={0}
+                parse={(v) => Number(v)}
+                format={(v) =>
+                    new Intl.NumberFormat('pt-BR', {
+                        style: 'currency',
+                        currency: 'BRL',
+                    }).format(v ?? 0)
+                }
             />
 
             <BooleanInput
@@ -98,6 +107,13 @@ export const ItemEdit = () => (
                 source="preco_padrao"
                 label="Preço padrão"
                 min={0}
+                parse={(v) => Number(v)}
+                format={(v) =>
+                    new Intl.NumberFormat('pt-BR', {
+                        style: 'currency',
+                        currency: 'BRL',
+                    }).format(v ?? 0)
+                }
             />
 
             <BooleanInput source="ativo" label="Ativo" />
