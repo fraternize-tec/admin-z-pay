@@ -1,3 +1,4 @@
+import { useMediaQuery } from '@mui/material';
 import {
   List,
   Datagrid,
@@ -12,21 +13,35 @@ import {
   BooleanInput,
   SelectInput,
   required,
+  SimpleList,
 } from 'react-admin';
 
 /* ========= LIST ========= */
-export const EventoList = () => (
+
+export const EventoList = () => {
+  const isSmall = useMediaQuery('(max-width:600px)');
+
+  return (
   <List>
-    <Datagrid rowClick="edit">
-      <TextField source="nome" />
-      <TextField source="localidade" />
-      <DateField source="inicio" />
-      <DateField source="fim" />
-      <TextField source="tipo_evento" />
-      <BooleanField source="ativo" />
-    </Datagrid>
+    {isSmall ? (
+      <SimpleList
+        primaryText={(record) => record.nome}
+        secondaryText={(record) => record.data_inicio}
+        tertiaryText={(record) => record.localidade}
+      />
+    ) : (
+      <Datagrid rowClick="edit">
+        <TextField source="nome" />
+        <TextField source="localidade" />
+        <DateField source="inicio" />
+        <DateField source="fim" />
+        <TextField source="tipo_evento" />
+        <BooleanField source="ativo" />
+      </Datagrid>
+    )}
   </List>
-);
+  );
+};
 
 /* ========= CREATE ========= */
 export const EventoCreate = () => (

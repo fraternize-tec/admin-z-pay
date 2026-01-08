@@ -59,18 +59,63 @@ export const lightTheme = createTheme({
                     paddingTop: 12,
                     paddingBottom: 12,
                     fontFamily: 'Poppins, sans-serif',
+                    textTransform: 'none',
                     fontWeight: 600,
                 },
             },
         },
         MuiTextField: {
+            defaultProps: {
+                variant: 'filled',
+            },
             styleOverrides: {
                 root: {
                     borderRadius: 12,
+                    '& .MuiFilledInput-root': {
+                        backgroundColor: 'rgba(255,255,255,0.04)',
+                        borderRadius: 12,
+                    },
+                    '& .MuiFilledInput-root:before, & .MuiFilledInput-root:after': {
+                        display: 'none',
+                    },
                 },
             },
         },
-    },
+        MuiInputLabel: {
+            styleOverrides: {
+                root: {
+                    fontFamily: 'Inter, sans-serif',
+                },
+            },
+        },
+        MuiAppBar: {
+            styleOverrides: {
+                root: {
+                    backgroundColor: colors.orange,
+                    color: '#fff',
+                },
+            },
+        },
+
+        MuiDrawer: {
+            styleOverrides: {
+                paper: {
+                    backgroundColor: colors.lightSurface,
+                    borderRight: '1px solid rgba(0,0,0,0.08)',
+                },
+            },
+        },
+        MuiListItemButton: {
+            styleOverrides: {
+                root: {
+                    borderRadius: 10,
+                    marginInline: 8,
+                    marginBlock: 4,
+                },
+            },
+        },
+    }
+
 });
 
 export const darkTheme = createTheme({

@@ -1,4 +1,4 @@
-import { Admin, Resource, TranslationMessages } from 'react-admin';
+import { Admin, Layout, Resource, TranslationMessages } from 'react-admin';
 import { authProvider } from './auth/authProvider';
 import { supabaseDataProvider } from './data/supabaseDataProvider';
 import { LoginPage } from './auth/LoginPage';
@@ -19,9 +19,17 @@ import { UsuarioList, UsuarioEdit } from './resources/usuarios';
 
 import { darkTheme, lightTheme } from './theme/theme';
 import { i18nProvider } from './i18n/i18nProvider';
+import { MyLayout } from './layout/MyLayout';
+
+import EventIcon from '@mui/icons-material/Event';
+import StoreIcon from '@mui/icons-material/Store';
+import InventoryIcon from '@mui/icons-material/Inventory';
+import PointOfSaleIcon from '@mui/icons-material/PointOfSale';
+import PeopleIcon from '@mui/icons-material/People';
 
 export const App = () => (
     <Admin
+        layout={MyLayout}
         theme={lightTheme}
         darkTheme={darkTheme}
         defaultTheme="dark"
@@ -32,6 +40,7 @@ export const App = () => (
     >
         <Resource
             name="eventos"
+            icon={EventIcon}
             list={EventoList}
             create={EventoCreate}
             edit={EventoEdit}
@@ -39,6 +48,7 @@ export const App = () => (
 
         <Resource
             name="pontos_de_venda"
+            icon={StoreIcon}
             options={{ label: 'PDVs' }}
             list={PontoDeVendaList}
             create={PontoDeVendaCreate}
@@ -47,6 +57,7 @@ export const App = () => (
 
         <Resource
             name="itens"
+            icon={InventoryIcon}
             list={ItemList}
             create={ItemCreate}
             edit={ItemEdit}
@@ -54,6 +65,7 @@ export const App = () => (
 
         <Resource
             name="item_pdv"
+            icon={InventoryIcon}
             options={{ label: 'Itens por PDV' }}
             list={ItemPdvList}
             create={ItemPdvCreate}
@@ -62,19 +74,17 @@ export const App = () => (
 
         <Resource
             name="caixas"
+            icon={PointOfSaleIcon}
             options={{ label: 'Caixas' }}
             list={CaixaList}
             create={CaixaCreate}
             edit={CaixaEdit}
         />
 
-        <Resource name="usuarios" list={UsuarioList} edit={UsuarioEdit} />
-        <Resource name="permissoes" list={PermissaoList} create={PermissaoCreate} edit={PermissaoEdit} />
+        <Resource name="usuarios"  icon={PeopleIcon} options={{ label: 'Usuários' }} list={UsuarioList} edit={UsuarioEdit} />
+        <Resource name="permissoes" options={{ label: 'Permissões' }} list={PermissaoList} create={PermissaoCreate} edit={PermissaoEdit} />
         <Resource name="funcoes_sistema" options={{ label: 'Papéis' }} list={FuncaoList} create={FuncaoCreate} edit={FuncaoEdit} />
         <Resource name="papel_contexto" options={{ label: 'Papéis por Contexto' }} list={PapelContextoList} create={PapelContextoCreate} />
     </Admin>
 );
-function polyglotI18nProvider(arg0: () => TranslationMessages, arg1: string) {
-    throw new Error('Function not implemented.');
-}
 
