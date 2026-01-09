@@ -114,6 +114,18 @@ export const lightTheme = createTheme({
                 },
             },
         },
+        MuiCssBaseline: {
+            styleOverrides: {
+                '.RaLogin-root': {
+                    minHeight: '100vh',
+                    backgroundColor: '#F7F5F2', // lightBackground
+                    backgroundImage: 'none',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                },
+            },
+        },
     }
 
 });
