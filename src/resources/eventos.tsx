@@ -14,9 +14,22 @@ import {
   SelectInput,
   required,
   SimpleList,
+  TopToolbar,
+  usePermissions,
+  Toolbar,
+  SaveButton,
+  DeleteButton,
 } from 'react-admin';
+import { BackToListButton } from '../components/BackToListButton';
+import { can } from '../auth/useCan';
 
 /* ========= LIST ========= */
+
+const EditActions = () => (
+  <TopToolbar>
+    <BackToListButton />
+  </TopToolbar>
+);
 
 export const EventoList = () => {
   const isSmall = useMediaQuery('(max-width:600px)');
@@ -66,10 +79,21 @@ export const EventoCreate = () => (
   </Create>
 );
 
+const EventoEditToolbar = () => {
+  const { permissions } = usePermissions();
+
+  return (
+    <Toolbar>
+      <SaveButton />
+      {can(permissions, 'rbac.manage') && <DeleteButton />}
+    </Toolbar>
+  );
+};
+
 /* ========= EDIT ========= */
 export const EventoEdit = () => (
-  <Edit>
-    <SimpleForm>
+  <Edit actions={<EditActions />}>
+    <SimpleForm  toolbar={<EventoEditToolbar />}>
       <TextInput source="nome" fullWidth />
       <TextInput source="descricao" multiline fullWidth />
       <TextInput source="localidade" fullWidth />

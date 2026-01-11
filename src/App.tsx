@@ -1,31 +1,35 @@
-import { Admin, Layout, Resource, TranslationMessages } from 'react-admin';
-import { authProvider } from './auth/authProvider';
+import { Admin, Resource } from 'react-admin';
 import { supabaseDataProvider } from './data/supabaseDataProvider';
+import { authProvider } from './auth/authProvider';
 import { LoginPage } from './auth/LoginPage';
+import { MyLayout } from './layout/MyLayout';
+import { can } from './auth/useCan';
 
 import {
     EventoList,
     EventoCreate,
     EventoEdit,
 } from './resources/eventos';
-import { PontoDeVendaCreate, PontoDeVendaEdit, PontoDeVendaList } from './resources/pontosDeVenda';
-import { ItemCreate, ItemEdit, ItemList } from './resources/itens';
-import { ItemPdvCreate, ItemPdvEdit, ItemPdvList } from './resources/itemPdv';
-import { CaixaCreate, CaixaEdit, CaixaList } from './resources/caixas';
+import {
+    PontoDeVendaList,
+    PontoDeVendaCreate,
+    PontoDeVendaEdit,
+} from './resources/pontosDeVenda';
+import { ItemList, ItemCreate, ItemEdit } from './resources/itens';
+import { CaixaList } from './resources/caixas';
+import { UsuarioList, UsuarioEdit } from './resources/usuarios';
+import { PermissaoList, PermissaoCreate, PermissaoEdit } from './resources/permissoes';
 import { FuncaoList, FuncaoCreate, FuncaoEdit } from './resources/funcoes';
 import { PapelContextoList, PapelContextoCreate } from './resources/papelContexto';
-import { PermissaoList, PermissaoCreate, PermissaoEdit } from './resources/permissoes';
-import { UsuarioList, UsuarioEdit } from './resources/usuarios';
-
-import { darkTheme, lightTheme } from './theme/theme';
-import { i18nProvider } from './i18n/i18nProvider';
-import { MyLayout } from './layout/MyLayout';
 
 import EventIcon from '@mui/icons-material/Event';
 import StoreIcon from '@mui/icons-material/Store';
 import InventoryIcon from '@mui/icons-material/Inventory';
 import PointOfSaleIcon from '@mui/icons-material/PointOfSale';
 import PeopleIcon from '@mui/icons-material/People';
+import { i18nProvider } from './i18n/i18nProvider';
+import { lightTheme, darkTheme } from './theme/theme';
+import { ItemPdvCreate, ItemPdvEdit, ItemPdvList } from './resources/itemPdv';
 
 export const App = () => (
     <Admin
@@ -38,53 +42,95 @@ export const App = () => (
         i18nProvider={i18nProvider}
         loginPage={LoginPage}
     >
-        <Resource
-            name="eventos"
-            icon={EventIcon}
-            list={EventoList}
-            create={EventoCreate}
-            edit={EventoEdit}
-        />
+        {(permissions) => (
+            <>
+                {can(permissions, 'eventos.read') && (
+                    <Resource
+                        name="eventos"
+                        icon={EventIcon}
+                        list={EventoList}
+                        create={can(permissions, 'eventos.write') ? EventoCreate : undefined}
+                        edit={can(permissions, 'eventos.write') ? EventoEdit : undefined}
+                    />
+                )}
 
-        <Resource
-            name="pontos_de_venda"
-            icon={StoreIcon}
-            options={{ label: 'PDVs' }}
-            list={PontoDeVendaList}
-            create={PontoDeVendaCreate}
-            edit={PontoDeVendaEdit}
-        />
+                {can(permissions, 'pdv.read') && (
+                    <Resource
+                        name="pontos_de_venda"
+                        icon={StoreIcon}
+                        options={{ label: 'PDVs' }}
+                        list={PontoDeVendaList}
+                        create={can(permissions, 'pdv.write') ? PontoDeVendaCreate : undefined}
+                        edit={can(permissions, 'pdv.write') ? PontoDeVendaEdit : undefined}
+                    />
+                )}
 
-        <Resource
-            name="itens"
-            icon={InventoryIcon}
-            list={ItemList}
-            create={ItemCreate}
-            edit={ItemEdit}
-        />
+                {can(permissions, 'itens.read') && (
+                    <Resource
+                        name="itens"
+                        icon={InventoryIcon}
+                        list={ItemList}
+                        create={can(permissions, 'itens.write') ? ItemCreate : undefined}
+                        edit={can(permissions, 'itens.write') ? ItemEdit : undefined}
+                    />
+                )}
 
-        <Resource
-            name="item_pdv"
-            icon={InventoryIcon}
-            options={{ label: 'Itens por PDV' }}
-            list={ItemPdvList}
-            create={ItemPdvCreate}
-            edit={ItemPdvEdit}
-        />
+                {can(permissions, 'itens.read') && (
+                    <Resource
+                        name="item_pdv"
+                        icon={InventoryIcon}
+                        options={{ label: 'Itens por PDV' }}
+                        list={ItemPdvList}
+                        create={can(permissions, 'itens.write') ? ItemPdvCreate : undefined}
+                        edit={can(permissions, 'itens.write') ? ItemPdvEdit : undefined}
+                    />
+                )}
 
-        <Resource
-            name="caixas"
-            icon={PointOfSaleIcon}
-            options={{ label: 'Caixas' }}
-            list={CaixaList}
-            create={CaixaCreate}
-            edit={CaixaEdit}
-        />
+                {can(permissions, 'caixa.read') && (
+                    <Resource
+                        name="caixas"
+                        icon={PointOfSaleIcon}
+                        options={{ label: 'Caixas' }}
+                        list={CaixaList}
+                    />
+                )}
 
-        <Resource name="usuarios"  icon={PeopleIcon} options={{ label: 'Usuários' }} list={UsuarioList} edit={UsuarioEdit} />
-        <Resource name="permissoes" options={{ label: 'Permissões' }} list={PermissaoList} create={PermissaoCreate} edit={PermissaoEdit} />
-        <Resource name="funcoes_sistema" options={{ label: 'Papéis' }} list={FuncaoList} create={FuncaoCreate} edit={FuncaoEdit} />
-        <Resource name="papel_contexto" options={{ label: 'Papéis por Contexto' }} list={PapelContextoList} create={PapelContextoCreate} />
+                {can(permissions, 'usuarios.read') && (
+                    <Resource
+                        name="usuarios"
+                        icon={PeopleIcon}
+                        options={{ label: 'Usuários' }}
+                        list={UsuarioList}
+                        edit={can(permissions, 'usuarios.write') ? UsuarioEdit : undefined}
+                    />
+                )}
+
+                {can(permissions, 'rbac.manage') && (
+                    <>
+                        <Resource
+                            name="permissoes"
+                            options={{ label: 'Permissões' }}
+                            list={PermissaoList}
+                            create={PermissaoCreate}
+                            edit={PermissaoEdit}
+                        />
+                        <Resource
+                            name="funcoes_sistema"
+                            options={{ label: 'Papéis' }}
+                            list={FuncaoList}
+                            create={FuncaoCreate}
+                            edit={FuncaoEdit}
+                        />
+                        <Resource
+                            name="papel_contexto"
+                            options={{ label: 'Papéis por Contexto' }}
+                            list={PapelContextoList}
+                            create={PapelContextoCreate}
+                        />
+                    </>
+                )}
+            </>
+        )}
     </Admin>
 );
 

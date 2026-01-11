@@ -1,29 +1,27 @@
-import type { DataProvider } from 'react-admin';
+import type { DataProvider, RaRecord } from 'react-admin';
 import { supabase } from '../lib/supabaseClient';
 
 export const supabaseDataProvider: DataProvider = {
   /* ================= GET LIST ================= */
   getList: async (resource, params) => {
-    const { page, perPage } = params.pagination;
-    const { field, order } = params.sort;
+    const {
+      page = 1,
+      perPage = 10,
+    } = params.pagination ?? {};
 
-    const from = (page - 1) * perPage;
-    const to = from + perPage - 1;
+    const {
+      field = 'id',
+      order = 'ASC',
+    } = params.sort ?? {};
 
-    let query = supabase
+    const rangeFrom = (page - 1) * perPage;
+    const rangeTo = rangeFrom + perPage - 1;
+
+    const { data, error, count } = await supabase
       .from(resource)
       .select('*', { count: 'exact' })
-      .range(from, to)
-      .order(field, { ascending: order === 'ASC' });
-
-    // filtros simples
-    Object.entries(params.filter).forEach(([key, value]) => {
-      if (value !== undefined && value !== '') {
-        query = query.ilike(key, `%${value}%`);
-      }
-    });
-
-    const { data, error, count } = await query;
+      .order(field, { ascending: order === 'ASC' })
+      .range(rangeFrom, rangeTo);
 
     if (error) {
       throw error;
@@ -50,6 +48,7 @@ export const supabaseDataProvider: DataProvider = {
     return { data };
   },
 
+
   /* ================= CREATE ================= */
   create: async (resource, params) => {
     const { data, error } = await supabase
@@ -66,24 +65,28 @@ export const supabaseDataProvider: DataProvider = {
 
 
   /* ================= UPDATE ================= */
-  update: async (resource, params) => {
-    const { data, error } = await supabase
+  update: async <RecordType extends RaRecord = any>(
+    resource: string,
+    params: any
+  ): Promise<{ data: RecordType }> => {
+    const { id, data } = params;
+
+    const { error } = await supabase
       .from(resource)
-      .update(params.data)
-      .eq('id', params.id)
-      .select();
+      .update(data)
+      .eq('id', id);
 
     if (error) {
       throw error;
     }
 
-    if (!data || data.length === 0) {
-      throw new Error('Registro não encontrado');
-    }
-
-    return { data: data[0] };
+    return {
+      data: {
+        id,
+        ...data,
+      } as RecordType, 
+    };
   },
-
 
   /* ================= DELETE ================= */
   delete: async (resource, params) => {
@@ -117,5 +120,19 @@ export const supabaseDataProvider: DataProvider = {
 
   getManyReference: async () => Promise.reject(),
   updateMany: async () => Promise.reject(),
-  deleteMany: async () => Promise.reject(),
+  deleteMany: async (resource, params) => {
+    const { ids } = params;
+
+    const { error } = await supabase
+      .from(resource)
+      .delete()
+      .in('id', ids);
+
+    if (error) {
+      throw error;
+    }
+
+    return { data: ids };
+  },
+
 };
