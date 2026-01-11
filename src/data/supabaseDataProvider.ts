@@ -84,7 +84,7 @@ export const supabaseDataProvider: DataProvider = {
       data: {
         id,
         ...data,
-      } as RecordType, 
+      } as RecordType,
     };
   },
 
@@ -118,7 +118,47 @@ export const supabaseDataProvider: DataProvider = {
     return { data: data ?? [] };
   },
 
-  getManyReference: async () => Promise.reject(),
+  getManyReference: async (resource, params) => {
+    const {
+      target,
+      id,
+      pagination,
+      sort,
+      filter,
+    } = params;
+
+    const { page = 1, perPage = 10 } = pagination ?? {};
+    const { field = 'id', order = 'ASC' } = sort ?? {};
+
+    const rangeFrom = (page - 1) * perPage;
+    const rangeTo = rangeFrom + perPage - 1;
+
+    let query = supabase
+      .from(resource)
+      .select('*', { count: 'exact' })
+      .eq(target, id);
+
+    // filtros adicionais (se houver)
+    if (filter) {
+      Object.entries(filter).forEach(([key, value]) => {
+        query = query.eq(key, value as any);
+      });
+    }
+
+    const { data, error, count } = await query
+      .order(field, { ascending: order === 'ASC' })
+      .range(rangeFrom, rangeTo);
+
+    if (error) {
+      throw error;
+    }
+
+    return {
+      data: data ?? [],
+      total: count ?? 0,
+    };
+  },
+
   updateMany: async () => Promise.reject(),
   deleteMany: async (resource, params) => {
     const { ids } = params;

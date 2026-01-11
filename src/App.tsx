@@ -20,7 +20,7 @@ import { CaixaList } from './resources/caixas';
 import { UsuarioList, UsuarioEdit } from './resources/usuarios';
 import { PermissaoList, PermissaoCreate, PermissaoEdit } from './resources/permissoes';
 import { FuncaoList, FuncaoCreate, FuncaoEdit } from './resources/funcoes';
-import { PapelContextoList, PapelContextoCreate } from './resources/papelContexto';
+import { PapelContextoCreate } from './resources/papelContexto';
 
 import EventIcon from '@mui/icons-material/Event';
 import StoreIcon from '@mui/icons-material/Store';
@@ -30,6 +30,7 @@ import PeopleIcon from '@mui/icons-material/People';
 import { i18nProvider } from './i18n/i18nProvider';
 import { lightTheme, darkTheme } from './theme/theme';
 import { ItemPdvCreate, ItemPdvEdit, ItemPdvList } from './resources/itemPdv';
+import { PapelPermissaoCreate } from './resources/papelPermissoes';
 
 export const App = () => (
     <Admin
@@ -107,13 +108,7 @@ export const App = () => (
 
                 {can(permissions, 'rbac.manage') && (
                     <>
-                        <Resource
-                            name="permissoes"
-                            options={{ label: 'Permissões' }}
-                            list={PermissaoList}
-                            create={PermissaoCreate}
-                            edit={PermissaoEdit}
-                        />
+                        
                         <Resource
                             name="funcoes_sistema"
                             options={{ label: 'Papéis' }}
@@ -122,11 +117,27 @@ export const App = () => (
                             edit={FuncaoEdit}
                         />
                         <Resource
+                            name="permissoes"
+                            options={{ label: 'Permissões' }}
+                            list={PermissaoList}
+                            create={PermissaoCreate}
+                            edit={PermissaoEdit}
+                        />
+                        <Resource
+                            name="papel_permissoes"
+                            options={{ label: 'Permissões por Papel' }}
+                            create={PapelPermissaoCreate}
+                        />
+                        <Resource
                             name="papel_contexto"
                             options={{ label: 'Papéis por Contexto' }}
-                            list={PapelContextoList}
                             create={PapelContextoCreate}
                         />
+                        <Resource
+                            name="vw_usuario_permissoes_detalhe"
+                            options={{ label: 'Permissões Efetivas' }}
+                        />
+
                     </>
                 )}
             </>

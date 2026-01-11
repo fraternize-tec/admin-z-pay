@@ -1,85 +1,75 @@
 import {
-  List,
-  Datagrid,
-  TextField,
-  ReferenceField,
   Create,
   SimpleForm,
   ReferenceInput,
   SelectInput,
   required,
-  TextInput,
+  FormDataConsumer,
+  useRedirect,
 } from 'react-admin';
+import { useLocation } from 'react-router-dom';
 
-/* ================= LIST ================= */
-export const PapelContextoList = () => (
-  <List>
-    <Datagrid rowClick="edit">
-      <ReferenceField
-        source="usuario_id"
-        reference="usuarios"
-        label="Usuário"
-      >
-        <TextField source="email" />
-      </ReferenceField>
+export const PapelContextoCreate = () => {
+  const { state } = useLocation();
+  const redirect = useRedirect();
 
-      <ReferenceField
-        source="papel_id"
-        reference="funcoes_sistema"
-        label="Papel"
-      >
-        <TextField source="codigo" />
-      </ReferenceField>
+  return (
+    <Create
+      transform={(data) => ({
+        ...data,
+        usuario_id: state?.usuario_id,
+      })}
+      mutationOptions={{
+        onSuccess: () => {
+          redirect(`/usuarios/${state?.usuario_id}`);
+        },
+      }}
+    >
+      <SimpleForm>
+        <ReferenceInput source="usuario_id" reference="usuarios">
+          <SelectInput optionText="email" disabled />
+        </ReferenceInput>
 
-      <TextField source="escopo_tipo" label="Escopo" />
-      <TextField source="escopo_id" label="ID do Escopo" />
-    </Datagrid>
-  </List>
-);
+        <ReferenceInput source="papel_id" reference="funcoes_sistema">
+          <SelectInput optionText="codigo" validate={required()} />
+        </ReferenceInput>
 
-
-/* ================= CREATE ================= */
-export const PapelContextoCreate = () => (
-  <Create>
-    <SimpleForm>
-      <ReferenceInput
-        source="usuario_id"
-        reference="usuarios"
-      >
         <SelectInput
-          optionText="email"
-          label="Usuário"
+          source="escopo_tipo"
+          label="Escopo"
+          choices={[
+            { id: 'global', name: 'Global' },
+            { id: 'evento', name: 'Evento' },
+            { id: 'pdv', name: 'PDV' },
+            { id: 'caixa', name: 'Caixa' },
+          ]}
           validate={required()}
         />
-      </ReferenceInput>
 
-      <ReferenceInput
-        source="papel_id"
-        reference="funcoes_sistema"
-      >
-        <SelectInput
-          optionText="codigo"
-          label="Papel"
-          validate={required()}
-        />
-      </ReferenceInput>
+        <FormDataConsumer>
+          {({ formData }) => (
+            <>
+              {formData.escopo_tipo === 'evento' && (
+                <ReferenceInput source="escopo_id" reference="eventos">
+                  <SelectInput optionText="nome" label="Evento" />
+                </ReferenceInput>
+              )}
 
-      <SelectInput
-        source="escopo_tipo"
-        label="Escopo"
-        choices={[
-          { id: 'global', name: 'Global' },
-          { id: 'evento', name: 'Evento' },
-          { id: 'pdv', name: 'PDV' },
-          { id: 'caixa', name: 'Caixa' },
-        ]}
-        validate={required()}
-      />
+              {formData.escopo_tipo === 'pdv' && (
+                <ReferenceInput source="escopo_id" reference="pontos_de_venda">
+                  <SelectInput optionText="nome" label="PDV" />
+                </ReferenceInput>
+              )}
 
-      <TextInput
-        source="escopo_id"
-        label="ID do Escopo"
-      />
-    </SimpleForm>
-  </Create>
-);
+              {formData.escopo_tipo === 'caixa' && (
+                <ReferenceInput source="escopo_id" reference="caixas">
+                  <SelectInput optionText="id" label="Caixa" />
+                </ReferenceInput>
+              )}
+            </>
+          )}
+        </FormDataConsumer>
+      </SimpleForm>
+    </Create>
+  );
+};
