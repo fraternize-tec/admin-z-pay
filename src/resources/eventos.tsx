@@ -19,40 +19,59 @@ import {
   Toolbar,
   SaveButton,
   DeleteButton,
+  Button,
+  useRecordContext,
 } from 'react-admin';
 import { BackToListButton } from '../components/BackToListButton';
 import { can } from '../auth/useCan';
+import { useNavigate } from 'react-router';
+import CreditCardIcon from '@mui/icons-material/CreditCard';
 
 /* ========= LIST ========= */
 
-const EditActions = () => (
-  <TopToolbar>
-    <BackToListButton />
-  </TopToolbar>
-);
+const EventoEditActions = () => {
+  const record = useRecordContext();
+  const navigate = useNavigate();
+
+  if (!record) return null;
+
+  return (
+    <TopToolbar>
+      <BackToListButton />
+
+      <Button
+        label="Lotes de cartões"
+        startIcon={<CreditCardIcon />}
+        onClick={() =>
+          navigate(`/eventos/${record.id}/lotes-cartoes`)
+        }
+      />
+    </TopToolbar>
+  );
+};
 
 export const EventoList = () => {
   const isSmall = useMediaQuery('(max-width:600px)');
 
   return (
-  <List>
-    {isSmall ? (
-      <SimpleList
-        primaryText={(record) => record.nome}
-        secondaryText={(record) => record.data_inicio}
-        tertiaryText={(record) => record.localidade}
-      />
-    ) : (
-      <Datagrid rowClick="edit">
-        <TextField source="nome" />
-        <TextField source="localidade" />
-        <DateField source="inicio" />
-        <DateField source="fim" />
-        <TextField source="tipo_evento" />
-        <BooleanField source="ativo" />
-      </Datagrid>
-    )}
-  </List>
+    <List>
+      {isSmall ? (
+        <SimpleList
+          primaryText={(record) => record.nome}
+          secondaryText={(record) => record.data_inicio}
+          tertiaryText={(record) => record.localidade}
+        />
+      ) : (
+        <Datagrid rowClick="edit">
+          <TextField source="nome" />
+          <TextField source="localidade" />
+          <DateField source="inicio" />
+          <DateField source="fim" />
+          <TextField source="tipo_evento" />
+          <BooleanField source="ativo" />
+        </Datagrid>
+      )}
+    </List>
   );
 };
 
@@ -91,9 +110,26 @@ const EventoEditToolbar = () => {
 };
 
 /* ========= EDIT ========= */
+export const EventoLotesButton = () => {
+  const record = useRecordContext();
+  const navigate = useNavigate();
+
+  if (!record) return null;
+
+  return (
+    <Button
+      label="Lotes de cartões"
+      startIcon={<CreditCardIcon />}
+      onClick={() =>
+        navigate(`/eventos/${record.id}/lotes-cartoes`)
+      }
+    />
+  );
+};
+
 export const EventoEdit = () => (
-  <Edit actions={<EditActions />}>
-    <SimpleForm  toolbar={<EventoEditToolbar />}>
+  <Edit actions={<EventoEditActions />}>
+    <SimpleForm toolbar={<EventoEditToolbar />}>
       <TextInput source="nome" fullWidth />
       <TextInput source="descricao" multiline fullWidth />
       <TextInput source="localidade" fullWidth />

@@ -17,11 +17,21 @@ export const supabaseDataProvider: DataProvider = {
     const rangeFrom = (page - 1) * perPage;
     const rangeTo = rangeFrom + perPage - 1;
 
-    const { data, error, count } = await supabase
+    let query = supabase
       .from(resource)
-      .select('*', { count: 'exact' })
+      .select('*', { count: 'exact' });
+
+    if (params.filter) {
+      Object.entries(params.filter).forEach(([key, value]) => {
+        query = query.eq(key, value as any);
+      });
+    }
+
+    query = query
       .order(field, { ascending: order === 'ASC' })
       .range(rangeFrom, rangeTo);
+
+    const { data, error, count } = await query;
 
     if (error) {
       throw error;
@@ -51,6 +61,58 @@ export const supabaseDataProvider: DataProvider = {
 
   /* ================= CREATE ================= */
   create: async (resource, params) => {
+
+    // =============================
+    // AÇÕES CUSTOMIZADAS (Edge)
+    // =============================
+    if (resource === 'lotes_cartoes_gerar') {
+      const { data, error } = await supabase.functions.invoke(
+        'gerar-cartoes-lote',
+        {
+          body: params.data,
+        }
+      );
+
+      if (error) {
+        throw error;
+      }
+
+      return {
+        data: data ?? {},
+      };
+    }
+
+    if (resource === 'bloquear-cartao') {
+      const { data, error } = await supabase.functions.invoke('bloquear-cartao', {
+        body: params.data,
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      return {
+        data: data?.data ?? { id: params.data.cartao_id },
+      };
+    }
+
+    if (resource === 'resetar-cartao') {
+      const { data, error } = await supabase.functions.invoke('resetar-cartao', {
+        body: params.data,
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      return {
+        data: data?.data ?? { id: params.data.cartao_id },
+      };
+    }
+
+    // =============================
+    // CREATE PADRÃO (CRUD)
+    // =============================
     const { data, error } = await supabase
       .from(resource)
       .insert(params.data)
@@ -62,6 +124,7 @@ export const supabaseDataProvider: DataProvider = {
 
     return { data: data[0] };
   },
+
 
 
   /* ================= UPDATE ================= */
