@@ -110,6 +110,22 @@ export const supabaseDataProvider: DataProvider = {
       };
     }
 
+    if (resource === 'marcar-lote-impresso') {
+      const { data, error } = await supabase.functions.invoke(
+        'marcar-lote-impresso',
+        {
+          body: params.data,
+        }
+      );
+
+      if (error) throw error;
+
+      return {
+        data: { id: params.data.lote_id },
+      };
+    }
+
+
     // =============================
     // CREATE PADRÃO (CRUD)
     // =============================

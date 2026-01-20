@@ -15,6 +15,8 @@ export const CartoesDoLoteButton = () => {
 
   if (!record) return null;
 
+  if (record.total_cartoes === 0) return null;
+
   return (
     <Button
       label="Cartões do lote"
