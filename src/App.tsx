@@ -36,6 +36,7 @@ import { PapelPermissaoCreate } from './resources/papelPermissoes';
 import { LoteCartaoList, LoteCartaoCreate, LoteCartaoEdit } from './resources/lotesCartoes';
 import { Route } from 'react-router';
 import { CartaoList } from './resources/cartoes';
+import { CartoesPropriosList } from './resources/cartoesProprios';
 
 export const App = () => (
     <Admin
@@ -81,6 +82,12 @@ export const App = () => (
                             options={{ label: 'Lotes de Cartões' }}
                             create={can(permissions, 'eventos.write') ? LoteCartaoCreate : undefined}
                             edit={can(permissions, 'eventos.write') ? LoteCartaoEdit : undefined}
+                        />
+
+                        <Resource
+                            name="vw_cartoes_proprios"
+                            options={{ label: 'Cartões Próprios' }}
+                            list={CartoesPropriosList}
                         />
 
                     </>

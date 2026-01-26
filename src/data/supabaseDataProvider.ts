@@ -125,7 +125,59 @@ export const supabaseDataProvider: DataProvider = {
       };
     }
 
+    if (resource === 'gerar-cartoes-proprios') {
+      const { data, error } = await supabase.functions.invoke(
+        'gerar-cartoes-proprios',
+        {
+          body: params.data,
+        }
+      );
 
+      if (error) {
+        throw error;
+      }
+
+      return {
+        data: {
+          id: crypto.randomUUID(), // RA exige um id
+          ...params.data,
+        },
+      };
+    }
+
+    if (resource === 'vincular-cartoes-evento') {
+      const { data, error } = await supabase.functions.invoke(
+        'vincular-cartoes-evento',
+        {
+          body: params.data,
+        }
+      );
+
+      if (error) throw error;
+
+      return {
+        data: {
+          id: crypto.randomUUID(),
+          ...data,
+        },
+      };
+    }
+
+
+    if (resource === 'desvincular-cartoes-evento') {
+      const { error } = await supabase.functions.invoke(
+        'desvincular-cartoes-evento',
+        {
+          body: params.data,
+        }
+      );
+
+      if (error) throw error;
+
+      return {
+        data: { id: params.data.cartao_id },
+      };
+    }
     // =============================
     // CREATE PADRÃO (CRUD)
     // =============================

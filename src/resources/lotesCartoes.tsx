@@ -228,6 +228,7 @@ const ExportarPdfButton = () => {
 
             {open && (
                 <ExportarCartoesPdf
+                    tipo="lote"
                     loteId={record.id}
                     onClose={() => setOpen(false)}
                 />

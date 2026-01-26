@@ -153,7 +153,7 @@ export const CartaoQrDialog = ({
   );
 };
 
-const BloquearButton = () => {
+export const BloquearButton = () => {
   const record = useRecordContext();
   const dataProvider = useDataProvider();
   const notify = useNotify();
@@ -191,7 +191,7 @@ const BloquearButton = () => {
   );
 };
 
-const ResetarButton = () => {
+export const ResetarButton = () => {
   const record = useRecordContext();
   const notify = useNotify();
   const refresh = useRefresh();
