@@ -1,30 +1,34 @@
 import { Identifier, useNotify } from 'react-admin';
 import { jsPDF } from 'jspdf';
 import QRCode from 'qrcode';
-import { useEffect, useRef } from 'react';
-import { Dialog, DialogTitle, DialogContent, Button } from '@mui/material';
+import { useEffect, useRef, useState } from 'react';
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  Button,
+  LinearProgress,
+  Typography,
+} from '@mui/material';
 import { supabase } from '../lib/supabaseClient';
 import { PoppinsBold } from '../fonts/Poppins-Bold';
+import JSZip from 'jszip';
+import { saveAs } from 'file-saver';
 
 interface Props {
   tipo: 'lote' | 'proprio';
   loteId?: Identifier;
+  zip?: boolean;
   onClose: () => void;
 }
 
-// =========================
-// CONFIGURAÇÕES
-// =========================
 const CARTOES_POR_PDF = 100;
+const PAGE_SIZE = 1000;
 
-// dimensões cartão
 const CARD_WIDTH = 90;
 const CARD_HEIGHT = 60;
-
-// área segura
 const SAFE_MARGIN = 7;
 
-// página
 const PAGE_WIDTH = 210;
 const PAGE_HEIGHT = 297;
 
@@ -32,13 +36,35 @@ const GAP = 5;
 const MARGIN_X = 10;
 const MARGIN_Y = 10;
 
-// arte padrão cartões próprios
 const ARTE_PROPRIO_URL =
   'https://aazveowyyfmpdfwwjiqp.supabase.co/storage/v1/object/public/cartoes-artes/proprios/frente.png';
 
-// =========================
-// UTIL
-// =========================
+/* -------------------------------------------------- */
+/* 🔥 BUSCA PAGINADA (remove limite 1000 do Supabase) */
+/* -------------------------------------------------- */
+async function buscarTodosCartoes(queryBase: any) {
+  let page = 0;
+  let all: any[] = [];
+
+  while (true) {
+    const from = page * PAGE_SIZE;
+    const to = from + PAGE_SIZE - 1;
+
+    const { data, error } = await queryBase.range(from, to);
+
+    if (error) throw error;
+    if (!data || data.length === 0) break;
+
+    all = all.concat(data);
+
+    if (data.length < PAGE_SIZE) break;
+
+    page++;
+  }
+
+  return all;
+}
+
 function chunkArray<T>(array: T[], size: number): T[][] {
   const chunks = [];
   for (let i = 0; i < array.length; i += size) {
@@ -47,13 +73,23 @@ function chunkArray<T>(array: T[], size: number): T[][] {
   return chunks;
 }
 
+const tick = () =>
+  new Promise<void>((resolve) =>
+    requestAnimationFrame(() => resolve())
+  );
+
 export const ExportarCartoesPdf = ({
   tipo,
   loteId,
+  zip = false,
   onClose,
 }: Props) => {
   const notify = useNotify();
   const gerouRef = useRef(false);
+  const cancelRef = useRef(false);
+
+  const [total, setTotal] = useState(0);
+  const [atual, setAtual] = useState(0);
 
   useEffect(() => {
     if (gerouRef.current) return;
@@ -72,34 +108,26 @@ export const ExportarCartoesPdf = ({
 
   const gerarPdf = async () => {
     try {
-      // =========================
-      // CARTÕES
-      // =========================
-      let cartoesQuery = supabase
+      /* ---------------- BUSCA CARTÕES ---------------- */
+      let query = supabase
         .from('meios_acesso')
         .select('codigo_unico, nano_id');
 
-      if (tipo === 'lote') {
-        cartoesQuery = cartoesQuery.eq('lote_id', loteId);
-      }
+      if (tipo === 'lote') query = query.eq('lote_id', loteId);
+      if (tipo === 'proprio')
+        query = query.eq('tipo_cartao', 'emergencial').is('lote_id', null);
 
-      if (tipo === 'proprio') {
-        cartoesQuery = cartoesQuery
-          .eq('tipo_cartao', 'emergencial')
-          .is('lote_id', null);
-      }
+      const cartoes = await buscarTodosCartoes(query);
 
-      const { data: cartoes } = await cartoesQuery;
-
-      if (!cartoes?.length) {
+      if (!cartoes.length) {
         notify('Nenhum cartão encontrado', { type: 'warning' });
         onClose();
         return;
       }
 
-      // =========================
-      // ARTE
-      // =========================
+      setTotal(cartoes.length);
+
+      /* ---------------- ARTE ---------------- */
       let arteFrenteUrl: string;
 
       if (tipo === 'lote') {
@@ -124,14 +152,16 @@ export const ExportarCartoesPdf = ({
         .then((r) => r.blob())
         .then(blobToBase64);
 
-      // =========================
-      // DIVISÃO EM PARTES
-      // =========================
       const grupos = chunkArray(cartoes, CARTOES_POR_PDF);
+      const zipFile = zip ? new JSZip() : null;
 
       let parte = 1;
+      let processados = 0;
 
+      /* ---------------- GERAÇÃO ---------------- */
       for (const grupo of grupos) {
+        if (cancelRef.current) return;
+
         const pdf = new jsPDF({ unit: 'mm', format: 'a4' });
 
         pdf.addFileToVFS('Poppins-Bold.ttf', PoppinsBold);
@@ -142,14 +172,14 @@ export const ExportarCartoesPdf = ({
         let y = MARGIN_Y;
 
         for (const cartao of grupo) {
+          if (cancelRef.current) return;
+
           const url = `https://cards.zpay.fraternize.com.br/card/${cartao.nano_id}`;
 
           // fundo
           pdf.addImage(frente, 'PNG', x, y, CARD_WIDTH, CARD_HEIGHT);
 
-          // =========================
-          // QR
-          // =========================
+          /* ================= QR ================= */
           const qrSize = 24;
           const qrPadding = 1.5;
 
@@ -175,9 +205,7 @@ export const ExportarCartoesPdf = ({
 
           pdf.addImage(qr, 'PNG', qrX, qrY, qrSize, qrSize);
 
-          // =========================
-          // CÓDIGO
-          // =========================
+          /* ================= CÓDIGO ================= */
           const codeBoxWidth = 33;
           const codeBoxHeight = 5;
 
@@ -208,9 +236,7 @@ export const ExportarCartoesPdf = ({
             { align: 'center' }
           );
 
-          // =========================
-          // GRID
-          // =========================
+          /* ================= GRID ================= */
           x += CARD_WIDTH + GAP;
 
           if (x + CARD_WIDTH > PAGE_WIDTH) {
@@ -223,18 +249,44 @@ export const ExportarCartoesPdf = ({
             x = MARGIN_X;
             y = MARGIN_Y;
           }
+
+          /* ================= PROGRESSO ================= */
+          processados++;
+          setAtual(processados);
+
+          // 🔥 permite render da barra
+          await tick();
         }
+
 
         const nome =
           tipo === 'lote'
             ? `cartoes-lote-${loteId}-parte-${parte}.pdf`
             : `cartoes-proprios-parte-${parte}.pdf`;
 
-        pdf.save(nome);
+        if (zipFile) {
+          zipFile.file(nome, pdf.output('blob'));
+        } else {
+          pdf.save(nome);
+        }
+
         parte++;
       }
 
-      notify('PDFs gerados com sucesso', { type: 'success' });
+      if (zipFile && !cancelRef.current) {
+        const blob = await zipFile.generateAsync({ type: 'blob' });
+        saveAs(
+          blob,
+          tipo === 'lote'
+            ? `cartoes-lote-${loteId}.zip`
+            : `cartoes-proprios.zip`
+        );
+      }
+
+      if (!cancelRef.current) {
+        notify('Exportação concluída', { type: 'success' });
+      }
+
       onClose();
     } catch (e) {
       console.error(e);
@@ -243,13 +295,31 @@ export const ExportarCartoesPdf = ({
     }
   };
 
+  /* ---------------- UI ---------------- */
   return (
     <Dialog open onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle>Gerando PDF</DialogTitle>
+      <DialogTitle>Gerando cartões</DialogTitle>
+
       <DialogContent>
-        Gerando cartões...
-        <Button onClick={onClose} sx={{ mt: 2 }}>
-          Fechar
+        <Typography sx={{ mb: 1 }}>
+          {atual} de {total} cartões
+        </Typography>
+
+        <LinearProgress
+          variant="determinate"
+          value={total ? (atual / total) * 100 : 0}
+        />
+
+        <Button
+          sx={{ mt: 3 }}
+          color="error"
+          variant="outlined"
+          onClick={() => {
+            cancelRef.current = true;
+            onClose();
+          }}
+        >
+          Cancelar geração
         </Button>
       </DialogContent>
     </Dialog>

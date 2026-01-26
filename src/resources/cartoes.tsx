@@ -8,14 +8,17 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import CreditCardIcon from '@mui/icons-material/CreditCard';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
 
+interface PropsEdit {
+  record?: any;
+}
 
-export const CartoesDoLoteButton = () => {
-  const record = useRecordContext();
+export const CartoesDoLoteButton = ({ record }: PropsEdit) => {
   const navigate = useNavigate();
 
   if (!record) return null;
 
-  if (record.total_cartoes === 0) return null;
+  // só aparece se já existirem cartões
+  if (!record.total_cartoes || record.total_cartoes === 0) return null;
 
   return (
     <Button

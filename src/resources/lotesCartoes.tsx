@@ -23,6 +23,8 @@ import {
     DeleteButton,
     ImageField,
     ImageInput,
+    useEditContext,
+    useGetOne,
 } from 'react-admin';
 import { BackToListButton } from '../components/BackToListButton';
 import { useNavigate, useParams } from 'react-router';
@@ -34,6 +36,7 @@ import { Chip } from '@mui/material';
 import { CartoesDoLoteButton } from './cartoes';
 import { ExportarCartoesPdf } from './exportarCartoesPdf';
 import { supabase } from '../lib/supabaseClient';
+import { ExportarCartoesPdfDialog } from './exportarCartoesPdfDialog';
 
 
 const LoteListActions = () => {
@@ -102,69 +105,53 @@ export const LoteCartaoList = () => {
     );
 };
 
-export const GerarCartoesButton = () => {
-    const record = useRecordContext();
-    const notify = useNotify();
-    const refresh = useRefresh();
-    const dataProvider = useDataProvider();
+export const GerarCartoesButton = ({ record }: ActionProps) => {
+  const notify = useNotify();
+  const refresh = useRefresh();
+  const dataProvider = useDataProvider();
+  const [open, setOpen] = useState(false);
 
-    const [open, setOpen] = useState(false);
-    const [loading, setLoading] = useState(false);
+  if (!record) return null;
+  if (record.status_lote !== 'criado') return null;
 
-    if (!record) return null;
+  const handleConfirm = async () => {
+    setOpen(false);
 
-    if (record.status_lote !== 'criado') return null;
+    try {
+      await dataProvider.create('lotes_cartoes_gerar', {
+        data: { lote_id: record.id },
+      });
 
-    const handleConfirm = async () => {
-        setOpen(false);
-        setLoading(true);
+      notify('Cartões gerados com sucesso', { type: 'success' });
+      refresh();
+    } catch (error: any) {
+      if (error?.context?.status === 409) {
+        notify('Este lote já teve os cartões gerados.', {
+          type: 'warning',
+        });
+      } else {
+        notify('Erro ao gerar cartões.', { type: 'error' });
+      }
+    }
+  };
 
-        try {
-            await dataProvider.create('lotes_cartoes_gerar', {
-                data: {
-                    lote_id: record.id,
-                },
-            });
+  return (
+    <>
+      <Button
+        label="Gerar cartões"
+        startIcon={<CreditCardIcon />}
+        onClick={() => setOpen(true)}
+      />
 
-            notify('Cartões gerados com sucesso', { type: 'success' });
-            refresh();
-        } catch (error: any) {
-            const status = error?.context?.status;
-
-            if (status === 409) {
-                notify(
-                    'Este lote já teve os cartões gerados.',
-                    { type: 'warning' }
-                );
-            } else {
-                notify(
-                    'Erro ao gerar cartões.',
-                    { type: 'error' }
-                );
-            }
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    return (
-        <>
-            <Button
-                label="Gerar cartões"
-                startIcon={<CreditCardIcon />}
-                onClick={() => setOpen(true)}
-                disabled={loading}
-            />
-
-            <Confirm
-                isOpen={open}
-                title="Gerar cartões"
-                content="Tem certeza que deseja gerar os cartões deste lote? Essa ação não poderá ser refeita."
-                onConfirm={handleConfirm}
-                onClose={() => setOpen(false)}
-            />
-        </>
-    );
+      <Confirm
+        isOpen={open}
+        title="Gerar cartões"
+        content="Tem certeza que deseja gerar os cartões deste lote?"
+        onConfirm={handleConfirm}
+        onClose={() => setOpen(false)}
+      />
+    </>
+  );
 };
 
 export const LoteCartaoCreate = () => {
@@ -210,101 +197,107 @@ export const LoteCartaoCreate = () => {
     );
 };
 
-const ExportarPdfButton = () => {
-    const record = useRecordContext();
-    const [open, setOpen] = useState(false);
+const ExportarPdfButton = ({ record }: ActionProps) => {
+  const [open, setOpen] = useState(false);
+  const [modo, setModo] = useState<'pdf' | 'zip' | null>(null);
 
-    if (!record) return null;
+  if (!record) return null;
+  if (record.status_lote === 'criado') return null;
 
-    if (record.status_lote === 'criado') return null;
+  return (
+    <>
+      <Button
+        label="Exportar cartões"
+        startIcon={<PictureAsPdfIcon />}
+        onClick={() => setOpen(true)}
+      />
 
-    return (
-        <>
-            <Button
-                label="Exportar PDF"
-                startIcon={<PictureAsPdfIcon />}
-                onClick={() => setOpen(true)}
-            />
-
-            {open && (
-                <ExportarCartoesPdf
-                    tipo="lote"
-                    loteId={record.id}
-                    onClose={() => setOpen(false)}
-                />
-            )}
-        </>
-    );
-};
-
-const DeleteLoteButton = () => {
-    const record = useRecordContext();
-    const notify = useNotify();
-
-    if (!record) return null;
-
-    if (record.status_lote !== 'criado') return null;
-
-    if (record.total_cartoes > 0) {
-        return (
-            <Button
-                label="Excluir"
-                disabled
-                onClick={() =>
-                    notify('Não é possível excluir um lote com cartões gerados', {
-                        type: 'warning',
-                    })
-                }
-            />
-        );
-    }
-
-    return <DeleteButton />;
-};
-
-const MarcarImpressoButton = () => {
-    const record = useRecordContext();
-    const notify = useNotify();
-    const refresh = useRefresh();
-    const dataProvider = useDataProvider();
-
-    if (!record) return null;
-
-    if (record.status_lote !== 'gerado') return null;
-
-    const handleClick = async () => {
-        await dataProvider.create('marcar-lote-impresso', {
-            data: { lote_id: record.id },
-        });
-
-        notify('Lote marcado como impresso', { type: 'success' });
-        refresh();
-    };
-
-    return (
-        <Button
-            label="Marcar como impresso"
-            disabled={record.impresso}
-            onClick={handleClick}
+      {open && (
+        <ExportarCartoesPdfDialog
+          open
+          onClose={() => setOpen(false)}
+          onConfirm={(m) => {
+            setModo(m);
+            setOpen(false);
+          }}
         />
-    );
+      )}
+
+      {modo && (
+        <ExportarCartoesPdf
+          tipo="lote"
+          loteId={record.id}
+          zip={modo === 'zip'}
+          onClose={() => setModo(null)}
+        />
+      )}
+    </>
+  );
 };
 
-export const BackToEventoLotesButton = () => {
-    const record = useRecordContext();
-    const navigate = useNavigate();
+const DeleteLoteButton = ({ record }: ActionProps) => {
+  const notify = useNotify();
 
-    if (!record?.evento_id) return null;
+  if (!record) return null;
+  if (record.status_lote !== 'criado') return null;
 
+  if (record.total_cartoes > 0) {
     return (
-        <Button
-            label="Voltar"
-            startIcon={<ArrowBackIcon />}
-            onClick={() =>
-                navigate(`/eventos/${record.evento_id}/lotes-cartoes`)
-            }
-        />
+      <Button
+        label="Excluir"
+        disabled
+        onClick={() =>
+          notify(
+            'Não é possível excluir um lote com cartões gerados',
+            { type: 'warning' }
+          )
+        }
+      />
     );
+  }
+
+  return <DeleteButton />;
+};
+
+const MarcarImpressoButton = ({ record }: ActionProps) => {
+  const notify = useNotify();
+  const refresh = useRefresh();
+  const dataProvider = useDataProvider();
+
+  if (!record) return null;
+  if (record.status_lote !== 'gerado') return null;
+
+  const handleClick = async () => {
+    await dataProvider.create('marcar-lote-impresso', {
+      data: { lote_id: record.id },
+    });
+
+    notify('Lote marcado como impresso', { type: 'success' });
+    refresh();
+  };
+
+  return (
+    <Button
+      label="Marcar como impresso"
+      onClick={handleClick}
+    />
+  );
+};
+
+const BackToEventoLotesButton = ({ record }: ActionProps) => {
+  const navigate = useNavigate();
+
+  if (!record?.evento_id) return null;
+
+  return (
+    <Button
+      label="Voltar"
+      startIcon={<ArrowBackIcon />}
+      onClick={() =>
+        navigate(`/eventos/${record.evento_id}/lotes-cartoes`)
+      }
+    />
+  );
 };
 
 const PreviewArte = ({ source, label }: { source: string; label: string }) => {
@@ -330,104 +323,118 @@ const PreviewArte = ({ source, label }: { source: string; label: string }) => {
     );
 };
 
-const EditActions = () => (
+const EditActions = () => {
+  const record = useRecordContext();
+
+  const { data: view } = useGetOne(
+    'vw_lotes_cartoes_status',
+    { id: record?.id },
+    { enabled: !!record?.id }
+  );
+
+  if (!record || !view) return null;
+
+  return (
     <TopToolbar>
-        <BackToEventoLotesButton />
+      <BackToEventoLotesButton record={view} />
 
-        <GerarCartoesButton />
+      {view.status_lote === 'criado' && (
+        <GerarCartoesButton record={view} />
+      )}
 
-        <MarcarImpressoButton />
+      {view.status_lote === 'gerado' && (
+        <MarcarImpressoButton record={view} />
+      )}
 
-        <ExportarPdfButton />
+      {view.status_lote !== 'criado' && (
+        <ExportarPdfButton record={view} />
+      )}
 
-        <CartoesDoLoteButton />
+      {view.total_cartoes > 0 && (
+        <CartoesDoLoteButton record={view} />
+      )}
 
-        <DeleteLoteButton />
+      {view.status_lote === 'criado' && (
+        <DeleteLoteButton record={view} />
+      )}
     </TopToolbar>
-);
+  );
+};
 
+interface ActionProps {
+  record?: any;
+}
 
-export const LoteCartaoEdit = () => (
+export const LoteCartaoEdit = () => {
+  return (
     <Edit
-        actions={<EditActions />}
-        transform={async (data) => {
-            const updates: any = { ...data };
+      resource="lotes_cartoes"
+      actions={<EditActions />}
+      mutationMode="pessimistic"
+      transform={async (data) => {
+        const updates: any = {};
 
-            const upload = async (file: any, nome: string) => {
-                const path = `eventos/${data.evento_id}/lotes/${data.id}/${nome}.png`;
+        const upload = async (file: any, nome: string) => {
+          const path = `eventos/${data.evento_id}/lotes/${data.id}/${nome}.png`;
 
-                const { error } = await supabase.storage
-                    .from('cartoes-artes')
-                    .upload(path, file.rawFile, {
-                        upsert: true,
-                        contentType: file.rawFile.type,
-                    });
+          const { error } = await supabase.storage
+            .from('cartoes-artes')
+            .upload(path, file.rawFile, {
+              upsert: true,
+              contentType: file.rawFile.type,
+            });
 
-                if (error) throw error;
+          if (error) throw error;
 
-                const { data: url } = supabase.storage
-                    .from('cartoes-artes')
-                    .getPublicUrl(path);
+          const { data: url } = supabase.storage
+            .from('cartoes-artes')
+            .getPublicUrl(path);
 
-                return url.publicUrl;
-            };
+          return url.publicUrl;
+        };
 
-            if (data.arte_frente_file) {
-                updates.arte_frente_url = await upload(
-                    data.arte_frente_file,
-                    'frente'
-                );
-            }
+        if (data.arte_frente_file) {
+          updates.arte_frente_url = await upload(
+            data.arte_frente_file,
+            'frente'
+          );
+        }
 
-            if (data.arte_verso_file) {
-                updates.arte_verso_url = await upload(
-                    data.arte_verso_file,
-                    'verso'
-                );
-            }
+        if (data.arte_verso_file) {
+          updates.arte_verso_url = await upload(
+            data.arte_verso_file,
+            'verso'
+          );
+        }
 
-            // remove campos virtuais
-            delete updates.arte_frente_file;
-            delete updates.arte_verso_file;
-
-            return updates;
-        }}
+        return updates;
+      }}
     >
-        <SimpleForm>
-            <TextInput source="prefixo_codigo" disabled fullWidth />
+      <SimpleForm>
+        <TextInput source="prefixo_codigo" disabled fullWidth />
+        <NumberInput source="sequencial_inicio" disabled />
+        <NumberInput source="sequencial_fim" disabled />
+        <NumberInput source="quantidade" disabled />
 
-            <NumberInput source="sequencial_inicio" disabled />
-            <NumberInput source="sequencial_fim" disabled />
-            <NumberInput source="quantidade" disabled />
+        <ImageInput source="arte_frente_file" label="Arte frente">
+          <ImageField source="src" />
+        </ImageInput>
 
-            <ImageInput
-                source="arte_frente_file"
-                label="Arte frente (PNG ou JPG)"
-                accept={{
-                    'image/png': [],
-                    'image/jpeg': [],
-                }}
-            >
-                <ImageField source="src" />
-            </ImageInput>
+        <PreviewArte
+          source="arte_frente_url"
+          label="Arte frente atual"
+        />
 
-            <PreviewArte source="arte_frente_url" label="Arte frente atual" />
+        <ImageInput source="arte_verso_file" label="Arte verso">
+          <ImageField source="src" />
+        </ImageInput>
 
-            <ImageInput
-                source="arte_verso_file"
-                label="Arte verso (PNG ou JPG)"
-                accept={{
-                    'image/png': [],
-                    'image/jpeg': [],
-                }}
-            >
-                <ImageField source="src" />
-            </ImageInput>
-
-            <PreviewArte source="arte_verso_url" label="Arte verso atual" />
-
-            <DateField source="criado_em" showTime />
-        </SimpleForm>
+        <PreviewArte
+          source="arte_verso_url"
+          label="Arte verso atual"
+        />
+      </SimpleForm>
     </Edit>
-);
+  );
+};
 
