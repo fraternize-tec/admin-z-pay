@@ -46,6 +46,14 @@ const EventoEditActions = () => {
           navigate(`/eventos/${record.id}/lotes-cartoes`)
         }
       />
+
+      <Button
+        label="Cartões emergenciais"
+        startIcon={<CreditCardIcon />}
+        onClick={() =>
+          navigate(`/eventos/${record.id}/cartoes-emergenciais`)
+        }
+      />
     </TopToolbar>
   );
 };

@@ -36,7 +36,8 @@ import { PapelPermissaoCreate } from './resources/papelPermissoes';
 import { LoteCartaoList, LoteCartaoCreate, LoteCartaoEdit } from './resources/lotesCartoes';
 import { Route } from 'react-router';
 import { CartaoList } from './resources/cartoes';
-import { CartoesPropriosList } from './resources/cartoesProprios';
+import { CartaoProprioShow, CartoesPropriosList } from './resources/cartoesProprios';
+import { CartoesPropriosEventoList } from './resources/cartoesEmergenciais';
 
 export const App = () => (
     <Admin
@@ -64,6 +65,11 @@ export const App = () => (
                 path="/eventos/:eventoId/lotes-cartoes/:loteId/cartoes"
                 element={<CartaoList />}
             />
+
+            <Route
+                path="/eventos/:eventoId/cartoes-emergenciais"
+                element={<CartoesPropriosEventoList />}
+            />
         </CustomRoutes>
         {(permissions) => (
             <>
@@ -86,8 +92,10 @@ export const App = () => (
 
                         <Resource
                             name="vw_cartoes_proprios"
+                            icon={CreditCardIcon}
                             options={{ label: 'Cartões Próprios' }}
                             list={CartoesPropriosList}
+                            show={CartaoProprioShow}
                         />
 
                     </>

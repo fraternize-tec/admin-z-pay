@@ -1,32 +1,30 @@
 import {
-    Datagrid,
-    TextField,
-    DateField,
-    NumberField,
-    ReferenceField,
-    NumberInput,
-    SimpleForm,
-    Create,
-    required,
-    TextInput,
-    Edit,
-    TopToolbar,
-    ListBase,
-    Button,
-    Confirm,
-    useDataProvider,
-    useNotify,
-    useRecordContext,
-    useRefresh,
-    Pagination,
-    CreateButton,
-    DeleteButton,
-    ImageField,
-    ImageInput,
-    useEditContext,
-    useGetOne,
+  Datagrid,
+  TextField,
+  DateField,
+  NumberField,
+  ReferenceField,
+  NumberInput,
+  SimpleForm,
+  Create,
+  required,
+  TextInput,
+  Edit,
+  TopToolbar,
+  ListBase,
+  Button,
+  Confirm,
+  useDataProvider,
+  useNotify,
+  useRecordContext,
+  useRefresh,
+  Pagination,
+  CreateButton,
+  DeleteButton,
+  ImageField,
+  ImageInput,
+  useGetOne,
 } from 'react-admin';
-import { BackToListButton } from '../components/BackToListButton';
 import { useNavigate, useParams } from 'react-router';
 import { useState } from 'react';
 import CreditCardIcon from '@mui/icons-material/CreditCard';
@@ -37,72 +35,74 @@ import { CartoesDoLoteButton } from './cartoes';
 import { ExportarCartoesPdf } from './exportarCartoesPdf';
 import { supabase } from '../lib/supabaseClient';
 import { ExportarCartoesPdfDialog } from './exportarCartoesPdfDialog';
+import { BackToListButtonNavigate } from '../components/BackToListButton';
 
 
 const LoteListActions = () => {
-    const { eventoId } = useParams();
+  const { eventoId } = useParams();
 
-    return (
-        <TopToolbar>
-            <CreateButton
-                resource="lotes_cartoes"
-                to={`/eventos/${eventoId}/lotes-cartoes/create`}
-            />
-        </TopToolbar>
-    );
+  return (
+    <TopToolbar>
+      <BackToListButtonNavigate />
+      <CreateButton
+        resource="lotes_cartoes"
+        to={`/eventos/${eventoId}/lotes-cartoes/create`}
+      />
+    </TopToolbar>
+  );
 };
 
 export const LoteStatusField = () => {
-    const record = useRecordContext();
+  const record = useRecordContext();
 
-    if (!record) return null;
+  if (!record) return null;
 
-    switch (record.status_lote) {
-        case 'criado':
-            return <Chip label="Criado" color="warning" />;
+  switch (record.status_lote) {
+    case 'criado':
+      return <Chip label="Criado" color="warning" />;
 
-        case 'gerado':
-            return <Chip label="Gerado" color="info" />;
+    case 'gerado':
+      return <Chip label="Gerado" color="info" />;
 
-        case 'impresso':
-            return <Chip label="Impresso" color="success" />;
+    case 'impresso':
+      return <Chip label="Impresso" color="success" />;
 
-        default:
-            return null;
-    }
+    default:
+      return null;
+  }
 };
 
 export const LoteCartaoList = () => {
-    const { eventoId } = useParams();
+  const { eventoId } = useParams();
 
-    return (
-        <ListBase
-            resource="vw_lotes_cartoes_status"
-            filter={{ evento_id: eventoId }}
-            perPage={25}
-        >
-            <LoteListActions />
+  return (
+    <ListBase
+      resource="vw_lotes_cartoes_status"
+      filter={{ evento_id: eventoId }}
+      perPage={25}
+    >
+      <LoteListActions />
 
-            <Datagrid
-                rowClick={(id, resource, record) =>
-                    `/lotes_cartoes/${record.id}`
-                }
-            >
-                <LoteStatusField />
-                <ReferenceField source="evento_id" reference="eventos">
-                    <TextField source="nome" />
-                </ReferenceField>
+      <Datagrid
+        rowClick={(id, resource, record) =>
+          `/lotes_cartoes/${record.id}`
+        }
+      >
+        <LoteStatusField />
+        <ReferenceField source="evento_id" reference="eventos">
+          <TextField source="nome" />
+        </ReferenceField>
 
-                <TextField source="prefixo_codigo" />
-                <NumberField source="sequencial_inicio" />
-                <NumberField source="sequencial_fim" />
-                <NumberField source="quantidade" />
-                <DateField source="criado_em" showTime />
-            </Datagrid>
+        <TextField source="prefixo_codigo" />
+        <NumberField source="sequencial_inicio" />
+        <NumberField source="sequencial_fim" />
+        <NumberField source="quantidade" />
+        <DateField source="criado_em" showTime />
+      </Datagrid>
 
-            <Pagination />
-        </ListBase>
-    );
+      <Pagination />
+    </ListBase>
+  );
 };
 
 export const GerarCartoesButton = ({ record }: ActionProps) => {
@@ -155,46 +155,46 @@ export const GerarCartoesButton = ({ record }: ActionProps) => {
 };
 
 export const LoteCartaoCreate = () => {
-    const { eventoId } = useParams();
-    const navigate = useNavigate();
+  const { eventoId } = useParams();
+  const navigate = useNavigate();
 
-    return (
-        <Create
-            resource="lotes_cartoes"
-            transform={(data) => ({
-                ...data,
-                evento_id: eventoId,
-            })}
-            mutationOptions={{
-                onSuccess: () => {
-                    navigate(`/eventos/${eventoId}/lotes-cartoes`);
-                },
-            }}
-        >
-            <SimpleForm
-                defaultValues={{
-                    evento_id: eventoId,
-                }}
-            >
-                <TextInput
-                    source="prefixo_codigo"
-                    label="Prefixo do cartão"
-                    validate={required()}
-                    fullWidth
-                />
+  return (
+    <Create
+      resource="lotes_cartoes"
+      transform={(data) => ({
+        ...data,
+        evento_id: eventoId,
+      })}
+      mutationOptions={{
+        onSuccess: () => {
+          navigate(`/eventos/${eventoId}/lotes-cartoes`);
+        },
+      }}
+    >
+      <SimpleForm
+        defaultValues={{
+          evento_id: eventoId,
+        }}
+      >
+        <TextInput
+          source="prefixo_codigo"
+          label="Prefixo do cartão"
+          validate={required()}
+          fullWidth
+        />
 
-                <NumberInput
-                    source="sequencial_inicio"
-                    validate={required()}
-                />
+        <NumberInput
+          source="sequencial_inicio"
+          validate={required()}
+        />
 
-                <NumberInput
-                    source="quantidade"
-                    validate={required()}
-                />
-            </SimpleForm>
-        </Create>
-    );
+        <NumberInput
+          source="quantidade"
+          validate={required()}
+        />
+      </SimpleForm>
+    </Create>
+  );
 };
 
 const ExportarPdfButton = ({ record }: ActionProps) => {
@@ -301,26 +301,26 @@ const BackToEventoLotesButton = ({ record }: ActionProps) => {
 };
 
 const PreviewArte = ({ source, label }: { source: string; label: string }) => {
-    const record = useRecordContext();
+  const record = useRecordContext();
 
-    if (!record?.[source]) return null;
+  if (!record?.[source]) return null;
 
-    return (
-        <div style={{ marginTop: 12 }}>
-            <strong>{label}</strong>
-            <div>
-                <img
-                    src={record[source]}
-                    style={{
-                        maxWidth: 320,
-                        borderRadius: 8,
-                        border: '1px solid #ddd',
-                        marginTop: 6,
-                    }}
-                />
-            </div>
-        </div>
-    );
+  return (
+    <div style={{ marginTop: 12 }}>
+      <strong>{label}</strong>
+      <div>
+        <img
+          src={record[source]}
+          style={{
+            maxWidth: 320,
+            borderRadius: 8,
+            border: '1px solid #ddd',
+            marginTop: 6,
+          }}
+        />
+      </div>
+    </div>
+  );
 };
 
 const EditActions = () => {

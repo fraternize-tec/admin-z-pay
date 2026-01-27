@@ -221,6 +221,13 @@ export const supabaseDataProvider: DataProvider = {
 
   /* ================= DELETE ================= */
   delete: async (resource, params) => {
+    if (
+      resource === 'vw_evento_cartoes_proprios' ||
+      resource === 'vw_cartoes_proprios'
+    ) {
+      throw new Error('Exclusão não permitida neste recurso');
+    }
+
     const { data, error } = await supabase
       .from(resource)
       .delete()
@@ -292,6 +299,13 @@ export const supabaseDataProvider: DataProvider = {
 
   updateMany: async () => Promise.reject(),
   deleteMany: async (resource, params) => {
+    if (
+      resource === 'vw_evento_cartoes_proprios' ||
+      resource === 'vw_cartoes_proprios'
+    ) {
+      throw new Error('Exclusão não permitida neste recurso');
+    }
+
     const { ids } = params;
 
     const { error } = await supabase

@@ -15,16 +15,22 @@ import {
   NumberInput,
   SimpleForm,
   TextInput,
+  ReferenceManyField,
+  Show,
+  SimpleShowLayout,
+  ChipField,
   Confirm,
 } from 'react-admin';
 import { VincularCartaoModal } from './vincularCartaoModal';
 import { useState } from 'react';
-import { Dialog, DialogTitle, DialogContent, Chip, Alert, DialogActions, FormControlLabel, Radio, RadioGroup, Stack } from '@mui/material';
+import { Dialog, DialogTitle, DialogContent, Chip, Stack, Card, CardContent, Typography } from '@mui/material';
 import LinkOffIcon from '@mui/icons-material/LinkOff';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
+import BlockIcon from '@mui/icons-material/Block';
 
 import { DesvincularCartoesLoteModal } from './desvincularCartoesLoteModal';
 import { ExportarCartoesPdf } from './exportarCartoesPdf';
+import { BackToListButtonNavigate } from '../components/BackToListButton';
 
 const GerarCartoesPropriosButton = () => {
   const [open, setOpen] = useState(false);
@@ -75,38 +81,34 @@ const GerarCartoesPropriosDialog = ({ onClose }: { onClose: () => void }) => {
   );
 };
 
-const DesvincularCartaoButton = () => {
+const DesvincularEventoButton = ({
+  onOpen,
+}: {
+  onOpen: (cartao: any) => void;
+}) => {
   const record = useRecordContext();
-  const [open, setOpen] = useState(false);
 
   if (!record) return null;
-
-  // só aparece se estiver vinculado
   if (!record.evento_id) return null;
 
   return (
-    <>
-      <Button
-        label="Desvincular"
-        startIcon={<LinkOffIcon />}
-        color="error"
-        onClick={() => setOpen(true)}
-      />
-
-      <DesvincularCartoesLoteModal
-        open={open}
-        onClose={() => setOpen(false)}
-        cartao={record}
-      />
-    </>
+    <Button
+      label="Desvincular"
+      color="error"
+      startIcon={<LinkOffIcon />}
+      onClick={(e) => {
+        e.stopPropagation();
+        onOpen(record);
+      }}
+    />
   );
 };
+
 
 export const StatusCartaoProprioField = () => {
   const record = useRecordContext();
 
   if (!record) return null;
-
   switch (record.status_cartao) {
     case 'disponivel':
       return <Chip label="Disponível" color="success" />;
@@ -125,26 +127,77 @@ export const StatusCartaoProprioField = () => {
   }
 };
 
-export const CartoesPropriosList = () => (
-  <ListBase resource="vw_cartoes_proprios" perPage={25}>
-    <TopToolbar>
-      <GerarCartoesPropriosButton />
-      <ExportarCartoesPropriosButton />
-    </TopToolbar>
+export const CartoesPropriosList = () => {
+  const [cartaoSelecionado, setCartaoSelecionado] =
+    useState<any | null>(null);
 
-    <Datagrid>
-      <StatusCartaoProprioField />
-      <TextField source="codigo_unico" label="Código" />
-      <TextField source="status" />
-      <NumberField source="saldo" />
-      <DateField source="criado_em" showTime />
-      <VincularEventoButton />
-      <DesvincularCartaoButton />
-    </Datagrid>
+  const [acao, setAcao] = useState<'vincular' | 'desvincular' | null>(
+    null
+  );
 
-    <Pagination />
-  </ListBase>
-);
+  return (
+    <>
+      <ListBase resource="vw_cartoes_proprios" perPage={25}>
+        <TopToolbar>
+          <GerarCartoesPropriosButton />
+          <ExportarCartoesPropriosButton />
+        </TopToolbar>
+
+        <Datagrid rowClick="show">
+          <StatusCartaoProprioField />
+          <TextField source="codigo_unico" />
+          <TextField source="evento_nome" />
+          <NumberField source="saldo" />
+          <DateField source="criado_em" showTime />
+
+          <VincularEventoButton
+            onOpen={(cartao) => {
+              setCartaoSelecionado(cartao);
+              setAcao('vincular');
+            }}
+          />
+
+          <DesvincularEventoButton
+            onOpen={(cartao) => {
+              setCartaoSelecionado(cartao);
+              setAcao('desvincular');
+            }}
+          />
+
+            <CancelarCartaoProprioButton />
+        </Datagrid>
+
+        <Pagination />
+      </ListBase>
+
+      {/* ========================= */}
+      {/* MODAIS FORA DO DATAGRID */}
+      {/* ========================= */}
+
+      {acao === 'vincular' && cartaoSelecionado && (
+        <VincularCartaoModal
+          open
+          cartao={cartaoSelecionado}
+          onClose={() => {
+            setCartaoSelecionado(null);
+            setAcao(null);
+          }}
+        />
+      )}
+
+      {acao === 'desvincular' && cartaoSelecionado && (
+        <DesvincularCartoesLoteModal
+          open
+          cartao={cartaoSelecionado}
+          onClose={() => {
+            setCartaoSelecionado(null);
+            setAcao(null);
+          }}
+        />
+      )}
+    </>
+  );
+};
 
 const ExportarCartoesPropriosButton = () => {
   const [open, setOpen] = useState(false);
@@ -169,25 +222,119 @@ const ExportarCartoesPropriosButton = () => {
 
 
 
-const VincularEventoButton = () => {
+const VincularEventoButton = ({ onOpen }: { onOpen: (cartao: any) => void }) => {
   const record = useRecordContext();
-  const [open, setOpen] = useState(false);
 
   if (!record || record.evento_id) return null;
 
   return (
+    <Button
+      label="Vincular"
+      onClick={(e) => {
+        e.stopPropagation();
+        onOpen(record);
+      }}
+    />
+  );
+};
+
+const CartaoProprioShowActions = () => (
+  <TopToolbar>
+    <BackToListButtonNavigate />
+    <CancelarCartaoProprioButton />
+  </TopToolbar>
+);
+
+export const CartaoProprioShow = () => (
+  <Show actions={<CartaoProprioShowActions />}>
+    <SimpleShowLayout>
+
+      {/* ========================= */}
+      {/* DADOS DO CARTÃO */}
+      {/* ========================= */}
+      <Card>
+        <CardContent>
+          <Typography variant="h6" gutterBottom>
+            Dados do cartão
+          </Typography>
+
+          <Stack spacing={1}>
+            <TextField source="codigo_unico" label="Código" />
+            <NumberField source="saldo" />
+            <TextField source="status_cartao" label="Status" />
+            <DateField source="criado_em" showTime />
+          </Stack>
+        </CardContent>
+      </Card>
+
+      {/* ========================= */}
+      {/* HISTÓRICO */}
+      {/* ========================= */}
+      <Card sx={{ mt: 2 }}>
+        <CardContent>
+          <Typography variant="h6" gutterBottom>
+            Histórico de participação em eventos
+          </Typography>
+
+          <ReferenceManyField
+            reference="vw_cartao_proprio_historico"
+            target="cartao_id"
+            sort={{ field: 'data_entrada', order: 'DESC' }}
+          >
+            <Datagrid bulkActionButtons={false}>
+              <TextField source="evento_nome" label="Evento" />
+              <ChipField source="status" />
+              <DateField source="data_entrada" label="Entrada" />
+              <DateField source="data_saida" label="Saída" />
+            </Datagrid>
+          </ReferenceManyField>
+        </CardContent>
+      </Card>
+
+    </SimpleShowLayout>
+  </Show>
+);
+
+export const CancelarCartaoProprioButton = () => {
+  const record = useRecordContext();
+  const notify = useNotify();
+  const refresh = useRefresh();
+  const dataProvider = useDataProvider();
+
+  const [open, setOpen] = useState(false);
+
+  if (!record) return null;
+  if (record.status === 'cancelado') return null;
+
+  const handleConfirm = async () => {
+    setOpen(false);
+
+    await dataProvider.update('meios_acesso', {
+      id: record.id,
+      data: { status: 'cancelado' },
+      previousData: record,
+    });
+
+    notify('Cartão cancelado com sucesso', { type: 'success' });
+    refresh();
+  };
+
+  return (
     <>
       <Button
-        label="Vincular"
+        label="Cancelar cartão"
+        color="error"
+        startIcon={<BlockIcon />}
         onClick={() => setOpen(true)}
       />
 
-      <VincularCartaoModal
-        open={open}
+      <Confirm
+        isOpen={open}
+        title="Cancelar cartão"
+        content="Tem certeza que deseja cancelar este cartão? Essa ação não poderá ser desfeita."
+        onConfirm={handleConfirm}
         onClose={() => setOpen(false)}
-        cartao={record}
       />
     </>
   );
 };
-
