@@ -371,6 +371,7 @@ export const LoteCartaoEdit = () => {
       resource="lotes_cartoes"
       actions={<EditActions />}
       mutationMode="pessimistic"
+      redirect={false}
       transform={async (data) => {
         const updates: any = {};
 
@@ -382,6 +383,7 @@ export const LoteCartaoEdit = () => {
             .upload(path, file.rawFile, {
               upsert: true,
               contentType: file.rawFile.type,
+              cacheControl: 'no-cache',
             });
 
           if (error) throw error;
@@ -390,8 +392,9 @@ export const LoteCartaoEdit = () => {
             .from('cartoes-artes')
             .getPublicUrl(path);
 
-          return url.publicUrl;
+          return `${url.publicUrl}?v=${Date.now()}`;
         };
+
 
         if (data.arte_frente_file) {
           updates.arte_frente_url = await upload(
