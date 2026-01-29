@@ -91,6 +91,13 @@ export const App = () => (
                         />
 
                         <Resource
+                            name="evento_taxa_primeira_recarga"
+                            options={{ label: 'Taxa de primeira recarga' }}
+                            recordRepresentation="descricao"
+                        />
+
+
+                        <Resource
                             name="vw_cartoes_proprios"
                             icon={CreditCardIcon}
                             options={{ label: 'Cartões Próprios' }}

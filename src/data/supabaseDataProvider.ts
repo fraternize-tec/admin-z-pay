@@ -62,6 +62,20 @@ export const supabaseDataProvider: DataProvider = {
   /* ================= CREATE ================= */
   create: async (resource, params) => {
 
+    if (params.meta?.rpc) {
+      const { data, error } = await supabase.rpc(
+        params.meta.rpc,
+        params.data
+      );
+
+      if (error) throw error;
+
+      return {
+        data,
+      };
+    }
+
+
     // =============================
     // AÇÕES CUSTOMIZADAS (Edge)
     // =============================
@@ -200,6 +214,17 @@ export const supabaseDataProvider: DataProvider = {
     resource: string,
     params: any
   ): Promise<{ data: RecordType }> => {
+    if (params.meta?.rpc) {
+      const { data, error } = await supabase.rpc(
+        params.meta.rpc,
+        params.data
+      );
+
+      if (error) throw error;
+
+      return { data };
+    }
+
     const { id, data } = params;
 
     const { error } = await supabase
