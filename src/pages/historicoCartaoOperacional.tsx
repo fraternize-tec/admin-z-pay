@@ -98,7 +98,13 @@ export default function HistoricoCartaoOperacional() {
     setLoading(false);
   }
 
-
+  const ultimaRecargaId = extrato
+    .filter(i => i.tipo === 'recarga' && !i.cancelado)
+    .sort(
+      (a, b) =>
+        new Date(b.criado_em).getTime() -
+        new Date(a.criado_em).getTime()
+    )[0]?.operacao_id;
 
   return (
     <Box p={2}>
@@ -240,7 +246,8 @@ export default function HistoricoCartaoOperacional() {
                   sx={{ opacity: item.cancelado ? 0.6 : 1 }}
                   secondaryAction={
                     !item.cancelado &&
-                    item.tipo !== "taxa" && (
+                    item.tipo !== "taxa" &&
+                    (item.tipo !== "recarga" || item.operacao_id === ultimaRecargaId) && (
                       <IconButton
                         edge="end"
                         size="small"
