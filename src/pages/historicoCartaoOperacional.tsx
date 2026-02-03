@@ -243,7 +243,12 @@ export default function HistoricoCartaoOperacional() {
               {extrato.map((item) => (
                 <ListItem
                   key={`${item.tipo}-${item.operacao_id}`}
-                  sx={{ opacity: item.cancelado ? 0.6 : 1 }}
+                  sx={{
+                    opacity:
+                      item.cancelado && item.valor === 0
+                        ? 0.6           // cancelado total
+                        : 1             // parcial ou normal
+                  }}
                   secondaryAction={
                     !item.cancelado &&
                     item.tipo !== "taxa" &&
@@ -265,19 +270,27 @@ export default function HistoricoCartaoOperacional() {
                   }
                 >
                   <ListItemText
-                    primary={`${labelTipo(item.tipo)} • ${formatDate(
-                      item.criado_em
-                    )}`}
+                    primary={`${labelTipo(item.tipo)} • ${formatDate(item.criado_em)}`}
                     secondary={
                       item.cancelado && (
                         <Chip
-                          label="Cancelado"
+                          label={
+                            item.cancelamento_tipo === 'parcial'
+                              ? 'Cancelado parcialmente'
+                              : 'Cancelado'
+                          }
                           size="small"
+                          color={
+                            item.cancelamento_tipo === 'parcial'
+                              ? 'warning'
+                              : 'default'
+                          }
                           sx={{ mt: 0.5 }}
                         />
                       )
                     }
                   />
+
 
                   <Typography
                     fontWeight="bold"
