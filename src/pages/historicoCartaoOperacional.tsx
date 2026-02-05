@@ -5,7 +5,6 @@ import {
   Card,
   CardContent,
   Typography,
-  Grid,
   Chip,
   Divider,
   List,
@@ -39,6 +38,13 @@ export default function HistoricoCartaoOperacional() {
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
   const openMenu = Boolean(menuAnchor);
 
+
+  const Field = ({ label, children }: any) => (
+    <Box display="flex" flexDirection="column" gap={0.5} width="100%">
+      <Typography variant="caption">{label}</Typography>
+      {children}
+    </Box>
+  );
   // ============================
   // 🔎 busca cartão
   // ============================
@@ -98,14 +104,6 @@ export default function HistoricoCartaoOperacional() {
     setLoading(false);
   }
 
-  const ultimaRecargaId = extrato
-    .filter(i => i.tipo === 'recarga' && !i.cancelado)
-    .sort(
-      (a, b) =>
-        new Date(b.criado_em).getTime() -
-        new Date(a.criado_em).getTime()
-    )[0]?.operacao_id;
-
   return (
     <Box p={2}>
       {/* ===================== */}
@@ -147,41 +145,63 @@ export default function HistoricoCartaoOperacional() {
       {cartao && (
         <Card sx={{ mb: 2 }}>
           <CardContent>
-            <Grid container spacing={2} alignItems="center">
-              <Grid item xs={12} md={3}>
-                <Typography variant="caption">Cartão</Typography>
-                <Typography variant="h6">{cartao.codigo_unico}</Typography>
-              </Grid>
+            <Box
+              sx={{
+                display: "flex",
+                flexWrap: "wrap",
+                alignItems: "center",
+                gap: 2,
+              }}
+            >
+              {/* Cartão */}
+              <Box sx={{ flex: "1 1 180px" }}>
+                <Field label="Cartão">
+                  <Typography variant="h6">{cartao.codigo_unico}</Typography>
+                </Field>
+              </Box>
 
-              <Grid item xs={12} md={3}>
-                <Typography variant="caption">Evento</Typography>
-                <Typography>{cartao.evento?.nome}</Typography>
-              </Grid>
+              {/* Evento */}
+              <Box sx={{ flex: "1 1 180px" }}>
+                <Field label="Evento">
+                  <Typography>{cartao.evento?.nome}</Typography>
+                </Field>
+              </Box>
 
-              <Grid item xs={12} md={2}>
-                <Typography variant="caption">Status</Typography>
-                <Chip
-                  label={cartao.bloqueado ? "Bloqueado" : "Ativo"}
-                  color={cartao.bloqueado ? "error" : "success"}
-                  size="small"
-                />
-              </Grid>
+              {/* Status */}
+              <Box sx={{ flex: "0 0 140px" }}>
+                <Field label="Status">
+                  <Chip
+                    label={cartao.bloqueado ? "Bloqueado" : "Ativo"}
+                    color={cartao.bloqueado ? "error" : "success"}
+                    size="small"
+                    sx={{ width: "fit-content" }}
+                  />
+                </Field>
+              </Box>
 
-              <Grid item xs={12} md={2}>
-                <Typography variant="caption">Saldo</Typography>
-                <Typography
-                  variant="h5"
-                  color={cartao.saldo < 0 ? "error" : "primary"}
-                >
-                  R$ {cartao.saldo.toFixed(2)}
-                </Typography>
-              </Grid>
+              {/* Saldo */}
+              <Box sx={{ flex: "0 0 180px" }}>
+                <Field label="Saldo">
+                  <Typography
+                    variant="h5"
+                    color={cartao.saldo < 0 ? "error" : "primary"}
+                  >
+                    R$ {cartao.saldo.toFixed(2)}
+                  </Typography>
+                </Field>
+              </Box>
 
-              <Grid item xs={12} md={2} textAlign="right">
-                <IconButton
-                  onClick={refreshTela}
-                  title="Atualizar dados do cartão"
-                >
+              {/* Ações */}
+              <Box
+                sx={{
+                  flex: "0 0 auto",
+                  marginLeft: "auto",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 1,
+                }}
+              >
+                <IconButton onClick={refreshTela} title="Atualizar dados do cartão">
                   <RefreshIcon
                     sx={{ animation: loading ? "spin 1s linear infinite" : "none" }}
                   />
@@ -224,9 +244,11 @@ export default function HistoricoCartaoOperacional() {
                     Resetar cartão
                   </MenuItem>
                 </Menu>
-              </Grid>
-            </Grid>
+              </Box>
+            </Box>
           </CardContent>
+
+
         </Card>
       )}
 
@@ -252,7 +274,7 @@ export default function HistoricoCartaoOperacional() {
                   secondaryAction={
                     !item.cancelado &&
                     item.tipo !== "taxa" &&
-                    (item.tipo !== "recarga" || item.operacao_id === ultimaRecargaId) && (
+                    (item.tipo !== "recarga" || item.recarga_cancelavel) && (
                       <IconButton
                         edge="end"
                         size="small"
@@ -264,7 +286,7 @@ export default function HistoricoCartaoOperacional() {
                           })
                         }
                       >
-                        <CancelIcon fontSize="small" />
+                        <CancelIcon sx={{ fontSize: 24 }} />
                       </IconButton>
                     )
                   }

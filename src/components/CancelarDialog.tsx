@@ -197,7 +197,7 @@ export function CancelarDialog({
               sx={{ mb: 1, display: "block" }}
             >
               {modoCancelamento === "parcial"
-                ? "Você está realizando um cancelamento parcial. O valor selecionado será correspondente a quantidade de itens que serão cancelados."
+                ? "Você está realizando um cancelamento parcial. O valor a ser devolvido será correspondente a quantidade de itens que serão cancelados."
                 : "Nenhum item selecionado. O consumo será cancelado por completo."}
             </Typography>
 
