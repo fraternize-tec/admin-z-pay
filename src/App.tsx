@@ -16,7 +16,7 @@ import {
     PontoDeVendaEdit,
 } from './resources/pontosDeVenda';
 import { ItemList, ItemCreate, ItemEdit } from './resources/itens';
-import { CaixaList } from './resources/caixas';
+import { CaixaCreate, CaixaEdit, CaixaList } from './resources/caixas';
 import { UsuarioList, UsuarioEdit } from './resources/usuarios';
 import { PermissaoList, PermissaoCreate, PermissaoEdit } from './resources/permissoes';
 import { FuncaoList, FuncaoCreate, FuncaoEdit } from './resources/funcoes';
@@ -153,6 +153,8 @@ export const App = () => (
                         icon={PointOfSaleIcon}
                         options={{ label: 'Caixas' }}
                         list={CaixaList}
+                        create={CaixaCreate}
+                        edit={CaixaEdit}
                     />
                 )}
 

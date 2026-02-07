@@ -13,7 +13,9 @@ import {
     SelectInput,
     required,
     ReferenceField,
+    TopToolbar,
 } from 'react-admin';
+import { BackToListButtonNavigate } from '../components/BackToListButton';
 
 /* ================= LIST ================= */
 export const PontoDeVendaList = () => (
@@ -74,9 +76,17 @@ export const PontoDeVendaCreate = () => (
     </Create>
 );
 
+const PontoDeVendaActions = () => {
+    return (
+        <TopToolbar>
+            <BackToListButtonNavigate />
+        </TopToolbar>
+    );
+};
+
 /* ================= EDIT ================= */
 export const PontoDeVendaEdit = () => (
-    <Edit>
+    <Edit actions={<PontoDeVendaActions />}>
         <SimpleForm>
             <TextInput source="nome" label="Nome" fullWidth />
 
