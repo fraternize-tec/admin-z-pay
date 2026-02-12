@@ -85,14 +85,6 @@ export const MyMenu = () => {
         />
       )}
 
-      {can(permissions, "itens.read") && (
-        <MenuItemLink
-          to="/item_pdv"
-          primaryText="Itens por PDV"
-          leftIcon={<InventoryIcon />}
-        />
-      )}
-
       {/* ===================== */}
       {/* USUÁRIOS              */}
       {/* ===================== */}

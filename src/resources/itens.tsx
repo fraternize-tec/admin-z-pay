@@ -19,6 +19,29 @@ import {
 } from 'react-admin';
 import { formatBRL } from '../utils/formatters';
 
+import { useGetManyReference, useGetMany } from "react-admin";
+
+export const PdvsDoItemField = ({ record }: any) => {
+    // 1️⃣ busca vínculos item_pdv
+    const { data: vinculos } = useGetManyReference("item_pdv", {
+        target: "item_id",
+        id: record?.id,
+        pagination: { page: 1, perPage: 50 },
+    });
+
+    const pdvIds = vinculos?.map((v: any) => v.pdv_id) ?? [];
+
+    // 2️⃣ busca nomes dos PDVs
+    const { data: pdvs } = useGetMany("pontos_de_venda", {
+        ids: pdvIds,
+    });
+
+    if (!pdvs?.length) return <>—</>;
+
+    return <>{pdvs.map((p) => p.nome).join(", ")}</>;
+};
+
+
 /* ================= LIST ================= */
 export const ItemList = () => (
     <List>
@@ -32,6 +55,11 @@ export const ItemList = () => (
             >
                 <TextField source="nome" />
             </ReferenceField>
+
+            <FunctionField
+                label="PDVs"
+                render={(record) => <PdvsDoItemField record={record} />}
+            />
 
             <FunctionField
                 source="preco_padrao"

@@ -31,7 +31,6 @@ import CreditCardIcon from '@mui/icons-material/CreditCard';
 
 import { i18nProvider } from './i18n/i18nProvider';
 import { lightTheme, darkTheme } from './theme/theme';
-import { ItemPdvCreate, ItemPdvEdit, ItemPdvList } from './resources/itemPdv';
 import { PapelPermissaoCreate } from './resources/papelPermissoes';
 import { LoteCartaoList, LoteCartaoCreate, LoteCartaoEdit } from './resources/lotesCartoes';
 import { Route } from 'react-router';
@@ -40,6 +39,7 @@ import { CartaoProprioShow, CartoesPropriosList } from './resources/cartoesPropr
 import { CartoesPropriosEventoList } from './resources/cartoesEmergenciais';
 import { ExtratoMeioAcesso } from './resources/extratoMeioAcesso';
 import HistoricoCartaoOperacional from './pages/historicoCartaoOperacional';
+import { ItemPdvCreate, ItemPdvEdit } from './resources/itemPdv';
 
 export const App = () => (
     <Admin
@@ -137,13 +137,11 @@ export const App = () => (
                 )}
 
                 {can(permissions, 'itens.read') && (
+
                     <Resource
                         name="item_pdv"
-                        icon={InventoryIcon}
-                        options={{ label: 'Itens por PDV' }}
-                        list={ItemPdvList}
-                        create={can(permissions, 'itens.write') ? ItemPdvCreate : undefined}
-                        edit={can(permissions, 'itens.write') ? ItemPdvEdit : undefined}
+                        create={ItemPdvCreate}
+                        edit={ItemPdvEdit}
                     />
                 )}
 

@@ -25,23 +25,28 @@ interface Props {
 const CARTOES_POR_PDF = 100;
 const PAGE_SIZE = 1000;
 
-const CARD_WIDTH = 90;
-const CARD_HEIGHT = 60;
-const SAFE_MARGIN = 7;
+/* ================= PADRÃO GRÁFICO ================= */
 
-const PAGE_WIDTH = 210;
-const PAGE_HEIGHT = 297;
+// corte final
+const CUT_WIDTH = 86;
+const CUT_HEIGHT = 54;
 
-const GAP = 5;
-const MARGIN_X = 10;
-const MARGIN_Y = 10;
+// sangria
+const BLEED = 3;
+
+// tamanho real do PDF
+const PAGE_WIDTH = CUT_WIDTH + BLEED * 2;   // 92
+const PAGE_HEIGHT = CUT_HEIGHT + BLEED * 2; // 60
+
+// margem de segurança interna
+const SAFE_MARGIN = 3;
+
+/* ================================================== */
 
 const ARTE_PROPRIO_URL =
   'https://aazveowyyfmpdfwwjiqp.supabase.co/storage/v1/object/public/cartoes-artes/proprios/frente.png';
 
-/* -------------------------------------------------- */
-/* 🔥 BUSCA PAGINADA (remove limite 1000 do Supabase) */
-/* -------------------------------------------------- */
+/* ---------------- BUSCA PAGINADA ---------------- */
 async function buscarTodosCartoes(queryBase: any) {
   let page = 0;
   let all: any[] = [];
@@ -162,40 +167,39 @@ export const ExportarCartoesPdf = ({
       for (const grupo of grupos) {
         if (cancelRef.current) return;
 
-        const pdf = new jsPDF({ unit: 'mm', format: 'a4' });
+        const pdf = new jsPDF({
+          unit: 'mm',
+          format: [PAGE_WIDTH, PAGE_HEIGHT],
+          orientation: 'landscape',
+        });
 
         pdf.addFileToVFS('Poppins-Bold.ttf', PoppinsBold);
         pdf.addFont('Poppins-Bold.ttf', 'Poppins', 'bold');
         pdf.setFont('Poppins', 'bold');
 
-        let x = MARGIN_X;
-        let y = MARGIN_Y;
-
-        for (const cartao of grupo) {
+        for (let i = 0; i < grupo.length; i++) {
           if (cancelRef.current) return;
+
+          const cartao = grupo[i];
+          if (i > 0) pdf.addPage();
 
           const url = `https://cards.zpay.fraternize.com.br/card/${cartao.nano_id}`;
 
-          // fundo
-          pdf.addImage(frente, 'PNG', x, y, CARD_WIDTH, CARD_HEIGHT);
+          /* ================= FUNDO COM SANGRIA ================= */
+          pdf.addImage(frente, 'PNG', 0, 0, PAGE_WIDTH, PAGE_HEIGHT);
+
+          /* ================= BASE ÁREA SEGURA ================= */
+          const baseX = BLEED;
+          const baseY = BLEED;
 
           /* ================= QR ================= */
-          const qrSize = 24;
-          const qrPadding = 1.5;
+          const qrSize = 20;
 
-          const qrX = x + SAFE_MARGIN;
-          const qrY = y + CARD_HEIGHT - qrSize - SAFE_MARGIN;
+          const qrX = baseX + SAFE_MARGIN;
+          const qrY = baseY + CUT_HEIGHT - qrSize - SAFE_MARGIN;
 
           pdf.setFillColor(255, 255, 255);
-          pdf.roundedRect(
-            qrX - qrPadding,
-            qrY - qrPadding,
-            qrSize + qrPadding * 2,
-            qrSize + qrPadding * 2,
-            2,
-            2,
-            'F'
-          );
+          pdf.roundedRect(qrX - 1, qrY - 1, qrSize + 2, qrSize + 2, 2, 2, 'F');
 
           const qr = await QRCode.toDataURL(url, {
             margin: 0,
@@ -206,58 +210,27 @@ export const ExportarCartoesPdf = ({
           pdf.addImage(qr, 'PNG', qrX, qrY, qrSize, qrSize);
 
           /* ================= CÓDIGO ================= */
-          const codeBoxWidth = 33;
+          const codeBoxWidth = 30;
           const codeBoxHeight = 5;
 
-          const codeX =
-            x + CARD_WIDTH - codeBoxWidth - SAFE_MARGIN + 2;
-
-          const codeY =
-            y + CARD_HEIGHT - codeBoxHeight - SAFE_MARGIN + 2;
+          const codeX = baseX + CUT_WIDTH - codeBoxWidth - SAFE_MARGIN;
+          const codeY = baseY + CUT_HEIGHT - codeBoxHeight - SAFE_MARGIN;
 
           pdf.setFillColor(255, 255, 255);
-          pdf.roundedRect(
-            codeX,
-            codeY,
-            codeBoxWidth,
-            codeBoxHeight,
-            2,
-            2,
-            'F'
-          );
+          pdf.roundedRect(codeX, codeY, codeBoxWidth, codeBoxHeight, 2, 2, 'F');
 
-          pdf.setFontSize(11);
+          pdf.setFontSize(10);
           pdf.setTextColor(0, 0, 0);
 
-          pdf.text(
-            cartao.codigo_unico,
-            codeX + codeBoxWidth / 2,
-            codeY + 4,
-            { align: 'center' }
-          );
-
-          /* ================= GRID ================= */
-          x += CARD_WIDTH + GAP;
-
-          if (x + CARD_WIDTH > PAGE_WIDTH) {
-            x = MARGIN_X;
-            y += CARD_HEIGHT + GAP;
-          }
-
-          if (y + CARD_HEIGHT > PAGE_HEIGHT) {
-            pdf.addPage();
-            x = MARGIN_X;
-            y = MARGIN_Y;
-          }
+          pdf.text(cartao.codigo_unico, codeX + codeBoxWidth / 2, codeY + 3.5, {
+            align: 'center',
+          });
 
           /* ================= PROGRESSO ================= */
           processados++;
           setAtual(processados);
-
-          // 🔥 permite render da barra
           await tick();
         }
-
 
         const nome =
           tipo === 'lote'
@@ -295,7 +268,6 @@ export const ExportarCartoesPdf = ({
     }
   };
 
-  /* ---------------- UI ---------------- */
   return (
     <Dialog open onClose={onClose} maxWidth="sm" fullWidth>
       <DialogTitle>Gerando cartões</DialogTitle>
