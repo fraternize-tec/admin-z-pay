@@ -39,7 +39,7 @@ const PAGE_WIDTH = CUT_WIDTH + BLEED * 2;   // 92
 const PAGE_HEIGHT = CUT_HEIGHT + BLEED * 2; // 60
 
 // margem de segurança interna
-const SAFE_MARGIN = 3;
+const SAFE_MARGIN = 4;
 
 /* ================================================== */
 

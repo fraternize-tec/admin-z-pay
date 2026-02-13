@@ -47,7 +47,7 @@ export const MyMenu = () => {
       {/* ===================== */}
       {/* OPERAÇÃO              */}
       {/* ===================== */}
-      {can(permissions, "eventos.read") && (
+      {can(permissions, "cancelar.operacao") && (
         <MenuItemLink
           to="/operacao/cartoes"
           primaryText="Cancelar Operação"

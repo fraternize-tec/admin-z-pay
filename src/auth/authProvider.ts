@@ -74,6 +74,7 @@ export const authProvider: AuthProvider = {
             .from('vw_usuario_permissoes')
             .select('*');
 
+        console.log('Permissões do usuário:', data, error);
         if (error) throw error;
         return data;
     },

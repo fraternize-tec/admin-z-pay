@@ -33,8 +33,14 @@ export const EscopoField = () => {
   }
 
   if (record.escopo_tipo === 'caixa') {
-    return (
-      <TextField source="escopo_id" label="Caixa" />
+          return (
+      <ReferenceField
+        source="escopo_id"
+        reference="caixas"
+        label="Escopo"
+      >
+        <TextField source="nome" />
+      </ReferenceField>
     );
   }
 

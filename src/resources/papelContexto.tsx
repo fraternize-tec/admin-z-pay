@@ -63,7 +63,7 @@ export const PapelContextoCreate = () => {
 
               {formData.escopo_tipo === 'caixa' && (
                 <ReferenceInput source="escopo_id" reference="caixas">
-                  <SelectInput optionText="id" label="Caixa" />
+                  <SelectInput optionText="nome" label="Caixa" />
                 </ReferenceInput>
               )}
             </>

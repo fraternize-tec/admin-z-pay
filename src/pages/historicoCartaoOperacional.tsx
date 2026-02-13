@@ -50,15 +50,7 @@ export default function HistoricoCartaoOperacional() {
   // ============================
   async function carregarCartao(id: string) {
     const { data, error } = await supabase
-      .from("meios_acesso")
-      .select(`
-        id,
-        codigo_unico,
-        saldo,
-        bloqueado,
-        evento:evento_id ( nome )
-      `)
-      .eq("id", id)
+      .rpc("get_meio_acesso_admin", { p_id: id })
       .single();
 
     if (error) {
@@ -121,10 +113,7 @@ export default function HistoricoCartaoOperacional() {
               if (value.length < 3) return;
 
               const { data } = await supabase
-                .from("meios_acesso")
-                .select("id, codigo_unico")
-                .ilike("codigo_unico", `%${value}%`)
-                .limit(10);
+                .rpc("search_meios_acesso", { p_codigo: value });
 
               setOpcoes(data || []);
             }}
