@@ -6,18 +6,22 @@ import {
   Typography,
   CircularProgress,
   Divider,
-  TextField,
   Button,
   Chip,
   Accordion,
   AccordionSummary,
   AccordionDetails,
+  Stack,
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import { LocalizationProvider, DateTimePicker } from "@mui/x-date-pickers";
+import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
+import { ptBR } from "date-fns/locale";
+import { subDays, startOfDay, endOfDay } from "date-fns";
 import { supabase } from "../lib/supabaseClient";
 
 // ============================
-// Tipagens alinhadas com a RPC v3
+// Tipagens
 // ============================
 
 type Cards = {
@@ -65,8 +69,39 @@ type DashboardData = {
   recargas_por_caixa: Caixa[];
 };
 
+const atalhos = [
+  {
+    label: "Hoje",
+    getRange: () => ({
+      inicio: startOfDay(new Date()),
+      fim: endOfDay(new Date()),
+    }),
+  },
+  {
+    label: "Ontem",
+    getRange: () => {
+      const d = subDays(new Date(), 1);
+      return { inicio: startOfDay(d), fim: endOfDay(d) };
+    },
+  },
+  {
+    label: "Últimos 7 dias",
+    getRange: () => ({
+      inicio: startOfDay(subDays(new Date(), 6)),
+      fim: endOfDay(new Date()),
+    }),
+  },
+  {
+    label: "Últimos 30 dias",
+    getRange: () => ({
+      inicio: startOfDay(subDays(new Date(), 29)),
+      fim: endOfDay(new Date()),
+    }),
+  },
+];
+
 // ============================
-// Cards financeiros (neutros ao tema)
+// Cards
 // ============================
 
 const CardFinanceiro = ({ titulo, valor, cor }: { titulo: string; valor: number; cor: string }) => (
@@ -88,6 +123,60 @@ const CardsResumo = ({ data }: { data: Cards }) => (
     <CardFinanceiro titulo="Consumos" valor={data.total_consumos} cor="#ff1744" />
     <CardFinanceiro titulo="Saldo" valor={data.saldo} cor="#2979ff" />
   </Box>
+);
+
+// ============================
+// Filtro de período brasileiro
+// ============================
+
+const FiltroPeriodo = ({ inicio, fim, setInicio, setFim, onAplicar }: any) => (
+  <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={ptBR}>
+    <Card sx={{ mb: 3, borderRadius: 4, boxShadow: 1 }}>
+      <CardContent>
+        <Typography variant="subtitle2" fontWeight={700} mb={2}>
+          Período de análise
+        </Typography>
+
+        <Stack direction={{ xs: "column", md: "row" }} spacing={2} alignItems="center" mb={2}>
+          <DateTimePicker
+            label="Data inicial"
+            value={inicio}
+            onChange={(v) => setInicio(v)}
+            slotProps={{ textField: { size: "small" } }}
+          />
+
+          <DateTimePicker
+            label="Data final"
+            value={fim}
+            onChange={(v) => setFim(v)}
+            slotProps={{ textField: { size: "small" } }}
+          />
+
+          <Button variant="contained" onClick={onAplicar} sx={{ height: 40 }}>
+            Aplicar
+          </Button>
+        </Stack>
+
+        {/* Atalhos rápidos */}
+        <Stack direction="row" spacing={1} flexWrap="wrap">
+          {atalhos.map((a) => (
+            <Button
+              key={a.label}
+              size="small"
+              variant="outlined"
+              onClick={() => {
+                const r = a.getRange();
+                setInicio(r.inicio);
+                setFim(r.fim);
+              }}
+            >
+              {a.label}
+            </Button>
+          ))}
+        </Stack>
+      </CardContent>
+    </Card>
+  </LocalizationProvider>
 );
 
 // ============================
@@ -242,32 +331,22 @@ const TabelaUltimas = ({ data }: { data: UltimaTransacao[] }) => (
 );
 
 // ============================
-// Filtro de período
-// ============================
-
-const FiltroPeriodo = ({ inicio, fim, setInicio, setFim, onAplicar }: any) => (
-  <Box display="flex" gap={2} mb={3} flexWrap="wrap">
-    <TextField type="datetime-local" label="Início" value={inicio} onChange={(e) => setInicio(e.target.value)} InputLabelProps={{ shrink: true }} />
-    <TextField type="datetime-local" label="Fim" value={fim} onChange={(e) => setFim(e.target.value)} InputLabelProps={{ shrink: true }} />
-    <Button variant="contained" onClick={onAplicar}>Aplicar</Button>
-  </Box>
-);
-
-// ============================
 // Página principal
 // ============================
 
 export const DashboardFinanceiroEvento = ({ eventoId }: { eventoId: string }) => {
   const [data, setData] = useState<DashboardData | null>(null);
 
-  const [inicio, setInicio] = useState(new Date(Date.now() - 86400000).toISOString().slice(0, 16));
-  const [fim, setFim] = useState(new Date().toISOString().slice(0, 16));
+  const [inicio, setInicio] = useState<Date | null>(startOfDay(new Date()));
+  const [fim, setFim] = useState<Date | null>(endOfDay(new Date()));
 
   const carregar = async () => {
+    if (!inicio || !fim) return;
+
     const { data } = await supabase.rpc("rpc_dashboard_evento", {
       p_evento: eventoId,
-      p_inicio: new Date(inicio).toISOString(),
-      p_fim: new Date(fim).toISOString(),
+      p_inicio: inicio.toISOString(),
+      p_fim: fim.toISOString(),
     });
 
     setData(data);
@@ -286,7 +365,7 @@ export const DashboardFinanceiroEvento = ({ eventoId }: { eventoId: string }) =>
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [eventoId]);
+  }, [eventoId, inicio, fim]);
 
   if (!data)
     return (
