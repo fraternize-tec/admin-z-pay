@@ -1,4 +1,4 @@
-import { Admin, CustomRoutes, MenuItemLink, Resource } from 'react-admin';
+import { Admin, CustomRoutes, Resource } from 'react-admin';
 import { supabaseDataProvider } from './data/supabaseDataProvider';
 import { authProvider } from './auth/authProvider';
 import { LoginPage } from './auth/LoginPage';
@@ -37,9 +37,9 @@ import { Route } from 'react-router';
 import { CartaoList } from './resources/cartoes';
 import { CartaoProprioShow, CartoesPropriosList } from './resources/cartoesProprios';
 import { CartoesPropriosEventoList } from './resources/cartoesEmergenciais';
-import { ExtratoMeioAcesso } from './resources/extratoMeioAcesso';
 import HistoricoCartaoOperacional from './pages/historicoCartaoOperacional';
 import { ItemPdvCreate, ItemPdvEdit } from './resources/itemPdv';
+import { DashboardFinanceiroEvento } from './resources/dashboard';
 
 export const App = () => (
     <Admin
@@ -76,6 +76,11 @@ export const App = () => (
             <Route
                 path="/operacao/cartoes"
                 element={<HistoricoCartaoOperacional />}
+            />
+
+            <Route
+                path="/dashboard-financeiro/:eventoId"
+                element={<DashboardFinanceiroEvento eventoId={'95ae09f5-bdb4-43b4-960d-6a846b984116'} />}
             />
         </CustomRoutes>
         {(permissions) => (

@@ -7,6 +7,7 @@ import PeopleIcon from "@mui/icons-material/People";
 import CreditCardIcon from "@mui/icons-material/CreditCard";
 import VpnKeyIcon from "@mui/icons-material/VpnKey";
 import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
+import AssessmentIcon from "@mui/icons-material/Assessment";
 import { can } from "../auth/useCan";
 
 export const MyMenu = () => {
@@ -54,6 +55,16 @@ export const MyMenu = () => {
           leftIcon={<CreditCardIcon />}
         />
       )}
+
+
+      {can(permissions, "visualizar.relatorio") && (
+        <MenuItemLink
+          to="/dashboard-financeiro/95ae09f5-bdb4-43b4-960d-6a846b984116"
+          primaryText="Relatório Financeiro"
+          leftIcon={<AssessmentIcon />}
+        />
+      )}
+
 
       {/* ===================== */}
       {/* PDV / CAIXA           */}
