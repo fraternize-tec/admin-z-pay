@@ -19,6 +19,7 @@ import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { ptBR } from "date-fns/locale";
 import { subDays, startOfDay, endOfDay } from "date-fns";
 import { supabase } from "../lib/supabaseClient";
+import { exportDashboardPdf } from "./exportDashboardPdf";
 
 // ============================
 // Tipagens
@@ -62,12 +63,24 @@ type Caixa = {
   formas_pagamento: FormaPagamento[];
 };
 
+type Operador = {
+  operador_nome: string;
+  total_recargas: number;
+  qtd_recargas: number;
+  formas_pagamento: {
+    forma: string;
+    total: number;
+  }[];
+};
+
 type DashboardData = {
   cards: Cards;
   ultimas_transacoes: UltimaTransacao[];
   itens_por_pdv: PDV[];
   recargas_por_caixa: Caixa[];
+  recargas_por_operador: Operador[];
 };
+
 
 const atalhos = [
   {
@@ -285,6 +298,65 @@ const TabelaCaixa = ({ data }: { data: Caixa[] }) => (
   </Card>
 );
 
+const TabelaOperador = ({ data }: { data: Operador[] }) => (
+  <Card sx={{ borderRadius: 4, boxShadow: 1 }}>
+    <CardContent>
+      <Typography variant="h6" fontWeight={800} mb={2}>
+        Recargas por Operador
+      </Typography>
+
+      {(data ?? []).map((op, i) => (
+        <Accordion key={i} disableGutters>
+          <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+            <Box display="flex" justifyContent="space-between" width="100%">
+              <Box>
+                <Typography fontWeight={700}>
+                  {op.operador_nome}
+                </Typography>
+
+                <Typography variant="caption" color="text.secondary">
+                  {op.qtd_recargas} recargas
+                </Typography>
+              </Box>
+
+              <Typography fontWeight={700} color="success.main">
+                {op.total_recargas.toLocaleString("pt-BR", {
+                  style: "currency",
+                  currency: "BRL",
+                })}
+              </Typography>
+            </Box>
+          </AccordionSummary>
+
+          <AccordionDetails>
+            <Box component="table" width="100%">
+              <thead>
+                <tr>
+                  <th style={{ textAlign: "left", padding: 6 }}>Forma</th>
+                  <th style={{ textAlign: "right", padding: 6 }}>Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(op.formas_pagamento ?? []).map((fp, idx) => (
+                  <tr key={idx}>
+                    <td style={{ padding: 6 }}>{fp.forma}</td>
+                    <td style={{ padding: 6, textAlign: "right" }}>
+                      {fp.total.toLocaleString("pt-BR", {
+                        style: "currency",
+                        currency: "BRL",
+                      })}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </Box>
+          </AccordionDetails>
+        </Accordion>
+      ))}
+    </CardContent>
+  </Card>
+);
+
 // ============================
 // Últimas transações
 // ============================
@@ -376,9 +448,25 @@ export const DashboardFinanceiroEvento = ({ eventoId }: { eventoId: string }) =>
 
   return (
     <Box p={3} minHeight="100vh">
-      <Typography variant="h5" fontWeight={900} mb={2}>
-        Relatório Financeiro do Evento
-      </Typography>
+      <Box
+        display="flex"
+        justifyContent="space-between"
+        alignItems="center"
+        mb={2}
+      >
+        <Typography variant="h5" fontWeight={900}>
+          Relatório Financeiro do Evento
+        </Typography>
+
+        <Button
+          variant="outlined"
+          onClick={() =>
+            exportDashboardPdf(data, inicio!, fim!)
+          }
+        >
+          Exportar PDF
+        </Button>
+      </Box>
 
       <FiltroPeriodo inicio={inicio} fim={fim} setInicio={setInicio} setFim={setFim} onAplicar={carregar} />
 
@@ -388,6 +476,7 @@ export const DashboardFinanceiroEvento = ({ eventoId }: { eventoId: string }) =>
 
       <Box display="flex" flexDirection="column" gap={4}>
         <TabelaCaixa data={data.recargas_por_caixa} />
+        <TabelaOperador data={data.recargas_por_operador} />
         <TabelaPDV data={data.itens_por_pdv} />
       </Box>
 
