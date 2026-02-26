@@ -2,7 +2,7 @@ import { jsPDF } from "jspdf";
 import { PoppinsBold } from "../fonts/Poppins-Bold";
 import { InterRegular } from "../fonts/Inter-Regular";
 
-export const exportDashboardPdf = async (
+export const exportarDashboardPdf = async (
   data: any,
   inicio: Date,
   fim: Date
@@ -134,7 +134,9 @@ export const exportDashboardPdf = async (
       subLine(fp.forma, money(fp.total));
     });
 
-    y += 3;
+    doc.setDrawColor(220);
+    doc.line(14, y - 2, 196, y - 2);
+    y += 4;
   });
 
   // =============================
@@ -153,7 +155,9 @@ export const exportDashboardPdf = async (
       subLine(fp.forma, money(fp.total));
     });
 
-    y += 3;
+    doc.setDrawColor(220);
+    doc.line(14, y - 2, 196, y - 2);
+    y += 4;
   });
 
   // =============================
@@ -167,13 +171,17 @@ export const exportDashboardPdf = async (
     pdv.itens.forEach((item: any) => {
       if (!item.quantidade) return;
 
-      subLine(
-        `${item.item_nome} (${item.quantidade})`,
-        money(item.valor_total)
-      );
+      const label =
+        item.valor_unitario != null
+          ? `${item.item_nome} — ${money(item.valor_unitario)} (${item.quantidade})`
+          : `${item.item_nome} (${item.quantidade})`;
+
+      subLine(label, money(item.valor_total));
     });
 
-    y += 3;
+    doc.setDrawColor(220);
+    doc.line(14, y - 2, 196, y - 2);
+    y += 4;
   });
 
   doc.save("relatorio-financeiro-evento.pdf");

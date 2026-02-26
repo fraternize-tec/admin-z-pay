@@ -19,7 +19,7 @@ import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { ptBR } from "date-fns/locale";
 import { subDays, startOfDay, endOfDay } from "date-fns";
 import { supabase } from "../lib/supabaseClient";
-import { exportDashboardPdf } from "./exportDashboardPdf";
+import { exportarDashboardPdf } from "./exportarDashboardPdf";
 
 // ============================
 // Tipagens
@@ -42,8 +42,9 @@ type UltimaTransacao = {
 
 type ItemPDV = {
   item_nome: string;
+  valor_unitario: number;
   quantidade: number;
-  valor_total?: number;
+  valor_total: number;
 };
 
 type PDV = {
@@ -196,59 +197,109 @@ const FiltroPeriodo = ({ inicio, fim, setInicio, setFim, onAplicar }: any) => (
 // PDV → Accordion detalhado
 // ============================
 
-const TabelaPDV = ({ data }: { data: PDV[] }) => (
-  <Card sx={{ borderRadius: 4, boxShadow: 1 }}>
-    <CardContent>
-      <Typography variant="h6" fontWeight={800} mb={2}>
-        Vendas por PDV
-      </Typography>
+const TabelaPDV = ({ data }: { data: PDV[] }) => {
+  const money = (v: number) =>
+    v.toLocaleString("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    });
 
-      {(data ?? []).map((pdv, i) => (
-        <Accordion key={i} disableGutters>
-          <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-            <Box display="flex" justifyContent="space-between" width="100%">
-              <Typography fontWeight={700}>{pdv.nome_pdv}</Typography>
-              <Typography fontWeight={700} color="primary">
-                {(pdv.total_vendas ?? 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
-              </Typography>
-            </Box>
-          </AccordionSummary>
+  return (
+    <Card sx={{ borderRadius: 4, boxShadow: 1 }}>
+      <CardContent>
+        <Typography variant="h6" fontWeight={800} mb={2}>
+          Vendas por PDV
+        </Typography>
 
-          <AccordionDetails>
-            {!pdv.itens?.length && (
-              <Typography variant="body2" color="text.secondary">
-                Nenhum item vendido no período
-              </Typography>
-            )}
+        {(data ?? []).map((pdv, i) => {
+          // agrupa por nome do item
+          const itensAgrupados = Object.values(
+            pdv.itens.reduce((acc: any, item) => {
+              if (!acc[item.item_nome]) acc[item.item_nome] = [];
+              acc[item.item_nome].push(item);
+              return acc;
+            }, {})
+          );
 
-            {!!pdv.itens?.length && (
-              <Box component="table" width="100%" sx={{ borderCollapse: "collapse" }}>
-                <thead>
-                  <tr>
-                    <th style={{ textAlign: "left", padding: 6 }}>Item</th>
-                    <th style={{ textAlign: "right", padding: 6 }}>Qtd</th>
-                    <th style={{ textAlign: "right", padding: 6 }}>Valor</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {pdv.itens.map((item, idx) => (
-                    <tr key={idx}>
-                      <td style={{ padding: 6 }}>{item.item_nome}</td>
-                      <td style={{ padding: 6, textAlign: "right" }}>{item.quantidade}</td>
-                      <td style={{ padding: 6, textAlign: "right" }}>
-                        {(item.valor_total ?? 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
-                      </td>
+          return (
+            <Accordion key={i} disableGutters>
+              <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                <Box display="flex" justifyContent="space-between" width="100%">
+                  <Typography fontWeight={700}>
+                    {pdv.nome_pdv}
+                  </Typography>
+
+                  <Typography fontWeight={700} color="primary">
+                    {money(pdv.total_vendas ?? 0)}
+                  </Typography>
+                </Box>
+              </AccordionSummary>
+
+              <AccordionDetails>
+                <Box component="table" width="100%">
+                  <thead>
+                    <tr>
+                      <th style={{ textAlign: "left", padding: 6 }}>
+                        Item
+                      </th>
+                      <th style={{ textAlign: "right", padding: 6 }}>
+                        Preço
+                      </th>
+                      <th style={{ textAlign: "right", padding: 6 }}>
+                        Qtd
+                      </th>
+                      <th style={{ textAlign: "right", padding: 6 }}>
+                        Total
+                      </th>
                     </tr>
-                  ))}
-                </tbody>
-              </Box>
-            )}
-          </AccordionDetails>
-        </Accordion>
-      ))}
-    </CardContent>
-  </Card>
-);
+                  </thead>
+
+                  <tbody>
+                    {itensAgrupados.map((grupo: any, idx) => {
+                      const mudouPreco = grupo.length > 1;
+
+                      return grupo.map((item: ItemPDV, j: number) => (
+                        <tr key={`${idx}-${j}`}>
+                          <td style={{ padding: 6 }}>
+                            {j === 0 && (
+                              <Box display="flex" alignItems="center" gap={1}>
+                                {item.item_nome}
+
+                                {mudouPreco && (
+                                  <Chip
+                                    size="small"
+                                    color="warning"
+                                    label="preço alterado"
+                                  />
+                                )}
+                              </Box>
+                            )}
+                          </td>
+
+                          <td style={{ padding: 6, textAlign: "right" }}>
+                            {money(item.valor_unitario)}
+                          </td>
+
+                          <td style={{ padding: 6, textAlign: "right" }}>
+                            {item.quantidade}
+                          </td>
+
+                          <td style={{ padding: 6, textAlign: "right" }}>
+                            {money(item.valor_total)}
+                          </td>
+                        </tr>
+                      ));
+                    })}
+                  </tbody>
+                </Box>
+              </AccordionDetails>
+            </Accordion>
+          );
+        })}
+      </CardContent>
+    </Card>
+  );
+};
 
 // ============================
 // Caixa → Accordion detalhado
@@ -461,7 +512,7 @@ export const DashboardFinanceiroEvento = ({ eventoId }: { eventoId: string }) =>
         <Button
           variant="outlined"
           onClick={() =>
-            exportDashboardPdf(data, inicio!, fim!)
+            exportarDashboardPdf(data, inicio!, fim!)
           }
         >
           Exportar PDF
