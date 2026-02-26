@@ -80,7 +80,7 @@ export const App = () => (
 
             <Route
                 path="/dashboard-financeiro/:eventoId"
-                element={<DashboardFinanceiroEvento eventoId={'dc37bdd5-e2bd-4047-9c7e-4858797805ca'} />}
+                element={<DashboardFinanceiroEvento eventoId={'95ae09f5-bdb4-43b4-960d-6a846b984116'} />}
             />
         </CustomRoutes>
         {(permissions) => (

@@ -38,6 +38,9 @@ export const exportarDashboardPdf = async (
       currency: "BRL",
     });
 
+  const number = (v: number) =>
+    v.toLocaleString("pt-BR");
+
   const ensurePage = (space = 15) => {
     if (y + space > 280) {
       doc.addPage();
@@ -123,12 +126,65 @@ export const exportarDashboardPdf = async (
   y += 6;
 
   // =============================
+  // INDICADORES OPERACIONAIS
+  // =============================
+  section("Indicadores Operacionais");
+
+  const possuiTaxa = (data.taxas?.total_taxas ?? 0) > 0;
+
+  line(
+    "Cartões Utilizados",
+    number(data.cartoes.total_cartoes_utilizados),
+    true
+  );
+
+  line(
+    "Cartões do Evento",
+    number(data.cartoes.cartoes_evento)
+  );
+
+  line(
+    "Cartões Emergenciais",
+    number(data.cartoes.cartoes_emergenciais)
+  );
+
+  if (possuiTaxa) {
+    line(
+      "Taxas Arrecadadas",
+      money(data.taxas.total_taxas),
+      true
+    );
+  }
+
+  y += 6;
+
+  // =============================
   // CAIXAS
   // =============================
   section("Recargas por Caixa");
 
   data.recargas_por_caixa.forEach((cx: any) => {
     line(cx.nome_caixa, money(cx.total_recargas), true);
+
+    // métricas operacionais do caixa
+    const infoCaixa = [];
+
+    if (cx.cartoes_utilizados != null)
+      infoCaixa.push(`${number(cx.cartoes_utilizados)} cartões`);
+
+    if ((cx.total_taxas ?? 0) > 0)
+      infoCaixa.push(`${money(cx.total_taxas)} taxas`);
+
+    if (infoCaixa.length) {
+      doc.setFont("Inter", "normal");
+      doc.setFontSize(9);
+      doc.setTextColor(...COLORS.petrolBlueSoft);
+
+      doc.text(infoCaixa.join(" • "), 18, y);
+      y += 5;
+
+      doc.setTextColor(...COLORS.petrolBlueDark);
+    }
 
     cx.formas_pagamento.forEach((fp: any) => {
       subLine(fp.forma, money(fp.total));
@@ -145,11 +201,26 @@ export const exportarDashboardPdf = async (
   section("Recargas por Operador");
 
   data.recargas_por_operador.forEach((op: any) => {
-    line(
-      `${op.operador_nome} (${op.qtd_recargas} recargas)`,
-      money(op.total_recargas),
-      true
-    );
+    line(op.operador_nome, money(op.total_recargas), true);
+
+    const infoOperador = [
+      `${number(op.qtd_recargas)} recargas`,
+    ];
+
+    if (op.cartoes_utilizados != null)
+      infoOperador.push(`${number(op.cartoes_utilizados)} cartões`);
+
+    if ((op.total_taxas ?? 0) > 0)
+      infoOperador.push(`${money(op.total_taxas)} taxas`);
+
+    doc.setFont("Inter", "normal");
+    doc.setFontSize(9);
+    doc.setTextColor(...COLORS.petrolBlueSoft);
+
+    doc.text(infoOperador.join(" • "), 18, y);
+    y += 5;
+
+    doc.setTextColor(...COLORS.petrolBlueDark);
 
     op.formas_pagamento.forEach((fp: any) => {
       subLine(fp.forma, money(fp.total));

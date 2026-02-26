@@ -31,6 +31,16 @@ type Cards = {
   saldo: number;
 };
 
+type CartoesStats = {
+  total_cartoes_utilizados: number;
+  cartoes_evento: number;
+  cartoes_emergenciais: number;
+};
+
+type TaxasStats = {
+  total_taxas: number;
+};
+
 type UltimaTransacao = {
   tipo: string;
   criado_em: string;
@@ -61,6 +71,8 @@ type FormaPagamento = {
 type Caixa = {
   nome_caixa: string;
   total_recargas?: number;
+  total_taxas?: number;        // novo
+  cartoes_utilizados?: number; // novo
   formas_pagamento: FormaPagamento[];
 };
 
@@ -68,6 +80,8 @@ type Operador = {
   operador_nome: string;
   total_recargas: number;
   qtd_recargas: number;
+  total_taxas?: number;
+  cartoes_utilizados?: number;
   formas_pagamento: {
     forma: string;
     total: number;
@@ -76,6 +90,8 @@ type Operador = {
 
 type DashboardData = {
   cards: Cards;
+  cartoes: CartoesStats;
+  taxas: TaxasStats;
   ultimas_transacoes: UltimaTransacao[];
   itens_por_pdv: PDV[];
   recargas_por_caixa: Caixa[];
@@ -114,6 +130,66 @@ const atalhos = [
   },
 ];
 
+const CardsOperacionais = ({
+  cartoes,
+  taxas,
+}: {
+  cartoes: CartoesStats;
+  taxas: TaxasStats;
+}) => {
+  const money = (v: number) =>
+    v.toLocaleString("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    });
+
+  const possuiTaxa = (taxas?.total_taxas ?? 0) > 0;
+
+  return (
+    <Box display="flex" gap={2} mb={2} flexWrap="wrap">
+      <CardMetrica
+        titulo="Cartões Utilizados"
+        valor={cartoes.total_cartoes_utilizados}
+        cor="#6a1b9a"
+      />
+
+      <CardMetrica
+        titulo="Cartões do Evento"
+        valor={cartoes.cartoes_evento}
+        cor="#00838f"
+      />
+
+      <CardMetrica
+        titulo="Cartões Emergenciais"
+        valor={cartoes.cartoes_emergenciais}
+        cor="#ef6c00"
+      />
+
+      {possuiTaxa && (
+        <Card
+          sx={{
+            borderRadius: 3,
+            boxShadow: 1,
+            flex: 1,
+            minWidth: 200,
+            borderTop: "3px solid #c62828",
+          }}
+        >
+          <CardContent sx={{ py: 2 }}>
+            <Typography variant="caption" sx={{ opacity: 0.7 }}>
+              Taxas Arrecadadas
+            </Typography>
+
+            <Typography variant="h5" fontWeight={700} mt={0.5}>
+              {money(taxas.total_taxas)}
+            </Typography>
+          </CardContent>
+        </Card>
+      )}
+    </Box>
+  );
+};
+
 // ============================
 // Cards
 // ============================
@@ -126,6 +202,36 @@ const CardFinanceiro = ({ titulo, valor, cor }: { titulo: string; valor: number;
       </Typography>
       <Typography variant="h4" fontWeight={800} mt={1}>
         {valor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+      </Typography>
+    </CardContent>
+  </Card>
+);
+
+const CardMetrica = ({
+  titulo,
+  valor,
+  cor,
+}: {
+  titulo: string;
+  valor: number;
+  cor: string;
+}) => (
+  <Card
+    sx={{
+      borderRadius: 3,
+      boxShadow: 1,
+      flex: 1,
+      minWidth: 200,
+      borderTop: `3px solid ${cor}`,
+    }}
+  >
+    <CardContent sx={{ py: 2 }}>
+      <Typography variant="caption" sx={{ opacity: 0.7 }}>
+        {titulo}
+      </Typography>
+
+      <Typography variant="h5" fontWeight={700} mt={0.5}>
+        {valor.toLocaleString("pt-BR")}
       </Typography>
     </CardContent>
   </Card>
@@ -317,6 +423,18 @@ const TabelaCaixa = ({ data }: { data: Caixa[] }) => (
           <AccordionSummary expandIcon={<ExpandMoreIcon />}>
             <Box display="flex" justifyContent="space-between" width="100%">
               <Typography fontWeight={700}>{cx.nome_caixa}</Typography>
+              <Typography variant="caption" color="text.secondary">
+                {cx.cartoes_utilizados ?? 0} cartões 
+                {(cx.total_taxas ?? 0) > 0 && (
+                  <>
+                    •{" "}
+                    {(cx.total_taxas ?? 0).toLocaleString("pt-BR", {
+                      style: "currency",
+                      currency: "BRL",
+                    })} em taxas
+                  </>
+                )}
+              </Typography>
               <Typography fontWeight={700} color="success.main">
                 {(cx.total_recargas ?? 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
               </Typography>
@@ -366,7 +484,16 @@ const TabelaOperador = ({ data }: { data: Operador[] }) => (
                 </Typography>
 
                 <Typography variant="caption" color="text.secondary">
-                  {op.qtd_recargas} recargas
+                  {op.qtd_recargas} recargas • {op.cartoes_utilizados ?? 0} cartões 
+                  {(op.total_taxas ?? 0) > 0 && (
+                    <>
+                      •{" "}
+                      {(op.total_taxas ?? 0).toLocaleString("pt-BR", {
+                        style: "currency",
+                        currency: "BRL",
+                      })} em taxas
+                    </>
+                  )}
                 </Typography>
               </Box>
 
@@ -522,6 +649,18 @@ export const DashboardFinanceiroEvento = ({ eventoId }: { eventoId: string }) =>
       <FiltroPeriodo inicio={inicio} fim={fim} setInicio={setInicio} setFim={setFim} onAplicar={carregar} />
 
       <CardsResumo data={data.cards} />
+
+      <Typography
+        variant="overline"
+        sx={{ opacity: 0.6, ml: 1 }}
+      >
+        Indicadores Operacionais
+      </Typography>
+
+      <CardsOperacionais
+        cartoes={data.cartoes}
+        taxas={data.taxas}
+      />
 
       <Divider sx={{ my: 4 }} />
 
