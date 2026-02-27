@@ -12,6 +12,7 @@ import {
   AccordionSummary,
   AccordionDetails,
   Stack,
+  useTheme,
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { LocalizationProvider, DateTimePicker } from "@mui/x-date-pickers";
@@ -29,6 +30,14 @@ type Cards = {
   total_recargas: number;
   total_consumos: number;
   saldo: number;
+};
+
+type FinanceiroResumo = {
+  valor_bruto_recebido: number;
+  taxas_arrecadadas: number;
+  valor_liquido_cartoes: number;
+  total_consumido: number;
+  saldo_evento: number;
 };
 
 type CartoesStats = {
@@ -90,6 +99,7 @@ type Operador = {
 
 type DashboardData = {
   cards: Cards;
+  financeiro: FinanceiroResumo;
   cartoes: CartoesStats;
   taxas: TaxasStats;
   ultimas_transacoes: UltimaTransacao[];
@@ -132,18 +142,14 @@ const atalhos = [
 
 const CardsOperacionais = ({
   cartoes,
-  taxas,
 }: {
   cartoes: CartoesStats;
-  taxas: TaxasStats;
 }) => {
   const money = (v: number) =>
     v.toLocaleString("pt-BR", {
       style: "currency",
       currency: "BRL",
     });
-
-  const possuiTaxa = (taxas?.total_taxas ?? 0) > 0;
 
   return (
     <Box display="flex" gap={2} mb={2} flexWrap="wrap">
@@ -164,28 +170,6 @@ const CardsOperacionais = ({
         valor={cartoes.cartoes_emergenciais}
         cor="#ef6c00"
       />
-
-      {possuiTaxa && (
-        <Card
-          sx={{
-            borderRadius: 3,
-            boxShadow: 1,
-            flex: 1,
-            minWidth: 200,
-            borderTop: "3px solid #c62828",
-          }}
-        >
-          <CardContent sx={{ py: 2 }}>
-            <Typography variant="caption" sx={{ opacity: 0.7 }}>
-              Taxas Arrecadadas
-            </Typography>
-
-            <Typography variant="h5" fontWeight={700} mt={0.5}>
-              {money(taxas.total_taxas)}
-            </Typography>
-          </CardContent>
-        </Card>
-      )}
     </Box>
   );
 };
@@ -219,31 +203,149 @@ const CardMetrica = ({
   <Card
     sx={{
       borderRadius: 3,
-      boxShadow: 1,
       flex: 1,
       minWidth: 200,
-      borderTop: `3px solid ${cor}`,
+      border: "1px solid",
+      borderColor: "divider",
+      position: "relative",
+      overflow: "hidden",
+      transition: "all .2s",
+      "&:hover": {
+        transform: "translateY(-2px)",
+        boxShadow: 2,
+      },
     }}
   >
-    <CardContent sx={{ py: 2 }}>
+    {/* accent bar */}
+    <Box
+      sx={{
+        position: "absolute",
+        top: 0,
+        left: 0,
+        width: 4,
+        height: "100%",
+        bgcolor: cor,
+      }}
+    />
+
+    <CardContent sx={{ py: 2, pl: 3 }}>
       <Typography variant="caption" sx={{ opacity: 0.7 }}>
         {titulo}
       </Typography>
 
-      <Typography variant="h5" fontWeight={700} mt={0.5}>
+      <Typography variant="h5" fontWeight={800} mt={0.5}>
         {valor.toLocaleString("pt-BR")}
       </Typography>
     </CardContent>
   </Card>
 );
 
-const CardsResumo = ({ data }: { data: Cards }) => (
-  <Box display="flex" gap={2} mb={3} flexWrap="wrap">
-    <CardFinanceiro titulo="Recargas" valor={data.total_recargas} cor="#00c853" />
-    <CardFinanceiro titulo="Consumos" valor={data.total_consumos} cor="#ff1744" />
-    <CardFinanceiro titulo="Saldo" valor={data.saldo} cor="#2979ff" />
-  </Box>
-);
+const ResumoFinanceiro = ({ data }: { data: FinanceiroResumo }) => {
+  const theme = useTheme();
+
+  const money = (v: number) =>
+    v.toLocaleString("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    });
+
+  const items = [
+    {
+      label: "Recebido Bruto",
+      value: data.valor_bruto_recebido,
+      color: theme.palette.info.main,
+    },
+    {
+      label: "Taxas do Evento",
+      value: data.taxas_arrecadadas,
+      color: theme.palette.warning.main,
+      oculto: data.taxas_arrecadadas === 0, // esconde se for zero
+    },
+    {
+      label: "Carregado em Cartões",
+      value: data.valor_liquido_cartoes,
+      color: theme.palette.primary.main,
+    },
+    {
+      label: "Consumido",
+      value: data.total_consumido,
+      color: theme.palette.error.main,
+    },
+    {
+      label: "Saldo em Circulação",
+      value: data.saldo_evento,
+      color: theme.palette.success.main,
+      destaque: true,
+    },
+  ];
+
+  return (
+    <Card
+      sx={{
+        borderRadius: 4,
+        mb: 3,
+        bgcolor: "background.paper", // ✅ adapta ao tema
+        border: "1px solid",
+        borderColor: "divider",
+      }}
+    >
+      <CardContent>
+        <Typography
+          variant="overline"
+          sx={{ color: "text.secondary" }}
+        >
+          Resumo Financeiro
+        </Typography>
+
+        <Box
+          mt={3}
+          display="grid"
+          gridTemplateColumns="repeat(auto-fit, minmax(180px,1fr))"
+          gap={2}
+        >
+          {items.map((item, i) => (
+            !item.oculto && (
+              <Box
+                key={i}
+                sx={{
+                  p: 2,
+                  borderRadius: 3,
+                  bgcolor: "background.default",
+                  border: "1px solid",
+                  borderColor: "divider",
+                  transition: "all .2s ease",
+                  "&:hover": {
+                    transform: "translateY(-2px)",
+                    boxShadow: theme.shadows[2],
+                  },
+                  borderLeft: `3px solid ${item.color}`
+                }}
+              >
+                <Typography
+                  variant="caption"
+                  sx={{ color: "text.secondary" }}
+                >
+                  {item.label}
+                </Typography>
+  
+                <Typography
+                  variant={item.destaque ? "h4" : "h5"}
+                  fontWeight={800}
+                  sx={{
+                    color: item.color,
+                    mt: 0.5,
+                  }}
+                >
+                  {money(item.value)}
+                </Typography>
+              </Box>
+            )
+          ))}
+        </Box>
+      </CardContent>
+    </Card>
+  );
+};
 
 // ============================
 // Filtro de período brasileiro
@@ -424,16 +526,7 @@ const TabelaCaixa = ({ data }: { data: Caixa[] }) => (
             <Box display="flex" justifyContent="space-between" width="100%">
               <Typography fontWeight={700}>{cx.nome_caixa}</Typography>
               <Typography variant="caption" color="text.secondary">
-                {cx.cartoes_utilizados ?? 0} cartões 
-                {(cx.total_taxas ?? 0) > 0 && (
-                  <>
-                    •{" "}
-                    {(cx.total_taxas ?? 0).toLocaleString("pt-BR", {
-                      style: "currency",
-                      currency: "BRL",
-                    })} em taxas
-                  </>
-                )}
+                {cx.cartoes_utilizados ?? 0} cartões
               </Typography>
               <Typography fontWeight={700} color="success.main">
                 {(cx.total_recargas ?? 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
@@ -484,16 +577,7 @@ const TabelaOperador = ({ data }: { data: Operador[] }) => (
                 </Typography>
 
                 <Typography variant="caption" color="text.secondary">
-                  {op.qtd_recargas} recargas • {op.cartoes_utilizados ?? 0} cartões 
-                  {(op.total_taxas ?? 0) > 0 && (
-                    <>
-                      •{" "}
-                      {(op.total_taxas ?? 0).toLocaleString("pt-BR", {
-                        style: "currency",
-                        currency: "BRL",
-                      })} em taxas
-                    </>
-                  )}
+                  {op.qtd_recargas} recargas • {op.cartoes_utilizados ?? 0} cartões
                 </Typography>
               </Box>
 
@@ -648,19 +732,19 @@ export const DashboardFinanceiroEvento = ({ eventoId }: { eventoId: string }) =>
 
       <FiltroPeriodo inicio={inicio} fim={fim} setInicio={setInicio} setFim={setFim} onAplicar={carregar} />
 
-      <CardsResumo data={data.cards} />
+      <ResumoFinanceiro data={data.financeiro} />
 
-      <Typography
-        variant="overline"
-        sx={{ opacity: 0.6, ml: 1 }}
-      >
-        Indicadores Operacionais
-      </Typography>
+      <Box mb={3}>
+        <Typography
+          variant="subtitle2"
+          fontWeight={800}
+          sx={{ mb: 1, opacity: 0.7 }}
+        >
+          Indicadores Operacionais
+        </Typography>
 
-      <CardsOperacionais
-        cartoes={data.cartoes}
-        taxas={data.taxas}
-      />
+        <CardsOperacionais cartoes={data.cartoes} />
+      </Box>
 
       <Divider sx={{ my: 4 }} />
 

@@ -48,6 +48,19 @@ export const exportarDashboardPdf = async (
     }
   };
 
+  const flowLine = (
+    label: string,
+    value: number,
+    type: "plus" | "minus" | "result" = "plus"
+  ) => {
+    const prefix =
+      type === "minus" ? "(-) " :
+        type === "plus" ? "(+) " :
+          "";
+
+    line(prefix + label, money(value), type === "result");
+  };
+
   // =============================
   // HEADER
   // =============================
@@ -115,22 +128,39 @@ export const exportarDashboardPdf = async (
   };
 
   // =============================
-  // RESUMO
+  // RESUMO FINANCEIRO (NOVO MODELO)
   // =============================
   section("Resumo Financeiro");
 
-  line("Total Recargas", money(data.cards.total_recargas));
-  line("Total Consumos", money(data.cards.total_consumos));
-  line("Saldo", money(data.cards.saldo), true);
+  const f = data.financeiro;
 
-  y += 6;
+  const possuiTaxa = (f.taxas_arrecadadas ?? 0) > 0;
+
+  // fluxo financeiro
+  flowLine("Recebido Bruto", f.valor_bruto_recebido);
+  if (possuiTaxa) {
+    flowLine("Taxas do Evento", f.taxas_arrecadadas, "minus");
+  }
+
+  flowLine("Carregado em Cartões", f.valor_liquido_cartoes, "result");
+
+  y += 2;
+
+  flowLine("Consumido", f.total_consumido, "minus");
+
+
+  // destaque final
+  doc.setFont("Poppins", "bold");
+  doc.setFontSize(12);
+
+  flowLine("Saldo em Circulação", f.saldo_evento, "result");
+
+  y += 8;
 
   // =============================
   // INDICADORES OPERACIONAIS
   // =============================
   section("Indicadores Operacionais");
-
-  const possuiTaxa = (data.taxas?.total_taxas ?? 0) > 0;
 
   line(
     "Cartões Utilizados",
@@ -148,14 +178,6 @@ export const exportarDashboardPdf = async (
     number(data.cartoes.cartoes_emergenciais)
   );
 
-  if (possuiTaxa) {
-    line(
-      "Taxas Arrecadadas",
-      money(data.taxas.total_taxas),
-      true
-    );
-  }
-
   y += 6;
 
   // =============================
@@ -171,9 +193,6 @@ export const exportarDashboardPdf = async (
 
     if (cx.cartoes_utilizados != null)
       infoCaixa.push(`${number(cx.cartoes_utilizados)} cartões`);
-
-    if ((cx.total_taxas ?? 0) > 0)
-      infoCaixa.push(`${money(cx.total_taxas)} taxas`);
 
     if (infoCaixa.length) {
       doc.setFont("Inter", "normal");
@@ -209,9 +228,6 @@ export const exportarDashboardPdf = async (
 
     if (op.cartoes_utilizados != null)
       infoOperador.push(`${number(op.cartoes_utilizados)} cartões`);
-
-    if ((op.total_taxas ?? 0) > 0)
-      infoOperador.push(`${money(op.total_taxas)} taxas`);
 
     doc.setFont("Inter", "normal");
     doc.setFontSize(9);
