@@ -59,7 +59,7 @@ export const MyMenu = () => {
 
       {can(permissions, "visualizar.relatorio") && (
         <MenuItemLink
-          to="/dashboard-financeiro/dc37bdd5-e2bd-4047-9c7e-4858797805ca"
+          to="/dashboard-financeiro/"
           primaryText="Relatório Financeiro"
           leftIcon={<AssessmentIcon />}
         />

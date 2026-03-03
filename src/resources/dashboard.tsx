@@ -21,17 +21,12 @@ import { ptBR } from "date-fns/locale";
 import { subDays, startOfDay, endOfDay } from "date-fns";
 import { supabase } from "../lib/supabaseClient";
 import { exportarDashboardPdf } from "./exportarDashboardPdf";
+import { useEvento } from "../context/EventoContext";
+import { EventoSelector } from "../components/EventoSelector";
 
 // ============================
 // Tipagens
 // ============================
-
-type Cards = {
-  total_recargas: number;
-  total_consumos: number;
-  saldo: number;
-};
-
 type FinanceiroResumo = {
   valor_bruto_recebido: number;
   taxas_arrecadadas: number;
@@ -98,7 +93,6 @@ type Operador = {
 };
 
 type DashboardData = {
-  cards: Cards;
   financeiro: FinanceiroResumo;
   cartoes: CartoesStats;
   taxas: TaxasStats;
@@ -111,32 +105,44 @@ type DashboardData = {
 
 const atalhos = [
   {
-    label: "Hoje",
-    getRange: () => ({
-      inicio: startOfDay(new Date()),
-      fim: endOfDay(new Date()),
-    }),
+    label: "Última hora",
+    getRange: () => {
+      const now = new Date();
+      return {
+        inicio: new Date(now.getTime() - 60 * 60 * 1000),
+        fim: now,
+      };
+    },
   },
   {
-    label: "Ontem",
+    label: "Últimas 24 horas",
     getRange: () => {
-      const d = subDays(new Date(), 1);
-      return { inicio: startOfDay(d), fim: endOfDay(d) };
+      const now = new Date();
+      return {
+        inicio: new Date(now.getTime() - 24 * 60 * 60 * 1000),
+        fim: now,
+      };
     },
   },
   {
     label: "Últimos 7 dias",
-    getRange: () => ({
-      inicio: startOfDay(subDays(new Date(), 6)),
-      fim: endOfDay(new Date()),
-    }),
+    getRange: () => {
+      const now = new Date();
+      return {
+        inicio: new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000),
+        fim: now,
+      };
+    },
   },
   {
     label: "Últimos 30 dias",
-    getRange: () => ({
-      inicio: startOfDay(subDays(new Date(), 29)),
-      fim: endOfDay(new Date()),
-    }),
+    getRange: () => {
+      const now = new Date();
+      return {
+        inicio: new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000),
+        fim: now,
+      };
+    },
   },
 ];
 
@@ -177,19 +183,6 @@ const CardsOperacionais = ({
 // ============================
 // Cards
 // ============================
-
-const CardFinanceiro = ({ titulo, valor, cor }: { titulo: string; valor: number; cor: string }) => (
-  <Card sx={{ borderRadius: 4, boxShadow: 2, flex: 1, minWidth: 240, borderTop: `4px solid ${cor}` }}>
-    <CardContent>
-      <Typography variant="overline" sx={{ opacity: 0.7 }}>
-        {titulo}
-      </Typography>
-      <Typography variant="h4" fontWeight={800} mt={1}>
-        {valor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
-      </Typography>
-    </CardContent>
-  </Card>
-);
 
 const CardMetrica = ({
   titulo,
@@ -327,7 +320,7 @@ const ResumoFinanceiro = ({ data }: { data: FinanceiroResumo }) => {
                 >
                   {item.label}
                 </Typography>
-  
+
                 <Typography
                   variant={item.destaque ? "h4" : "h5"}
                   fontWeight={800}
@@ -668,17 +661,26 @@ const TabelaUltimas = ({ data }: { data: UltimaTransacao[] }) => (
 // Página principal
 // ============================
 
-export const DashboardFinanceiroEvento = ({ eventoId }: { eventoId: string }) => {
+export const DashboardFinanceiroEvento = () => {
+  const { eventoAtual } = useEvento();
   const [data, setData] = useState<DashboardData | null>(null);
 
-  const [inicio, setInicio] = useState<Date | null>(startOfDay(new Date()));
-  const [fim, setFim] = useState<Date | null>(endOfDay(new Date()));
+  const now = new Date();
+
+  const [inicio, setInicio] = useState<Date | null>(
+    new Date(now.getTime() - 60 * 60 * 1000) // 1h atrás
+  );
+
+  const [fim, setFim] = useState<Date | null>(now);
+
+  const [gerandoPdf, setGerandoPdf] = useState(false);
 
   const carregar = async () => {
     if (!inicio || !fim) return;
+    if (!eventoAtual) return null;
 
     const { data } = await supabase.rpc("rpc_dashboard_evento", {
-      p_evento: eventoId,
+      p_evento: eventoAtual.id,
       p_inicio: inicio.toISOString(),
       p_fim: fim.toISOString(),
     });
@@ -699,7 +701,8 @@ export const DashboardFinanceiroEvento = ({ eventoId }: { eventoId: string }) =>
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [eventoId, inicio, fim]);
+  }, [eventoAtual?.id, inicio, fim]);
+
 
   if (!data)
     return (
@@ -717,18 +720,48 @@ export const DashboardFinanceiroEvento = ({ eventoId }: { eventoId: string }) =>
         mb={2}
       >
         <Typography variant="h5" fontWeight={900}>
-          Relatório Financeiro do Evento
+          Relatório Financeiro
         </Typography>
 
         <Button
           variant="outlined"
-          onClick={() =>
-            exportarDashboardPdf(data, inicio!, fim!)
+          disabled={gerandoPdf}
+          onClick={async () => {
+            setGerandoPdf(true);
+            await exportarDashboardPdf(
+              data,
+              inicio!,
+              fim!,
+              eventoAtual?.nome ?? ""
+            );
+            setGerandoPdf(false);
+          }}
+          startIcon={
+            gerandoPdf ? <CircularProgress size={16} /> : undefined
           }
         >
-          Exportar PDF
+          {gerandoPdf ? "Gerando..." : "Exportar PDF"}
         </Button>
       </Box>
+
+      <Card
+        sx={{
+          mb: 3,
+          borderRadius: 3,
+          border: "1px solid",
+          borderColor: "divider",
+        }}
+      >
+        <CardContent>
+          <Stack spacing={1}>
+            <Typography variant="subtitle2" fontWeight={700}>
+              Evento
+            </Typography>
+
+            <EventoSelector />
+          </Stack>
+        </CardContent>
+      </Card>
 
       <FiltroPeriodo inicio={inicio} fim={fim} setInicio={setInicio} setFim={setFim} onAplicar={carregar} />
 

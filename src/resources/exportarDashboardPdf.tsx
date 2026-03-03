@@ -5,7 +5,8 @@ import { InterRegular } from "../fonts/Inter-Regular";
 export const exportarDashboardPdf = async (
   data: any,
   inicio: Date,
-  fim: Date
+  fim: Date,
+  nomeEvento: string
 ) => {
 
   const doc = new jsPDF();
@@ -75,11 +76,15 @@ export const exportarDashboardPdf = async (
   doc.text("Relatório Financeiro", 50, 16);
 
   doc.setFont("Inter", "normal");
+  doc.setFontSize(11);
+  doc.text(nomeEvento, 50, 22);
+
+  doc.setFont("Inter", "normal");
   doc.setFontSize(10);
   doc.text(
     `${inicio.toLocaleString("pt-BR")} → ${fim.toLocaleString("pt-BR")}`,
     50,
-    23
+    28
   );
 
   y = 42;
