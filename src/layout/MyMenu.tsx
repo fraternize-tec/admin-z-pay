@@ -51,7 +51,7 @@ export const MyMenu = () => {
       {can(permissions, "cancelar.operacao") && (
         <MenuItemLink
           to="/operacao/cartoes"
-          primaryText="Cancelar Operação"
+          primaryText="Gerenciar Cartões"
           leftIcon={<CreditCardIcon />}
         />
       )}

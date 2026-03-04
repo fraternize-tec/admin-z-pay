@@ -1,5 +1,8 @@
 import {
+  Confirm,
+  useGetIdentity,
   useNotify,
+  usePermissions,
 } from "react-admin";
 import {
   Card,
@@ -25,8 +28,13 @@ import RefreshIcon from "@mui/icons-material/Refresh";
 import { useEffect, useState } from "react";
 import { CancelarDialog } from "../components/CancelarDialog";
 import { supabase } from "../lib/supabaseClient";
+import { DevolucaoDialog } from "../components/DevolucaoDialog";
+import { can } from "../auth/useCan";
+import { formatBRL } from "../utils/formatters";
 
 export default function HistoricoCartaoOperacional() {
+  const { permissions } = usePermissions();
+  const { data: identity } = useGetIdentity();
   const notify = useNotify();
 
   const [meioId, setMeioId] = useState<string | null>(null);
@@ -34,6 +42,9 @@ export default function HistoricoCartaoOperacional() {
   const [extrato, setExtrato] = useState<any[]>([]);
   const [cancelar, setCancelar] = useState<any>(null);
   const [opcoes, setOpcoes] = useState<any[]>([]);
+  const [devolverOpen, setDevolverOpen] = useState(false);
+  const [resetConfirm, setResetConfirm] = useState(false);
+  const [actionLoading, setActionLoading] = useState(false);
 
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
   const openMenu = Boolean(menuAnchor);
@@ -96,6 +107,60 @@ export default function HistoricoCartaoOperacional() {
     setLoading(false);
   }
 
+  async function toggleBloqueio() {
+    if (!cartao) return;
+
+    try {
+      setActionLoading(true);
+
+      const { data, error } = await supabase.functions.invoke("bloquear-cartao", {
+        body: {
+          cartao_id: cartao.id,
+          bloquear: !cartao.bloqueado,
+        },
+      });
+
+      if (error) throw error;
+
+      notify(
+        cartao.bloqueado
+          ? "Cartão desbloqueado com sucesso"
+          : "Cartão bloqueado com sucesso",
+        { type: "success" }
+      );
+
+      refreshTela();
+    } catch (e) {
+      notify("Erro ao alterar status do cartão", { type: "error" });
+    } finally {
+      setActionLoading(false);
+    }
+  }
+
+  async function resetarCartao() {
+    if (!cartao) return;
+
+    try {
+      setActionLoading(true);
+
+      const { data, error } = await supabase.functions.invoke("resetar-cartao", {
+        body: {
+          cartao_id: cartao.id,
+        },
+      });
+
+      if (error) throw error;
+
+      notify("Cartão resetado com sucesso", { type: "success" });
+
+      refreshTela();
+    } catch (e) {
+      notify("Erro ao resetar cartão", { type: "error" });
+    } finally {
+      setActionLoading(false);
+    }
+  }
+
   return (
     <Box p={2}>
       {/* ===================== */}
@@ -103,7 +168,7 @@ export default function HistoricoCartaoOperacional() {
       {/* ===================== */}
       <Card sx={{ mb: 2 }}>
         <CardContent>
-          <Typography variant="h6">🔎 Buscar cartão</Typography>
+          <Typography sx={{ mb: 2 }} variant="h6">🔎 Buscar cartão</Typography>
 
           <Autocomplete
             options={opcoes}
@@ -175,7 +240,7 @@ export default function HistoricoCartaoOperacional() {
                     variant="h5"
                     color={cartao.saldo < 0 ? "error" : "primary"}
                   >
-                    R$ {cartao.saldo.toFixed(2)}
+                    {formatBRL(cartao.saldo)}
                   </Typography>
                 </Field>
               </Box>
@@ -208,30 +273,42 @@ export default function HistoricoCartaoOperacional() {
                   open={openMenu}
                   onClose={() => setMenuAnchor(null)}
                 >
-                  <MenuItem
-                    onClick={() => {
-                      setMenuAnchor(null);
-                      notify("Bloquear/desbloquear ainda não implementado", {
-                        type: "info",
-                      });
-                    }}
-                  >
-                    <BlockIcon fontSize="small" sx={{ mr: 1 }} />
-                    {cartao.bloqueado ? "Desbloquear cartão" : "Bloquear cartão"}
-                  </MenuItem>
+                  {can(permissions, "devolver.saldo") && (
+                    <MenuItem
+                      onClick={() => {
+                        setMenuAnchor(null);
+                        setDevolverOpen(true);
+                      }}
+                      sx={{ color: "error.main" }}
+                    >
+                      💸 Devolver saldo
+                    </MenuItem>
+                  )}
+                  {can(permissions, "bloquear.cartao") && (
+                    <MenuItem
+                      onClick={() => {
+                        setMenuAnchor(null);
+                        toggleBloqueio();
+                      }}
+                      disabled={actionLoading}
+                    >
+                      <BlockIcon fontSize="small" sx={{ mr: 1 }} />
+                      {cartao.bloqueado ? "Desbloquear cartão" : "Bloquear cartão"}
+                    </MenuItem>
+                  )}
 
-                  <MenuItem
-                    onClick={() => {
-                      setMenuAnchor(null);
-                      notify("Resetar ainda não implementado", {
-                        type: "warning",
-                      });
-                    }}
-                    sx={{ color: "warning.main" }}
-                  >
-                    <RestartAltIcon fontSize="small" sx={{ mr: 1 }} />
-                    Resetar cartão
-                  </MenuItem>
+                  {can(permissions, "resetar.cartao") && (
+                    <MenuItem
+                      onClick={() => {
+                        setMenuAnchor(null);
+                        setResetConfirm(true);
+                      }}
+                      sx={{ color: "warning.main" }}
+                    >
+                      <RestartAltIcon fontSize="small" sx={{ mr: 1 }} />
+                      Resetar cartão
+                    </MenuItem>
+                  )}
                 </Menu>
               </Box>
             </Box>
@@ -263,6 +340,7 @@ export default function HistoricoCartaoOperacional() {
                   secondaryAction={
                     !item.cancelado &&
                     item.tipo !== "taxa" &&
+                    item.tipo !== "devolucao" &&
                     (item.tipo !== "recarga" || item.recarga_cancelavel) && (
                       <IconButton
                         edge="end"
@@ -312,7 +390,7 @@ export default function HistoricoCartaoOperacional() {
                     }
                   >
                     {item.valor >= 0 ? "+" : ""}
-                    {item.valor.toFixed(2)}
+                    {formatBRL(item.valor)}
                   </Typography>
                 </ListItem>
               ))}
@@ -333,6 +411,42 @@ export default function HistoricoCartaoOperacional() {
           onSuccess={onCancelado}
         />
       )}
+
+
+      {cartao && identity && (
+        <DevolucaoDialog
+          open={devolverOpen}
+          meioId={cartao.id}
+          saldoAtual={cartao.saldo}
+          operadorId={identity.id.toString()}
+          caixaId={null}
+          onClose={() => setDevolverOpen(false)}
+          onSuccess={refreshTela}
+        />
+      )}
+
+      <Confirm
+        isOpen={resetConfirm}
+        title="Resetar cartão"
+        content={
+          <>
+            <strong>Atenção!</strong>
+            <br />
+            Esta ação irá:
+            <ul>
+              <li>Zerar o saldo do cartão</li>
+              <li>Remover vínculo com o usuário</li>
+              <li>Manter o cartão ativo para novo uso</li>
+            </ul>
+            Deseja continuar?
+          </>
+        }
+        onConfirm={() => {
+          setResetConfirm(false);
+          resetarCartao();
+        }}
+        onClose={() => setResetConfirm(false)}
+      />
     </Box>
   );
 }
@@ -345,6 +459,7 @@ function labelTipo(tipo: string) {
     recarga: "Recarga",
     consumo: "Consumo",
     taxa: "Taxa",
+    devolucao: "Devolução",
   }[tipo] || tipo;
 }
 
