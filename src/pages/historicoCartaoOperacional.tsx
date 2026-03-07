@@ -19,18 +19,22 @@ import {
   IconButton,
   Menu,
   MenuItem,
+  Dialog,
 } from "@mui/material";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import BlockIcon from "@mui/icons-material/Block";
 import RestartAltIcon from "@mui/icons-material/RestartAlt";
 import CancelIcon from "@mui/icons-material/Cancel";
 import RefreshIcon from "@mui/icons-material/Refresh";
+import QrCodeScannerIcon from "@mui/icons-material/QrCodeScanner";
 import { useEffect, useState } from "react";
 import { CancelarDialog } from "../components/CancelarDialog";
 import { supabase } from "../lib/supabaseClient";
 import { DevolucaoDialog } from "../components/DevolucaoDialog";
 import { can } from "../auth/useCan";
 import { formatBRL } from "../utils/formatters";
+import { QrScanner } from "../components/QrScanner";
+
 
 export default function HistoricoCartaoOperacional() {
   const { permissions } = usePermissions();
@@ -45,6 +49,7 @@ export default function HistoricoCartaoOperacional() {
   const [devolverOpen, setDevolverOpen] = useState(false);
   const [resetConfirm, setResetConfirm] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
+  const [scanOpen, setScanOpen] = useState(false);
 
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
   const openMenu = Boolean(menuAnchor);
@@ -161,6 +166,18 @@ export default function HistoricoCartaoOperacional() {
     }
   }
 
+  async function buscarPorCodigo(codigo: string) {
+    const { data } = await supabase
+      .rpc("search_meios_acesso", { p_codigo: codigo });
+
+    if (!data || data.length === 0) {
+      notify("Cartão não encontrado", { type: "warning" });
+      return;
+    }
+
+    setMeioId(data[0].id);
+  }
+
   return (
     <Box p={2}>
       {/* ===================== */}
@@ -186,7 +203,18 @@ export default function HistoricoCartaoOperacional() {
               <MuiTextField
                 {...params}
                 label="Código do cartão"
-                placeholder="Digite ao menos 3 caracteres"
+                placeholder="Digite ou escaneie"
+                InputProps={{
+                  ...params.InputProps,
+                  endAdornment: (
+                    <>
+                      <IconButton onClick={() => setScanOpen(true)}>
+                        <QrCodeScannerIcon />
+                      </IconButton>
+                      {params.InputProps.endAdornment}
+                    </>
+                  ),
+                }}
               />
             )}
           />
@@ -447,6 +475,34 @@ export default function HistoricoCartaoOperacional() {
         }}
         onClose={() => setResetConfirm(false)}
       />
+
+      <Dialog
+        open={scanOpen}
+        onClose={() => setScanOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <QrScanner
+          onResult={(raw: string) => {
+            setScanOpen(false);
+
+            let codigo = raw;
+
+            try {
+              const url = new URL(raw);
+
+              if (url.pathname.startsWith("/card/")) {
+                codigo = url.pathname.split("/card/")[1];
+              }
+            } catch {
+              // não era URL, mantém valor original
+            }
+
+            buscarPorCodigo(codigo);
+          }}
+          onClose={() => setScanOpen(false)}
+        />
+      </Dialog>
     </Box>
   );
 }
