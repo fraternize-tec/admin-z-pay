@@ -369,6 +369,7 @@ export default function HistoricoCartaoOperacional() {
                     !item.cancelado &&
                     item.tipo !== "taxa" &&
                     item.tipo !== "devolucao" &&
+                    item.tipo !== "reset" &&
                     (item.tipo !== "recarga" || item.recarga_cancelavel) && (
                       <IconButton
                         edge="end"
@@ -516,6 +517,7 @@ function labelTipo(tipo: string) {
     consumo: "Consumo",
     taxa: "Taxa",
     devolucao: "Devolução",
+    reset: "Reset de cartão",
   }[tipo] || tipo;
 }
 
