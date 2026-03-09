@@ -9,6 +9,7 @@ import {
   Box,
   Typography,
   CircularProgress,
+  Chip,
 } from "@mui/material";
 import { useEffect, useState } from "react";
 import { useNotify } from "react-admin";
@@ -41,26 +42,51 @@ export function DevolucaoDialog({
   const [formaPagamentoId, setFormaPagamentoId] = useState("");
   const [formas, setFormas] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [caixas, setCaixas] = useState<any[]>([]);
+  const [caixaSelecionado, setCaixaSelecionado] = useState<string | null>(caixaId);
+
+  const nomeCaixa = caixas.find(c => c.id === caixaId)?.nome;
 
   useEffect(() => {
     if (!open) return;
 
-    async function carregarFormas() {
-      const { data } = await supabase
+    async function carregarDados() {
+
+      // formas pagamento
+      const { data: formasData } = await supabase
         .from("dominio_formas_pagamento")
         .select("id, descricao")
         .order("ordem");
 
-      setFormas(data || []);
+      setFormas(formasData || []);
+
+      // caixas do evento do cartão
+      const { data: meio } = await supabase
+        .from("meios_acesso")
+        .select("evento_id")
+        .eq("id", meioId)
+        .single();
+
+      if (meio?.evento_id) {
+        const { data: caixasData } = await supabase
+          .from("caixas")
+          .select("id, nome")
+          .eq("evento_id", meio.evento_id)
+          .eq("status", "aberto")
+          .order("nome");
+
+        setCaixas(caixasData || []);
+      }
     }
 
-    carregarFormas();
-  }, [open]);
+    carregarDados();
+  }, [open, meioId]);
 
   function resetState() {
     setValor(0);
     setObservacao("");
     setFormaPagamentoId("");
+    setCaixaSelecionado(caixaId ?? null);
   }
 
   async function handleConfirmar() {
@@ -73,6 +99,13 @@ export function DevolucaoDialog({
 
     if (valorNumerico > saldoAtual) {
       notify("Valor maior que o saldo disponível", { type: "error" });
+      return;
+    }
+
+    const caixaFinal = caixaId ?? caixaSelecionado;
+
+    if (!caixaFinal) {
+      notify("Selecione o caixa da devolução", { type: "warning" });
       return;
     }
 
@@ -89,7 +122,7 @@ export function DevolucaoDialog({
         p_valor: valorNumerico,
         p_operador_id: operadorId,
         p_forma_pagamento_id: formaPagamentoId,
-        p_caixa_id: caixaId,
+        p_caixa_id: caixaFinal,
         p_observacao: observacao || null,
       });
 
@@ -121,6 +154,14 @@ export function DevolucaoDialog({
           </Typography>
         </Box>
 
+        {caixaId && nomeCaixa && (
+          <Chip
+            size="small"
+            label={`Caixa: ${nomeCaixa}`}
+            color="primary"
+            variant="outlined"
+          />
+        )}
 
         <CurrencyInput
           label="Valor da devolução"
@@ -128,12 +169,30 @@ export function DevolucaoDialog({
           onChange={(value) => setValor(value)}
         />
 
+        {!caixaId && (
+          <TextField
+            select
+            label="Caixa da devolução"
+            value={caixaSelecionado ?? ""}
+            onChange={(e) => setCaixaSelecionado(e.target.value)}
+            fullWidth
+            required
+          >
+            {caixas.map((cx) => (
+              <MenuItem key={cx.id} value={cx.id}>
+                {cx.nome}
+              </MenuItem>
+            ))}
+          </TextField>
+        )}
+
 
         <TextField
           select
           label="Forma de pagamento"
           value={formaPagamentoId}
           onChange={(e) => setFormaPagamentoId(e.target.value)}
+          required
           fullWidth
         >
           {formas.map((forma) => (
