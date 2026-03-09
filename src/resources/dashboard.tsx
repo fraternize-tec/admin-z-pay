@@ -32,6 +32,7 @@ type FinanceiroResumo = {
   taxas_arrecadadas: number;
   valor_liquido_cartoes: number;
   total_consumido: number;
+  devolucoes: number;
   saldo_evento: number;
 };
 
@@ -263,6 +264,12 @@ const ResumoFinanceiro = ({ data }: { data: FinanceiroResumo }) => {
       label: "Consumido",
       value: data.total_consumido,
       color: theme.palette.error.main,
+    },
+    {
+      label: "Devoluções",
+      value: data.devolucoes,
+      color: theme.palette.error.light,
+      oculto: data.devolucoes === 0,
     },
     {
       label: "Saldo em Circulação",

@@ -153,6 +153,9 @@ export const exportarDashboardPdf = async (
 
   flowLine("Consumido", f.total_consumido, "minus");
 
+  if ((f.devolucoes ?? 0) > 0) {
+    flowLine("Devoluções", f.devolucoes, "minus");
+  }
 
   // destaque final
   doc.setFont("Poppins", "bold");
