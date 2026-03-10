@@ -116,7 +116,8 @@ export const ExportarCartoesPdf = ({
       /* ---------------- BUSCA CARTÕES ---------------- */
       let query = supabase
         .from('meios_acesso')
-        .select('codigo_unico, nano_id');
+        .select('codigo_unico, nano_id')
+        .order('codigo_unico', { ascending: true });
 
       if (tipo === 'lote') query = query.eq('lote_id', loteId);
       if (tipo === 'proprio')
