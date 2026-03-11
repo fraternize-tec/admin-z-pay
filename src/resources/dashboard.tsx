@@ -30,6 +30,7 @@ import { EventoSelector } from "../components/EventoSelector";
 type FinanceiroResumo = {
   valor_bruto_recebido: number;
   taxas_arrecadadas: number;
+  cortesias: number;
   valor_liquido_cartoes: number;
   total_consumido: number;
   devolucoes: number;
@@ -256,6 +257,12 @@ const ResumoFinanceiro = ({ data }: { data: FinanceiroResumo }) => {
       oculto: data.taxas_arrecadadas === 0, // esconde se for zero
     },
     {
+      label: "Cortesias",
+      value: data.cortesias,
+      color: theme.palette.success.main,
+      oculto: data.cortesias === 0,
+    },
+    {
       label: "Carregado em Cartões",
       value: data.valor_liquido_cartoes,
       color: theme.palette.primary.main,
@@ -329,7 +336,7 @@ const ResumoFinanceiro = ({ data }: { data: FinanceiroResumo }) => {
                 </Typography>
 
                 <Typography
-                  variant={item.destaque ? "h4" : "h5"}
+                  variant={item.destaque ? "h5" : "h6"}
                   fontWeight={800}
                   sx={{
                     color: item.color,

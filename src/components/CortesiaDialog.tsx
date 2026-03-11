@@ -27,7 +27,7 @@ interface Props {
   onSuccess: () => void;
 }
 
-export function DevolucaoDialog({
+export function CortesiaDialog({
   open,
   meioId,
   saldoAtual,
@@ -39,9 +39,6 @@ export function DevolucaoDialog({
   const notify = useNotify();
 
   const [valor, setValor] = useState<number | null>(null);
-  const [observacao, setObservacao] = useState("");
-  const [formaPagamentoId, setFormaPagamentoId] = useState("");
-  const [formas, setFormas] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [caixas, setCaixas] = useState<any[]>([]);
   const [caixaSelecionado, setCaixaSelecionado] = useState<string | null>(caixaId);
@@ -52,15 +49,6 @@ export function DevolucaoDialog({
     if (!open) return;
 
     async function carregarDados() {
-
-      // formas pagamento
-      const { data: formasData } = await supabase
-        .from("dominio_formas_pagamento")
-        .select("id, descricao")
-        .eq("visivel", true)
-        .order("ordem");
-
-      setFormas(formasData || []);
 
       // caixas do evento do cartão
       const { data: meio } = await supabase
@@ -86,8 +74,6 @@ export function DevolucaoDialog({
 
   function resetState() {
     setValor(0);
-    setObservacao("");
-    setFormaPagamentoId("");
     setCaixaSelecionado(caixaId ?? null);
   }
 
@@ -99,44 +85,36 @@ export function DevolucaoDialog({
       return;
     }
 
-    if (valorNumerico > saldoAtual) {
-      notify("Valor maior que o saldo disponível", { type: "error" });
+    if (valorNumerico > 600) {
+      notify("Valor maior que o limite de cortesia", { type: "error" });
       return;
     }
 
     const caixaFinal = caixaId ?? caixaSelecionado;
 
     if (!caixaFinal) {
-      notify("Selecione o caixa da devolução", { type: "warning" });
-      return;
-    }
-
-    if (!formaPagamentoId) {
-      notify("Selecione a forma de pagamento", { type: "warning" });
+      notify("Selecione o caixa da cortesia", { type: "warning" });
       return;
     }
 
     try {
       setLoading(true);
 
-      const { error } = await supabase.rpc("realizar_devolucao", {
+      const { data, error } = await supabase.rpc("dar_cortesia", {
         p_meio_id: meioId,
-        p_valor: valorNumerico,
-        p_operador_id: operadorId,
-        p_forma_pagamento_id: formaPagamentoId,
-        p_caixa_id: caixaFinal,
-        p_observacao: observacao || null,
+        p_caixa_id: caixaSelecionado,
+        p_valor: valorNumerico
       });
 
       if (error) throw error;
 
-      notify("Devolução realizada com sucesso", { type: "success" });
+      notify("Cortesia realizada com sucesso", { type: "success" });
 
       resetState();
       onSuccess();
       onClose();
     } catch (err: any) {
-      notify(err.message || "Erro ao realizar devolução", {
+      notify(err.message || "Erro ao realizar cortesia", {
         type: "error",
       });
     } finally {
@@ -146,7 +124,7 @@ export function DevolucaoDialog({
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
-      <DialogTitle>💸 Devolução de saldo</DialogTitle>
+      <DialogTitle>💰 Dar cortesia</DialogTitle>
 
       <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
         <Box>
@@ -166,7 +144,7 @@ export function DevolucaoDialog({
         )}
 
         <CurrencyInput
-          label="Valor da devolução"
+          label="Valor da cortesia"
           value={valor}
           onChange={(value) => setValor(value)}
         />
@@ -174,7 +152,7 @@ export function DevolucaoDialog({
         {!caixaId && (
           <TextField
             select
-            label="Caixa da devolução"
+            label="Caixa da cortesia"
             value={caixaSelecionado ?? ""}
             onChange={(e) => setCaixaSelecionado(e.target.value)}
             fullWidth
@@ -187,31 +165,6 @@ export function DevolucaoDialog({
             ))}
           </TextField>
         )}
-
-
-        <TextField
-          select
-          label="Forma de pagamento"
-          value={formaPagamentoId}
-          onChange={(e) => setFormaPagamentoId(e.target.value)}
-          required
-          fullWidth
-        >
-          {formas.map((forma) => (
-            <MenuItem key={forma.id} value={forma.id}>
-              {forma.descricao}
-            </MenuItem>
-          ))}
-        </TextField>
-
-        <TextField
-          label="Observação"
-          value={observacao}
-          onChange={(e) => setObservacao(e.target.value)}
-          multiline
-          rows={3}
-          fullWidth
-        />
       </DialogContent>
 
       <DialogActions>
@@ -225,7 +178,7 @@ export function DevolucaoDialog({
           disabled={loading}
           startIcon={loading ? <CircularProgress size={18} /> : null}
         >
-          Confirmar devolução
+          Confirmar cortesia
         </Button>
       </DialogActions>
     </Dialog>

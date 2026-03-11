@@ -34,6 +34,7 @@ import { DevolucaoDialog } from "../components/DevolucaoDialog";
 import { can } from "../auth/useCan";
 import { formatBRL } from "../utils/formatters";
 import { QrScanner } from "../components/QrScanner";
+import { CortesiaDialog } from "../components/CortesiaDialog";
 
 
 export default function HistoricoCartaoOperacional() {
@@ -47,6 +48,7 @@ export default function HistoricoCartaoOperacional() {
   const [cancelar, setCancelar] = useState<any>(null);
   const [opcoes, setOpcoes] = useState<any[]>([]);
   const [devolverOpen, setDevolverOpen] = useState(false);
+  const [cortesiaOpen, setCortesiaOpen] = useState(false);
   const [resetConfirm, setResetConfirm] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
   const [scanOpen, setScanOpen] = useState(false);
@@ -312,6 +314,17 @@ export default function HistoricoCartaoOperacional() {
                       💸 Devolver saldo
                     </MenuItem>
                   )}
+
+                  {can(permissions, "dar.cortesia") && (<MenuItem
+                    onClick={() => {
+                      setMenuAnchor(null);
+                      setCortesiaOpen(true);
+                    }}
+                  >
+                    💰 Dar cortesia
+                  </MenuItem>
+                  )}
+
                   {can(permissions, "bloquear.cartao") && (
                     <MenuItem
                       onClick={() => {
@@ -450,6 +463,17 @@ export default function HistoricoCartaoOperacional() {
           operadorId={identity.id.toString()}
           caixaId={null}
           onClose={() => setDevolverOpen(false)}
+          onSuccess={refreshTela}
+        />
+      )}
+
+      {cartao && identity && (
+        <CortesiaDialog
+          open={cortesiaOpen}
+          meioId={cartao.id}
+          saldoAtual={cartao.saldo}
+          operadorId={identity.id.toString()}
+          onClose={() => setCortesiaOpen(false)}
           onSuccess={refreshTela}
         />
       )}

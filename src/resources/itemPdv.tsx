@@ -2,7 +2,7 @@ import { Box, Card, CardContent, Typography } from "@mui/material";
 import { ReferenceManyField, TextField, NumberField, BooleanField, SimpleForm, NumberInput, required, BooleanInput, Datagrid, Edit, EditButton, Create, TextInput, useDataProvider, useNotify, useRedirect, ReferenceField, useGetOne, useRecordContext, TopToolbar } from "react-admin";
 import { useSearchParams } from "react-router-dom";
 import { BackToListButtonNavigate } from "../components/BackToListButton";
-import { CurrencyInput } from "../components/CurrencyInput";
+import { CurrencyInput } from "../components/CurrencyInputRA";
 
 
 export const ItensDoPdv = () => (

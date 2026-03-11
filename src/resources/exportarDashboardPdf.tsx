@@ -140,11 +140,16 @@ export const exportarDashboardPdf = async (
   const f = data.financeiro;
 
   const possuiTaxa = (f.taxas_arrecadadas ?? 0) > 0;
+  const possuiCortesias = (f.cortesias ?? 0) > 0;
 
   // fluxo financeiro
   flowLine("Recebido Bruto", f.valor_bruto_recebido);
   if (possuiTaxa) {
     flowLine("Taxas do Evento", f.taxas_arrecadadas, "minus");
+  }
+
+  if (possuiCortesias) {
+    flowLine("Cortesias", f.cortesias);
   }
 
   flowLine("Carregado em Cartões", f.valor_liquido_cartoes, "result");
