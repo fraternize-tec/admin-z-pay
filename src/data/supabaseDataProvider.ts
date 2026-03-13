@@ -79,6 +79,21 @@ export const supabaseDataProvider: DataProvider = {
     // =============================
     // AÇÕES CUSTOMIZADAS (Edge)
     // =============================
+    if (resource === 'usuarios') {
+      const { data, error } = await supabase.functions.invoke(
+        'criar-usuario',
+        {
+          body: params.data,
+        }
+      );
+
+      if (error) throw error;
+
+      return {
+        data,
+      };
+    }
+
     if (resource === 'lotes_cartoes_gerar') {
       const { data, error } = await supabase.functions.invoke(
         'gerar-cartoes-lote',

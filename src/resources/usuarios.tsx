@@ -15,6 +15,11 @@ import {
   Show,
   useRecordContext,
   BulkDeleteButton,
+  Create,
+  required,
+  ReferenceInput,
+  SelectInput,
+  FormDataConsumer,
 } from 'react-admin';
 
 import { EscopoField } from './escopoField';
@@ -93,4 +98,109 @@ export const UsuarioEdit = () => (
   </Edit>
 );
 
+export const UsuarioCreate = () => (
 
+  <Create>
+    <SimpleForm>
+
+      <TextInput
+        source="email"
+        fullWidth
+        validate={required()}
+      />
+
+      {/* PAPEL */}
+      <ReferenceInput
+        source="papel_id"
+        reference="funcoes_sistema"
+        label="Papel"
+      >
+        <SelectInput optionText="codigo" />
+      </ReferenceInput>
+
+      {/* ESCOPO */}
+      <SelectInput
+        source="escopo_tipo"
+        label="Escopo"
+        choices={[
+          { id: "global", name: "Global" },
+          { id: "evento", name: "Evento" },
+          { id: "pdv", name: "PDV" },
+          { id: "caixa", name: "Caixa" }
+        ]}
+      />
+
+      <FormDataConsumer>
+        {({ formData }) => {
+
+          if (!formData.escopo_tipo) return null;
+
+          return (
+            <>
+              {/* EVENTO COMO ESCOPO */}
+              {formData.escopo_tipo === "evento" && (
+                <ReferenceInput
+                  source="escopo_id"
+                  reference="eventos"
+                  label="Evento"
+                >
+                  <SelectInput optionText="nome" />
+                </ReferenceInput>
+              )}
+
+              {/* PDV */}
+              {formData.escopo_tipo === "pdv" && (
+                <>
+                  <ReferenceInput
+                    source="evento_id"
+                    reference="eventos"
+                    label="Evento"
+                  >
+                    <SelectInput optionText="nome" />
+                  </ReferenceInput>
+
+                  {formData.evento_id && (
+                    <ReferenceInput
+                      source="escopo_id"
+                      reference="pontos_de_venda"
+                      filter={{ evento_id: formData.evento_id }}
+                      label="PDV"
+                    >
+                      <SelectInput optionText="nome" />
+                    </ReferenceInput>
+                  )}
+                </>
+              )}
+
+              {/* CAIXA */}
+              {formData.escopo_tipo === "caixa" && (
+                <>
+                  <ReferenceInput
+                    source="evento_id"
+                    reference="eventos"
+                    label="Evento"
+                  >
+                    <SelectInput optionText="nome" />
+                  </ReferenceInput>
+
+                  {formData.evento_id && (
+                    <ReferenceInput
+                      source="escopo_id"
+                      reference="caixas"
+                      filter={{ evento_id: formData.evento_id }}
+                      label="Caixa"
+                    >
+                      <SelectInput optionText="nome" />
+                    </ReferenceInput>
+                  )}
+                </>
+              )}
+
+            </>
+          );
+        }}
+      </FormDataConsumer>
+
+    </SimpleForm>
+  </Create>
+);

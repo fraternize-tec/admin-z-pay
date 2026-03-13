@@ -17,7 +17,7 @@ import {
 } from './resources/pontosDeVenda';
 import { ItemList, ItemCreate, ItemEdit } from './resources/itens';
 import { CaixaCreate, CaixaEdit, CaixaList } from './resources/caixas';
-import { UsuarioList, UsuarioEdit } from './resources/usuarios';
+import { UsuarioList, UsuarioEdit, UsuarioCreate } from './resources/usuarios';
 import { PermissaoList, PermissaoCreate, PermissaoEdit } from './resources/permissoes';
 import { FuncaoList, FuncaoCreate, FuncaoEdit } from './resources/funcoes';
 import { PapelContextoCreate } from './resources/papelContexto';
@@ -167,6 +167,7 @@ export const App = () => (
                         icon={PeopleIcon}
                         options={{ label: 'Usuários' }}
                         list={UsuarioList}
+                        create={UsuarioCreate}
                         edit={can(permissions, 'usuarios.write') ? UsuarioEdit : undefined}
                     />
                 )}
