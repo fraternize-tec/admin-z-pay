@@ -20,14 +20,22 @@ import {
   ReferenceInput,
   SelectInput,
   FormDataConsumer,
+  Button,
+  useDataProvider,
+  useNotify,
 } from 'react-admin';
 
 import { EscopoField } from './escopoField';
 import { UsuarioPermissoesTab } from './usuarioPermissoesTab';
 
+const usuarioFilters = [
+  <TextInput source="nome" label="Nome" alwaysOn />,
+  <TextInput source="email" label="Email" alwaysOn />
+];
+
 /* ================= LIST ================= */
 export const UsuarioList = () => (
-  <List>
+  <List filters={usuarioFilters} perPage={25}>
     <Datagrid rowClick="edit">
       <TextField source="nome" />
       <TextField source="email" />
@@ -72,6 +80,41 @@ const UsuarioPapeisTab = () => {
   );
 };
 
+export const ReenviarConviteButton = () => {
+
+  const record = useRecordContext()
+  const notify = useNotify()
+  const dataProvider = useDataProvider()
+
+  const handleClick = async () => {
+    if (!record) {
+      notify("Registro não encontrado", { type: "error" });
+      return;
+    }
+
+    try {
+
+      await dataProvider.create("reenviar-convite", {
+        data: { email: record.email }
+      })
+
+      notify("Convite reenviado com sucesso", { type: "info" })
+
+    } catch (e) {
+
+      notify(e instanceof Error ? e.message : "Erro desconhecido", { type: "error" })
+
+    }
+  }
+
+  return (
+    <Button
+      label="Reenviar convite"
+      onClick={handleClick}
+    />
+  )
+}
+
 /* ================= EDIT ================= */
 export const UsuarioEdit = () => (
   <Edit>
@@ -80,6 +123,7 @@ export const UsuarioEdit = () => (
       <SimpleForm>
         <TextInput source="nome" fullWidth />
         <TextInput source="email" fullWidth disabled />
+        <ReenviarConviteButton />
       </SimpleForm>
 
       {/* VISUALIZAÇÕES */}

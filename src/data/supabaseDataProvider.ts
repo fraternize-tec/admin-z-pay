@@ -21,9 +21,34 @@ export const supabaseDataProvider: DataProvider = {
       .from(resource)
       .select('*', { count: 'exact' });
 
+    /* ================= FILTROS ================= */
     if (params.filter) {
       Object.entries(params.filter).forEach(([key, value]) => {
-        query = query.eq(key, value as any);
+
+        if (!value) return;
+
+        // busca textual
+        if (key === 'email' || key === 'nome') {
+          query = query.ilike(key, `%${value}%`);
+        }
+
+        // filtro de data maior ou igual
+        else if (key.endsWith('_gte')) {
+          const field = key.replace('_gte', '');
+          query = query.gte(field, value);
+        }
+
+        // filtro de data menor ou igual
+        else if (key.endsWith('_lte')) {
+          const field = key.replace('_lte', '');
+          query = query.lte(field, value);
+        }
+
+        // igualdade padrão
+        else {
+          query = query.eq(key, value as any);
+        }
+
       });
     }
 
@@ -79,19 +104,53 @@ export const supabaseDataProvider: DataProvider = {
     // =============================
     // AÇÕES CUSTOMIZADAS (Edge)
     // =============================
-    if (resource === 'usuarios') {
+    if (resource === "usuarios") {
+
       const { data, error } = await supabase.functions.invoke(
-        'criar-usuario',
-        {
-          body: params.data,
-        }
+        "criar-usuario",
+        { body: params.data }
       );
 
-      if (error) throw error;
+      if (error) {
+        let message = "Erro ao criar usuário";
+
+        try {
+          const body = await error.context.json();
+          message = body?.error || body?.message || message;
+        } catch { }
+
+        throw new Error(message);
+      }
+
+      // garante objeto JSON
+      const result = typeof data === "string" ? JSON.parse(data) : data;
+
+      if (!result?.id) {
+        throw new Error("Resposta inválida da função criar-usuario");
+      }
 
       return {
-        data,
+        data: {
+          id: result.id,
+          email: result.email
+        }
       };
+    }
+
+    if (resource === "reenviar-convite") {
+
+      const { data, error } = await supabase.functions.invoke(
+        "reenviar-convite",
+        { body: params.data }
+      )
+
+      if (error) throw new Error(error.message)
+
+      return {
+        data: {
+          id: params.data.email
+        }
+      }
     }
 
     if (resource === 'lotes_cartoes_gerar') {
