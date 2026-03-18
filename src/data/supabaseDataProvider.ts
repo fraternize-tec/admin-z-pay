@@ -27,24 +27,52 @@ export const supabaseDataProvider: DataProvider = {
 
         if (!value) return;
 
-        // busca textual
+        // 🔥 AUTOCOMPLETE (q)
+        if (key === 'q') {
+
+          // escolha os campos por resource
+          if (resource === 'funcoes_sistema') {
+            query = query.ilike('codigo', `%${value}%`);
+          }
+
+          else if (resource === 'eventos') {
+            query = query.ilike('nome', `%${value}%`);
+          }
+
+          else if (resource === 'pontos_de_venda') {
+            query = query.ilike('nome', `%${value}%`);
+          }
+
+          else if (resource === 'caixas') {
+            query = query.ilike('nome', `%${value}%`);
+          }
+
+          else if (resource === 'usuarios') {
+            query = query.or(
+              `email.ilike.%${value}%,nome.ilike.%${value}%`
+            );
+          }
+
+          return;
+        }
+
+        // busca textual normal
         if (key === 'email' || key === 'nome') {
           query = query.ilike(key, `%${value}%`);
         }
 
-        // filtro de data maior ou igual
+        // datas
         else if (key.endsWith('_gte')) {
           const field = key.replace('_gte', '');
           query = query.gte(field, value);
         }
 
-        // filtro de data menor ou igual
         else if (key.endsWith('_lte')) {
           const field = key.replace('_lte', '');
           query = query.lte(field, value);
         }
 
-        // igualdade padrão
+        // igualdade
         else {
           query = query.eq(key, value as any);
         }

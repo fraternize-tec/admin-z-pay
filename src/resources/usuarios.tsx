@@ -23,6 +23,7 @@ import {
   Button,
   useDataProvider,
   useNotify,
+  AutocompleteInput,
 } from 'react-admin';
 
 import { EscopoField } from './escopoField';
@@ -54,7 +55,7 @@ const UsuarioPapeisTab = () => {
       <CreateButton
         resource="papel_contexto"
         label="Adicionar papel"
-        state={{ usuario_id: record.id }}
+        state={{ usuario_id: record.id, email: record.email }}
         sx={{ mb: 2 }}
       />
 
@@ -147,6 +148,7 @@ export const UsuarioCreate = () => (
   <Create>
     <SimpleForm>
 
+      {/* EMAIL */}
       <TextInput
         source="email"
         fullWidth
@@ -158,8 +160,13 @@ export const UsuarioCreate = () => (
         source="papel_id"
         reference="funcoes_sistema"
         label="Papel"
+        perPage={50}
       >
-        <SelectInput optionText="codigo" />
+        <AutocompleteInput
+          optionText="codigo"
+          debounce={350}
+          sx={{ minWidth: 250, maxWidth: 500 }}
+        />
       </ReferenceInput>
 
       {/* ESCOPO */}
@@ -172,6 +179,7 @@ export const UsuarioCreate = () => (
           { id: "pdv", name: "PDV" },
           { id: "caixa", name: "Caixa" }
         ]}
+        validate={required()}
       />
 
       <FormDataConsumer>
@@ -181,14 +189,19 @@ export const UsuarioCreate = () => (
 
           return (
             <>
-              {/* EVENTO COMO ESCOPO */}
+              {/* EVENTO */}
               {formData.escopo_tipo === "evento" && (
                 <ReferenceInput
                   source="escopo_id"
                   reference="eventos"
                   label="Evento"
+                  perPage={50}
                 >
-                  <SelectInput optionText="nome" />
+                  <AutocompleteInput
+                    optionText="nome"
+                    debounce={350}
+                    sx={{ minWidth: 250, maxWidth: 500 }}
+                  />
                 </ReferenceInput>
               )}
 
@@ -199,8 +212,13 @@ export const UsuarioCreate = () => (
                     source="evento_id"
                     reference="eventos"
                     label="Evento"
+                    perPage={50}
                   >
-                    <SelectInput optionText="nome" />
+                    <AutocompleteInput
+                      optionText="nome"
+                      debounce={350}
+                      sx={{ minWidth: 250, maxWidth: 500 }}
+                    />
                   </ReferenceInput>
 
                   {formData.evento_id && (
@@ -210,7 +228,11 @@ export const UsuarioCreate = () => (
                       filter={{ evento_id: formData.evento_id }}
                       label="PDV"
                     >
-                      <SelectInput optionText="nome" />
+                      <AutocompleteInput
+                        optionText="nome"
+                        debounce={350}
+                        sx={{ minWidth: 250, maxWidth: 500 }}
+                      />
                     </ReferenceInput>
                   )}
                 </>
@@ -223,8 +245,13 @@ export const UsuarioCreate = () => (
                     source="evento_id"
                     reference="eventos"
                     label="Evento"
+                    perPage={50}
                   >
-                    <SelectInput optionText="nome" />
+                    <AutocompleteInput
+                      optionText="nome"
+                      debounce={350}
+                      sx={{ minWidth: 250, maxWidth: 500 }}
+                    />
                   </ReferenceInput>
 
                   {formData.evento_id && (
@@ -234,7 +261,11 @@ export const UsuarioCreate = () => (
                       filter={{ evento_id: formData.evento_id }}
                       label="Caixa"
                     >
-                      <SelectInput optionText="nome" />
+                      <AutocompleteInput
+                        optionText="nome"
+                        debounce={350}
+                        sx={{ minWidth: 250, maxWidth: 500 }}
+                      />
                     </ReferenceInput>
                   )}
                 </>
