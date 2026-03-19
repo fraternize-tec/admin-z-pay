@@ -24,6 +24,7 @@ import LightModeIcon from '@mui/icons-material/LightMode';
 
 const APP_VERSION = import.meta.env.VITE_APP_VERSION ?? 'v1.0.0';
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+type Mode = 'initial' | 'password' | 'magic';
 
 export const LoginPage = () => {
   // 🔐 React Admin
@@ -40,6 +41,7 @@ export const LoginPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [emailError, setEmailError] = useState<string | null>(null);
+  const [mode, setMode] = useState<'initial' | 'password' | 'magic'>('initial');
 
   const isDark = raTheme === 'dark';
 
@@ -197,6 +199,102 @@ export const LoginPage = () => {
             )}
           </Button>
         </form>
+
+        {/* 🔀 Divider */}
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            my: 3,
+          }}
+        >
+          <Box flex={1} height={1} bgcolor="divider" />
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            sx={{ mx: 2 }}
+          >
+            ou
+          </Typography>
+          <Box flex={1} height={1} bgcolor="divider" />
+        </Box>
+
+        {/* 👇 STACK VERTICAL (CORREÇÃO PRINCIPAL) */}
+        <Box display="flex" flexDirection="column" gap={1.5}>
+
+          {/* 🌐 Google */}
+          <Button
+            fullWidth
+            variant="outlined"
+            disabled={loading}
+            startIcon={
+              <img src="/google.png" alt="google" style={{ height: 18 }} />
+            }
+            onClick={async () => {
+              try {
+                setLoading(true);
+                await login({ provider: 'google' });
+              } catch {
+                notify('Erro ao entrar com Google', { type: 'error' });
+                setLoading(false);
+              }
+            }}
+            sx={{
+              height: 48,
+              borderRadius: 2,
+              textTransform: 'none',
+              fontWeight: 500,
+              backgroundColor: '#fff',
+              borderColor: 'divider',
+              color: '#000',
+              '&:hover': {
+                backgroundColor: '#f9f9f9',
+              },
+            }}
+          >
+            Continuar com Google
+          </Button>
+
+          {/* 🔗 Magic Link */}
+          <Button
+            fullWidth
+            variant="outlined"
+            disabled={loading}
+            onClick={async () => {
+              if (!email) {
+                notify('Informe o email primeiro', { type: 'warning' });
+                return;
+              }
+
+              if (!emailRegex.test(email)) {
+                notify('Email inválido', { type: 'warning' });
+                return;
+              }
+
+              try {
+                setLoading(true);
+                await login({ email, magicLink: true });
+
+                notify('Enviamos um link para seu email', {
+                  type: 'info',
+                });
+
+                setLoading(false);
+              } catch {
+                notify('Erro ao enviar link', { type: 'error' });
+                setLoading(false);
+              }
+            }}
+            sx={{
+              height: 48,
+              borderRadius: 2,
+              textTransform: 'none',
+              fontWeight: 500,
+            }}
+          >
+            Entrar com link de acesso
+          </Button>
+        </Box>
 
         <Typography
           textAlign="center"

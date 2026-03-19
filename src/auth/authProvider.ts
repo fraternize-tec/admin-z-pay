@@ -2,81 +2,119 @@ import type { AuthProvider } from 'react-admin';
 import { supabase } from '../lib/supabaseClient';
 
 type LoginParams = {
-    email: string;
-    password: string;
+  email?: string;
+  password?: string;
+  provider?: 'google';
+  magicLink?: boolean;
 };
 
 export const authProvider: AuthProvider = {
-    /* ================= LOGIN ================= */
-    login: async ({ email, password }: LoginParams) => {
-        if (!email || !password) {
-            throw new Error('Email e senha são obrigatórios');
-        }
+  /* ================= LOGIN ================= */
+  login: async (params: LoginParams) => {
+    const { email, password, provider, magicLink } = params;
 
-        const { error } = await supabase.auth.signInWithPassword({
-            email,
-            password,
-        });
+    // 🔐 EMAIL + SENHA
+    if (email && password) {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
-        if (error) {
-            throw new Error(error.message);
-        }
+      if (error) {
+        throw new Error(error.message);
+      }
 
-        return Promise.resolve();
-    },
+      return Promise.resolve();
+    }
 
-    /* ================= LOGOUT ================= */
-    logout: async () => {
-        await supabase.auth.signOut();
-        return Promise.resolve();
-    },
+    // 🔗 MAGIC LINK
+    if (magicLink && email) {
+      const { error } = await supabase.auth.signInWithOtp({
+        email,
+        options: {
+          emailRedirectTo: window.location.origin,
+        },
+      });
 
-    /* ================= CHECK AUTH ================= */
-    checkAuth: async () => {
-        const { data } = await supabase.auth.getSession();
+      if (error) {
+        throw new Error(error.message);
+      }
 
-        if (!data.session) {
-            return Promise.reject();
-        }
+      // ⚠️ Não redireciona (usuário precisa clicar no email)
+      return Promise.resolve();
+    }
 
-        return Promise.resolve();
-    },
+    // 🌐 GOOGLE LOGIN
+    if (provider === 'google') {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: window.location.origin,
+        },
+      });
 
-    /* ================= CHECK ERROR ================= */
-    checkError: async (error) => {
-        const status = error?.status;
+      if (error) {
+        throw new Error(error.message);
+      }
 
-        if (status === 401 || status === 403) {
-            await supabase.auth.signOut();
-            return Promise.reject();
-        }
+      // ⚠️ Redirecionamento é externo (OAuth)
+      return Promise.resolve();
+    }
 
-        return Promise.resolve();
-    },
+    throw new Error('Parâmetros de login inválidos');
+  },
 
-    /* ================= IDENTITY ================= */
-    getIdentity: async () => {
-        const { data } = await supabase.auth.getUser();
+  /* ================= LOGOUT ================= */
+  logout: async () => {
+    await supabase.auth.signOut();
+    return Promise.resolve();
+  },
 
-        if (!data.user) {
-            return Promise.reject();
-        }
+  /* ================= CHECK AUTH ================= */
+  checkAuth: async () => {
+    const { data } = await supabase.auth.getSession();
 
-        return {
-            id: data.user.id,
-            fullName: data.user.email ?? '',
-        };
-    },
+    if (!data.session) {
+      return Promise.reject();
+    }
 
-    /* ================= PERMISSIONS ================= */
-    getPermissions: async () => {
-        const { data, error } = await supabase
-            .from('vw_usuario_permissoes')
-            .select('*');
+    return Promise.resolve();
+  },
 
-        // console.log('Permissões do usuário:', data, error);
-        if (error) throw error;
-        return data;
-    },
+  /* ================= CHECK ERROR ================= */
+  checkError: async (error) => {
+    const status = error?.status;
 
+    if (status === 401 || status === 403) {
+      await supabase.auth.signOut();
+      return Promise.reject();
+    }
+
+    return Promise.resolve();
+  },
+
+  /* ================= IDENTITY ================= */
+  getIdentity: async () => {
+    const { data } = await supabase.auth.getUser();
+
+    if (!data.user) {
+      return Promise.reject();
+    }
+
+    return {
+      id: data.user.id,
+      fullName: data.user.email ?? '',
+    };
+  },
+
+  /* ================= PERMISSIONS ================= */
+  getPermissions: async () => {
+    const { data, error } = await supabase
+      .from('vw_usuario_permissoes')
+      .select('*');
+
+    if (error) throw error;
+
+    return data;
+  },
 };
