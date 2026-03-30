@@ -1,9 +1,11 @@
-import { Button, useNotify, useRefresh, useRecordContext, Create, Datagrid, DateField, Edit, List, ReferenceField, ReferenceInput, required, SelectInput, SimpleForm, TextField, TextInput, TopToolbar, SaveButton, Toolbar } from 'react-admin';
+import { Button, useNotify, useRefresh, useRecordContext, Create, Datagrid, DateField, Edit, List, ReferenceField, ReferenceInput, required, SelectInput, SimpleForm, TextField, TextInput, TopToolbar, SaveButton, Toolbar, useRedirect } from 'react-admin';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import StopIcon from '@mui/icons-material/Stop';
+import PersonAddIcon from "@mui/icons-material/PersonAdd";
 import { supabase } from '../lib/supabaseClient';
 import { BackToListButtonNavigate } from '../components/BackToListButton';
 import { Box } from '@mui/material';
+import { useNavigate } from 'react-router-dom';
 
 export const AbrirCaixaButton = () => {
     const record = useRecordContext();
@@ -100,15 +102,33 @@ export const CaixaCreate = () => (
     </Create>
 );
 
+const CriarUsuarioCaixaButton = () => {
+  const record = useRecordContext();
+  const navigate = useNavigate();
+
+  if (!record) return null;
+
+  const handleClick = () => {
+    navigate(`/usuarios/create?caixa_id=${record.id}`);
+  };
+
+  return (
+    <Button
+      label="Criar usuário"
+      startIcon={<PersonAddIcon />}
+      onClick={handleClick}
+    />
+  );
+};
+
 const CaixaActions = () => {
     return (
         <TopToolbar>
+            <CriarUsuarioCaixaButton />
             <BackToListButtonNavigate />
         </TopToolbar>
     );
 };
-
-
 
 const CaixaEditToolbar = () => (
     <Toolbar sx={{ display: 'flex', justifyContent: 'space-between' }}>
@@ -125,7 +145,7 @@ const CaixaEditToolbar = () => (
 
 export const CaixaEdit = () => (
     <Edit actions={<CaixaActions />}>
-        <SimpleForm toolbar={<CaixaEditToolbar />}>            
+        <SimpleForm toolbar={<CaixaEditToolbar />}>
             {/* Único campo editável */}
             <TextInput
                 source="nome"

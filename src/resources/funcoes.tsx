@@ -15,6 +15,7 @@ import {
   Tab,
   Show,
   useRecordContext,
+  SelectInput,
 } from 'react-admin';
 
 /* ================= LIST ================= */
@@ -23,6 +24,7 @@ export const FuncaoList = () => (
     <Datagrid rowClick="edit">
       <TextField source="codigo" label="Código" />
       <TextField source="descricao" label="Descrição" />
+      <TextField source="escopo_tipo" label="Escopo" />
     </Datagrid>
   </List>
 );
@@ -33,6 +35,19 @@ export const FuncaoCreate = () => (
     <SimpleForm>
       <TextInput source="codigo" validate={required()} fullWidth />
       <TextInput source="descricao" fullWidth />
+
+      <SelectInput
+        source="escopo_tipo"
+        label="Escopo"
+        validate={required()}
+        choices={[
+          { id: "global", name: "Global" },
+          { id: "evento", name: "Evento" },
+          { id: "pdv", name: "PDV" },
+          { id: "caixa", name: "Caixa" },
+        ]}
+        fullWidth
+      />
     </SimpleForm>
   </Create>
 );
@@ -84,6 +99,18 @@ export const FuncaoEdit = () => (
       <SimpleForm>
         <TextInput source="codigo" fullWidth />
         <TextInput source="descricao" fullWidth />
+
+        <SelectInput
+          source="escopo_tipo"
+          label="Escopo"
+          choices={[
+            { id: "global", name: "Global" },
+            { id: "evento", name: "Evento" },
+            { id: "pdv", name: "PDV" },
+            { id: "caixa", name: "Caixa" },
+          ]}
+          fullWidth
+        />
       </SimpleForm>
 
       <Show actions={false}>

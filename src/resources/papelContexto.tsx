@@ -2,16 +2,16 @@ import {
   Create,
   SimpleForm,
   ReferenceInput,
-  SelectInput,
   required,
   FormDataConsumer,
   useRedirect,
-  TextField,
   TopToolbar,
   AutocompleteInput,
+  useGetOne,
 } from 'react-admin';
 import { useLocation } from 'react-router-dom';
 import { BackToListButtonNavigate } from '../components/BackToListButton';
+import { EscopoSelector } from '../components/EscopoSelector';
 
 const PapelContextoCreateActions = () => (
   <TopToolbar>
@@ -25,11 +25,11 @@ export const PapelContextoCreate = () => {
 
   return (
     <Create
-     actions={<PapelContextoCreateActions />}
+      actions={<PapelContextoCreateActions />}
       transform={(data) => ({
         ...data,
         usuario_id: state?.usuario_id,
-        evento_id: undefined, // 🔥 remove campo auxiliar
+        evento_id: undefined,
       })}
       mutationOptions={{
         onSuccess: () => {
@@ -40,100 +40,52 @@ export const PapelContextoCreate = () => {
       <SimpleForm>
 
         {/* USUÁRIO */}
-        <div style={{ marginBottom: '1em' }}><b>Usuário:</b> {state?.email ?? ''}</div>
+        <div style={{ marginBottom: '1em' }}>
+          <b>Usuário:</b> {state?.email ?? ''}
+        </div>
 
         {/* PAPEL */}
-        <ReferenceInput source="papel_id" reference="funcoes_sistema">
-          <SelectInput optionText="codigo" validate={required()} />
+        <ReferenceInput
+          source="papel_id"
+          reference="funcoes_sistema"
+        >
+          <AutocompleteInput
+            optionText="codigo"
+            validate={required()}
+            fullWidth
+          />
         </ReferenceInput>
 
-        {/* ESCOPO */}
-        <SelectInput
-          source="escopo_tipo"
-          label="Escopo"
-          choices={[
-            { id: "global", name: "Global" },
-            { id: "evento", name: "Evento" },
-            { id: "pdv", name: "PDV" },
-            { id: "caixa", name: "Caixa" },
-          ]}
-          validate={required()}
-        />
-
+        {/* ESCOPOS DINÂMICOS */}
         <FormDataConsumer>
           {({ formData }) => {
 
-            if (!formData.escopo_tipo) return null;
+            if (!formData.papel_id) return null;
 
             return (
-              <>
-                {/* EVENTO */}
-                {formData.escopo_tipo === "evento" && (
-                  <ReferenceInput
-                    source="escopo_id"
-                    reference="eventos"
-                    label="Evento"
-                    perPage={50}
-                  >
-                    <AutocompleteInput optionText="nome" debounce={350} sx={{ minWidth: 250, maxWidth: 500 }} />
-                  </ReferenceInput>
-                )}
-
-                {/* PDV */}
-                {formData.escopo_tipo === "pdv" && (
-                  <>
-                    <ReferenceInput
-                      source="evento_id" // campo auxiliar
-                      reference="eventos"
-                      label="Evento"
-                      perPage={50}
-                    >
-                      <AutocompleteInput optionText="nome" debounce={350} sx={{ minWidth: 250, maxWidth: 500 }} />
-                    </ReferenceInput>
-
-                    {formData.evento_id && (
-                      <ReferenceInput
-                        source="escopo_id"
-                        reference="pontos_de_venda"
-                        filter={{ evento_id: formData.evento_id }}
-                        label="PDV"
-                      >
-                        <AutocompleteInput optionText="nome" debounce={350} sx={{ minWidth: 250, maxWidth: 500 }} />
-                      </ReferenceInput>
-                    )}
-                  </>
-                )}
-
-                {/* CAIXA */}
-                {formData.escopo_tipo === "caixa" && (
-                  <>
-                    <ReferenceInput
-                      source="evento_id" // campo auxiliar
-                      reference="eventos"
-                      label="Evento"
-                    >
-                      <AutocompleteInput optionText="nome" debounce={350} sx={{ minWidth: 250, maxWidth: 500 }} />
-                    </ReferenceInput>
-
-                    {formData.evento_id && (
-                      <ReferenceInput
-                        source="escopo_id"
-                        reference="caixas"
-                        filter={{ evento_id: formData.evento_id }}
-                        label="Caixa"
-                      >
-                        <AutocompleteInput optionText="nome" debounce={350} sx={{ minWidth: 250, maxWidth: 500 }} />
-                      </ReferenceInput>
-                    )}
-                  </>
-                )}
-
-              </>
+              <EscopoFromPapel papelId={formData.papel_id} />
             );
           }}
         </FormDataConsumer>
 
       </SimpleForm>
     </Create>
+  );
+};
+
+const EscopoFromPapel = ({ papelId }: { papelId: string | number }) => {
+
+  const { data: papel } = useGetOne(
+    "funcoes_sistema",
+    { id: papelId },
+    { enabled: !!papelId }
+  );
+
+  console.log("Papel selecionado:", papel);
+
+  if (!papel?.escopo_tipo) return null;
+
+  return (
+    <EscopoSelector fixedEscopo={papel.escopo_tipo} />
   );
 };

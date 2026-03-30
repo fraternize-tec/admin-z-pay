@@ -22,7 +22,7 @@ interface Props {
   onClose: () => void;
 }
 
-const CARTOES_POR_PDF = 100;
+const CARTOES_POR_PDF = 50;
 const PAGE_SIZE = 1000;
 
 /* ================= PADRÃO GRÁFICO ================= */
