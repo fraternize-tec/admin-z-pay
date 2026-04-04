@@ -1,6 +1,6 @@
 import { useRecordContext, ReferenceField, TextField } from 'react-admin';
 
-export const EscopoField = () => {
+export const EscopoField = (props: any) => {
   const record = useRecordContext();
   if (!record) return null;
 

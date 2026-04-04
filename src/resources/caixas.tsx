@@ -1,4 +1,4 @@
-import { Button, useNotify, useRefresh, useRecordContext, Create, Datagrid, DateField, Edit, List, ReferenceField, ReferenceInput, required, SelectInput, SimpleForm, TextField, TextInput, TopToolbar, SaveButton, Toolbar, useRedirect } from 'react-admin';
+import { Button, useNotify, useRefresh, useRecordContext, Create, Datagrid, DateField, Edit, List, ReferenceField, ReferenceInput, required, SelectInput, SimpleForm, TextField, TextInput, TopToolbar, SaveButton, Toolbar, useRedirect, Tab, ReferenceManyField, Show, TabbedShowLayout } from 'react-admin';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import StopIcon from '@mui/icons-material/Stop';
 import PersonAddIcon from "@mui/icons-material/PersonAdd";
@@ -103,22 +103,22 @@ export const CaixaCreate = () => (
 );
 
 const CriarUsuarioCaixaButton = () => {
-  const record = useRecordContext();
-  const navigate = useNavigate();
+    const record = useRecordContext();
+    const navigate = useNavigate();
 
-  if (!record) return null;
+    if (!record) return null;
 
-  const handleClick = () => {
-    navigate(`/usuarios/create?caixa_id=${record.id}`);
-  };
+    const handleClick = () => {
+        navigate(`/usuarios/create?caixa_id=${record.id}`);
+    };
 
-  return (
-    <Button
-      label="Criar usuário"
-      startIcon={<PersonAddIcon />}
-      onClick={handleClick}
-    />
-  );
+    return (
+        <Button
+            label="Criar usuário"
+            startIcon={<PersonAddIcon />}
+            onClick={handleClick}
+        />
+    );
 };
 
 const CaixaActions = () => {
@@ -179,7 +179,40 @@ export const CaixaEdit = () => (
             <TextInput source="aberto_em" label="Aberto em" disabled fullWidth />
             <TextInput source="fechado_em" label="Fechado em" disabled fullWidth />
         </SimpleForm>
+        <Show actions={false}>
+            <TabbedShowLayout>
+                <Tab label="Usuários">
+                    <UsuariosDoCaixaTab />
+                </Tab>
+            </TabbedShowLayout>
+        </Show>
+
     </Edit>
 );
+
+const UsuariosDoCaixaTab = () => {
+
+    const record = useRecordContext();
+
+    if (!record) return null;
+
+    return (
+        <ReferenceManyField
+            reference="usuarios_por_escopo"
+            target="caixa_id"
+        >
+            <Datagrid rowClick="edit">
+
+                <TextField source="nome" />
+                <TextField source="email" />
+
+                <DateField source="inicio" label="Início" />
+                <DateField source="fim" label="Fim" />
+
+            </Datagrid>
+
+        </ReferenceManyField>
+    );
+};
 
 

@@ -32,25 +32,33 @@ export const VigenciaFromEvento = ({
     const fim = useWatch({ control, name: "fim" });
 
     useEffect(() => {
-            if (!evento) return;
+        if (!evento) return;
 
-    if (!inicio && !fim) {
+        if (inicio && typeof inicio === "string") {
+            setValue("inicio", new Date(inicio));
+        }
 
-        const now = new Date();
+        if (fim && typeof fim === "string") {
+            setValue("fim", new Date(fim));
+        }
 
-        const inicioEvento = evento.inicio
-            ? new Date(evento.inicio)
-            : now;
+        if (!inicio && !fim) {
 
-        const fimEvento = evento.fim
-            ? new Date(evento.fim)
-            : new Date(now.getTime() + DEFAULT_DAYS * 24 * 60 * 60 * 1000);
+            const now = new Date();
 
-        requestAnimationFrame(() => {
-            setValue("inicio", inicioEvento);
-            setValue("fim", fimEvento);
-        });
-    }
+            const inicioEvento = evento.inicio
+                ? new Date(evento.inicio)
+                : now;
+
+            const fimEvento = evento.fim
+                ? new Date(evento.fim)
+                : new Date(now.getTime() + DEFAULT_DAYS * 24 * 60 * 60 * 1000);
+
+            requestAnimationFrame(() => {
+                setValue("inicio", inicioEvento);
+                setValue("fim", fimEvento);
+            });
+        }
 
     }, [evento]);
 
@@ -155,7 +163,13 @@ export const VigenciaFromEvento = ({
                     render={({ field, fieldState }) => (
                         <DateTimePicker
                             label="Início"
-                            value={field.value ?? null}
+                            value={
+                                field.value
+                                    ? typeof field.value === "string"
+                                        ? new Date(field.value)
+                                        : field.value
+                                    : null
+                            }
                             onChange={field.onChange}
                             minDateTime={minDate}
                             maxDateTime={maxDate}
@@ -178,7 +192,13 @@ export const VigenciaFromEvento = ({
                     render={({ field, fieldState }) => (
                         <DateTimePicker
                             label="Fim"
-                            value={field.value ?? null}
+                            value={
+                                field.value
+                                    ? typeof field.value === "string"
+                                        ? new Date(field.value)
+                                        : field.value
+                                    : null
+                            }
                             onChange={field.onChange}
                             minDateTime={minDate}
                             maxDateTime={maxDate}

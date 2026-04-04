@@ -26,13 +26,17 @@ import {
   AutocompleteInput,
   useGetOne,
   TopToolbar,
+  FunctionField,
+  useUpdate,
+  useRefresh,
 } from 'react-admin';
 
 import { EscopoField } from './escopoField';
 import { UsuarioPermissoesTab } from './usuarioPermissoesTab';
 import { EscopoSelector } from '../components/EscopoSelector';
-import { useLocation, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { BackToListButtonNavigate } from '../components/BackToListButton';
+import { Box, Chip } from '@mui/material';
 
 const usuarioFilters = [
   <TextInput source="nome" label="Nome" alwaysOn />,
@@ -40,11 +44,11 @@ const usuarioFilters = [
 ];
 
 const UsuarioActions = () => {
-    return (
-        <TopToolbar>
-            <BackToListButtonNavigate />
-        </TopToolbar>
-    );
+  return (
+    <TopToolbar>
+      <BackToListButtonNavigate />
+    </TopToolbar>
+  );
 };
 
 /* ================= LIST ================= */
@@ -54,9 +58,86 @@ export const UsuarioList = () => (
       <TextField source="nome" />
       <TextField source="email" />
       <DateField source="criado_em" />
+      <FunctionField
+        label="Status"
+        render={(record) =>
+          record.ativo ? "Ativo" : "Inativo"
+        }
+      />
     </Datagrid>
   </List>
 );
+
+const StatusVigenciaField = (props: any) => {
+
+  const record = useRecordContext();
+
+  if (!record) return null;
+
+  const now = new Date();
+
+  const inicio = record.inicio ? new Date(record.inicio) : null;
+  const fim = record.fim ? new Date(record.fim) : null;
+
+  let label = "Ativo";
+  let color: "success" | "warning" | "default" = "success";
+
+  if (inicio && inicio > now) {
+    label = "Futuro";
+    color = "warning";
+  }
+
+  if (fim && fim < now) {
+    label = "Encerrado";
+    color = "default";
+  }
+
+  return (
+    <Chip
+      label={label}
+      color={color}
+      size="small"
+    />
+  );
+};
+
+const EncerrarPermissaoButton = (props: any) => {
+
+  const record = useRecordContext();
+  const [update, { isLoading }] = useUpdate();
+  const notify = useNotify();
+  const refresh = useRefresh();
+
+  if (!record) return null;
+
+  const handleClick = () => {
+    update(
+      "papel_contexto",
+      {
+        id: record.id,
+        data: {
+          fim: new Date()
+        },
+        previousData: record
+      },
+      {
+        onSuccess: () => {
+          notify("Permissão encerrada");
+          refresh();
+        }
+      }
+    );
+  };
+
+  return (
+    <Button
+      label="Encerrar"
+      color="warning"
+      onClick={handleClick}
+      disabled={isLoading || record.fim}
+    />
+  );
+};
 
 /* ================= PAPÉIS TAB ================= */
 const UsuarioPapeisTab = () => {
@@ -72,13 +153,16 @@ const UsuarioPapeisTab = () => {
         sx={{ mb: 2 }}
       />
 
+
       <ReferenceManyField
         reference="papel_contexto"
         target="usuario_id"
+        sort={{ field: "inicio", order: "DESC" }}
       >
-        <Datagrid
-          bulkActionButtons={<BulkDeleteButton />}
-        >
+        <Datagrid bulkActionButtons={<BulkDeleteButton />}>
+
+          <StatusVigenciaField label="Status" />
+
           <ReferenceField
             source="papel_id"
             reference="funcoes_sistema"
@@ -87,16 +171,20 @@ const UsuarioPapeisTab = () => {
             <TextField source="codigo" />
           </ReferenceField>
 
-          <ReferenceFieldWithEscopoSelector />
+          <ReferenceFieldWithEscopoSelector label="Escopo" />
 
-          <EscopoField />
+          <DateField source="inicio" label="Início" />
+          <DateField source="fim" label="Fim" />
+
+          <EncerrarPermissaoButton label="Ações" />
+
         </Datagrid>
       </ReferenceManyField>
     </>
   );
 };
 
-const ReferenceFieldWithEscopoSelector = () => {
+const ReferenceFieldWithEscopoSelector = (props: any) => {
   const record = useRecordContext();
   const { data: funcao } = useGetOne(
     "funcoes_sistema",
@@ -111,13 +199,49 @@ const ReferenceFieldWithEscopoSelector = () => {
         funcao?.escopo_tipo === "evento"
           ? "eventos"
           : funcao?.escopo_tipo === "pdv"
-          ? "pontos_de_venda"
-          : "caixas"
+            ? "pontos_de_venda"
+            : "caixas"
       }
       label="Escopo"
     >
       <TextField source="nome" />
     </ReferenceField>
+  );
+};
+const ToggleUsuarioButton = () => {
+  const record = useRecordContext();
+  const [update, { isLoading }] = useUpdate();
+  const notify = useNotify();
+  const refresh = useRefresh();
+
+  if (!record) return null;
+
+  const handleClick = () => {
+    update(
+      "usuarios",
+      {
+        id: record.id,
+        data: {
+          ativo: !record.ativo
+        },
+        previousData: record
+      },
+      {
+        onSuccess: () => {
+          notify("Usuário atualizado");
+          refresh();
+        }
+      }
+    );
+  };
+
+  return (
+    <Button
+      label={record.ativo ? "Desativar" : "Ativar"}
+      color={record.ativo ? "error" : "success"}
+      onClick={handleClick}
+      disabled={isLoading}
+    />
   );
 };
 
@@ -164,7 +288,25 @@ export const UsuarioEdit = () => (
       <SimpleForm>
         <TextInput source="nome" fullWidth />
         <TextInput source="email" fullWidth disabled />
-        <ReenviarConviteButton />
+
+        <Box mb={2}>
+          <FunctionField
+            label="Status"
+            render={(record) =>
+              record.ativo ? (
+                <Chip label="Ativo" color="success" size="small" />
+              ) : (
+                <Chip label="Inativo" color="error" size="small" />
+              )
+            }
+          />
+        </Box>
+
+        <Box mt={1} display="flex" gap={1}>
+          <ToggleUsuarioButton />
+          <ReenviarConviteButton />
+        </Box>
+
       </SimpleForm>
 
       {/* VISUALIZAÇÕES */}

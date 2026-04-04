@@ -20,7 +20,7 @@ import { CaixaCreate, CaixaEdit, CaixaList } from './resources/caixas';
 import { UsuarioList, UsuarioEdit, UsuarioCreate } from './resources/usuarios';
 import { PermissaoList, PermissaoCreate, PermissaoEdit } from './resources/permissoes';
 import { FuncaoList, FuncaoCreate, FuncaoEdit } from './resources/funcoes';
-import { PapelContextoCreate } from './resources/papelContexto';
+import { PapelContextoCreate, PapelContextoEdit } from './resources/papelContexto';
 
 import EventIcon from '@mui/icons-material/Event';
 import StoreIcon from '@mui/icons-material/Store';
@@ -198,6 +198,7 @@ export const App = () => (
                             name="papel_contexto"
                             options={{ label: 'Papéis por Contexto' }}
                             create={PapelContextoCreate}
+                            edit={PapelContextoEdit}
                         />
                         <Resource
                             name="vw_usuario_permissoes_detalhe"

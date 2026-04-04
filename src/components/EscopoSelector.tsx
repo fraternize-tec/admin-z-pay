@@ -7,7 +7,9 @@ import {
   AutocompleteInput,
   useGetOne,
 } from "react-admin";
+import { useFormContext } from "react-hook-form";
 import { VigenciaFromEvento } from "./VigenciaFromEvento";
+import { useEffect } from "react";
 
 type EscopoSelectorProps = {
   fixedEscopo?: "global" | "evento" | "pdv" | "caixa";
@@ -21,7 +23,19 @@ export const EscopoSelector = ({
   fixedEventoId,
 }: EscopoSelectorProps) => {
 
-  console.log({ fixedEscopo, fixedEscopoId, fixedEventoId });
+  const { setValue } = useFormContext(); // 👈 adicionar isso
+
+  useEffect(() => {
+    if (fixedEscopo) {
+      setValue("escopo_tipo", fixedEscopo);
+    }
+
+    if (fixedEscopoId) {
+      setValue("escopo_id", fixedEscopoId);
+    }
+
+  }, [fixedEscopo, fixedEscopoId]);
+
 
   const { data: caixa } = useGetOne(
     "caixas",
