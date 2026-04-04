@@ -23,17 +23,17 @@ export const EscopoSelector = ({
 
   console.log({ fixedEscopo, fixedEscopoId, fixedEventoId });
 
+  const { data: caixa } = useGetOne(
+    "caixas",
+    { id: fixedEscopoId },
+    {
+      enabled: fixedEscopo === "caixa" && !!fixedEscopoId
+    }
+  );
+
   if (!fixedEscopo) return null;
 
   if (fixedEscopo && fixedEscopoId) {
-
-    const { data: caixa } = useGetOne(
-      "caixas",
-      { id: fixedEscopoId },
-      {
-        enabled: fixedEscopo === "caixa"
-      }
-    );
 
     const eventoId =
       fixedEscopo === "evento"

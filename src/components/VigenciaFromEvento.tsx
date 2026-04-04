@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { useGetOne } from "react-admin";
-import { useFormContext, Controller } from "react-hook-form";
+import { useFormContext, Controller, useWatch } from "react-hook-form";
 
 import { DateTimePicker } from "@mui/x-date-pickers/DateTimePicker";
 import { Box } from "@mui/material";
@@ -28,33 +28,31 @@ export const VigenciaFromEvento = ({
     );
 
     const { setValue, control, getValues } = useFormContext();
-
-    const previousEventoId = useRef<string | number | null>(null);
+    const inicio = useWatch({ control, name: "inicio" });
+    const fim = useWatch({ control, name: "fim" });
 
     useEffect(() => {
-        if (!evento) return;
+            if (!evento) return;
 
-        const isEventoChanged = previousEventoId.current !== eventoId;
+    if (!inicio && !fim) {
 
-        if (isEventoChanged) {
+        const now = new Date();
 
-            const now = new Date();
+        const inicioEvento = evento.inicio
+            ? new Date(evento.inicio)
+            : now;
 
-            const inicioEvento = evento.inicio
-                ? new Date(evento.inicio)
-                : now;
+        const fimEvento = evento.fim
+            ? new Date(evento.fim)
+            : new Date(now.getTime() + DEFAULT_DAYS * 24 * 60 * 60 * 1000);
 
-            const fimEvento = evento.fim
-                ? new Date(evento.fim)
-                : new Date(now.getTime() + DEFAULT_DAYS * 24 * 60 * 60 * 1000);
-
+        requestAnimationFrame(() => {
             setValue("inicio", inicioEvento);
             setValue("fim", fimEvento);
-        }
+        });
+    }
 
-        previousEventoId.current = eventoId;
-
-    }, [evento, eventoId]);
+    }, [evento]);
 
     if (!evento) return null;
 
@@ -152,11 +150,12 @@ export const VigenciaFromEvento = ({
                 <Controller
                     name="inicio"
                     control={control}
+                    defaultValue={null}
                     rules={{ validate: validateInicio }}
                     render={({ field, fieldState }) => (
                         <DateTimePicker
                             label="Início"
-                            value={field.value ? new Date(field.value) : null}
+                            value={field.value ?? null}
                             onChange={field.onChange}
                             minDateTime={minDate}
                             maxDateTime={maxDate}
@@ -174,11 +173,12 @@ export const VigenciaFromEvento = ({
                 <Controller
                     name="fim"
                     control={control}
+                    defaultValue={null}
                     rules={{ validate: validateFim }}
                     render={({ field, fieldState }) => (
                         <DateTimePicker
                             label="Fim"
-                            value={field.value ? new Date(field.value) : null}
+                            value={field.value ?? null}
                             onChange={field.onChange}
                             minDateTime={minDate}
                             maxDateTime={maxDate}

@@ -172,6 +172,7 @@ export const ExportarCartoesPdf = ({
           unit: 'mm',
           format: [PAGE_WIDTH, PAGE_HEIGHT],
           orientation: 'landscape',
+          compress: false,
         });
 
         pdf.addFileToVFS('Poppins-Bold.ttf', PoppinsBold);
@@ -238,17 +239,30 @@ export const ExportarCartoesPdf = ({
             ? `cartoes-lote-${loteId}-parte-${parte}.pdf`
             : `cartoes-proprios-parte-${parte}.pdf`;
 
+        const blob = pdf.output('blob');
+
         if (zipFile) {
-          zipFile.file(nome, pdf.output('blob'));
+          zipFile.file(nome, blob, {
+            compression: 'DEFLATE',
+            compressionOptions: {
+              level: 9
+            }
+          });
         } else {
-          pdf.save(nome);
+          saveAs(blob, nome);
         }
 
         parte++;
       }
 
       if (zipFile && !cancelRef.current) {
-        const blob = await zipFile.generateAsync({ type: 'blob' });
+        const blob = await zipFile.generateAsync({
+          type: 'blob',
+          compression: 'DEFLATE',
+          compressionOptions: {
+            level: 9
+          }
+        });
         saveAs(
           blob,
           tipo === 'lote'
