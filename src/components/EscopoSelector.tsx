@@ -26,15 +26,22 @@ export const EscopoSelector = ({
   const { setValue } = useFormContext(); // 👈 adicionar isso
 
   useEffect(() => {
-    if (fixedEscopo) {
-      setValue("escopo_tipo", fixedEscopo);
-    }
+    if (fixedEscopo || fixedEscopoId) {
+      requestAnimationFrame(() => {
+        if (fixedEscopo) {
+          setValue("escopo_tipo", fixedEscopo);
+        }
 
-    if (fixedEscopoId) {
-      setValue("escopo_id", fixedEscopoId);
-    }
+        if (fixedEscopoId) {
+          setValue("escopo_id", fixedEscopoId);
+        }
 
-  }, [fixedEscopo, fixedEscopoId]);
+        if (fixedEventoId) {
+          setValue("evento_id", fixedEventoId);
+        }
+      });
+    }
+  }, [fixedEscopo, fixedEscopoId, fixedEventoId]);
 
 
   const { data: caixa } = useGetOne(
@@ -45,16 +52,29 @@ export const EscopoSelector = ({
     }
   );
 
+  const { data: pdv } = useGetOne(
+    "pontos_de_venda",
+    { id: fixedEscopoId },
+    {
+      enabled: fixedEscopo === "pdv" && !!fixedEscopoId
+    }
+  );
+
+  console.log({ caixa, pdv });
+
   if (!fixedEscopo) return null;
 
   if (fixedEscopo && fixedEscopoId) {
 
-    const eventoId =
-      fixedEscopo === "evento"
+    const eventoId = fixedEventoId ? 
+    fixedEventoId
+     : fixedEscopo === "evento"
         ? fixedEscopoId
         : fixedEscopo === "caixa"
           ? caixa?.evento_id
-          : fixedEventoId;
+          : fixedEscopo === "pdv"
+            ? pdv?.evento_id
+            : null;
 
     return (
       <>

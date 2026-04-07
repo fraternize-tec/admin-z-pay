@@ -89,6 +89,7 @@ export const PapelContextoEdit = () => {
 
   return (
     <Edit
+    mutationMode="pessimistic"
       actions={<PapelContextoActions />}
       mutationOptions={{
         onSuccess: (data) => {
@@ -96,7 +97,10 @@ export const PapelContextoEdit = () => {
         }
       }}
     >
-      <PapelContextoEditForm />
+      <SimpleForm>
+        <PapelContextoInfo />
+        <PapelContextoVigencia />
+      </SimpleForm>
     </Edit>
   );
 };
@@ -107,7 +111,7 @@ const PapelContextoEditForm = () => {
   if (!record) return null;
 
   return (
-    <SimpleForm defaultValues={record}>
+    <SimpleForm>
       <PapelContextoInfo />
       <PapelContextoVigencia />
     </SimpleForm>

@@ -8,7 +8,6 @@ import {
   SimpleForm,
   ReferenceManyField,
   ReferenceField,
-  DeleteButton,
   CreateButton,
   TabbedShowLayout,
   Tab,
@@ -18,7 +17,6 @@ import {
   Create,
   required,
   ReferenceInput,
-  SelectInput,
   FormDataConsumer,
   Button,
   useDataProvider,
@@ -31,12 +29,15 @@ import {
   useRefresh,
 } from 'react-admin';
 
-import { EscopoField } from './escopoField';
 import { UsuarioPermissoesTab } from './usuarioPermissoesTab';
 import { EscopoSelector } from '../components/EscopoSelector';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { BackToListButtonNavigate } from '../components/BackToListButton';
 import { Box, Chip } from '@mui/material';
+import { UsuariosDatagrid } from '../components/UsuariosDatagrid';
+import { useEffect } from 'react';
+import { useFormContext } from "react-hook-form";
+
 
 const usuarioFilters = [
   <TextInput source="nome" label="Nome" alwaysOn />,
@@ -54,17 +55,7 @@ const UsuarioActions = () => {
 /* ================= LIST ================= */
 export const UsuarioList = () => (
   <List filters={usuarioFilters} perPage={25}>
-    <Datagrid rowClick="edit">
-      <TextField source="nome" />
-      <TextField source="email" />
-      <DateField source="criado_em" />
-      <FunctionField
-        label="Status"
-        render={(record) =>
-          record.ativo ? "Ativo" : "Inativo"
-        }
-      />
-    </Datagrid>
+    <UsuariosDatagrid />
   </List>
 );
 
@@ -208,7 +199,8 @@ const ReferenceFieldWithEscopoSelector = (props: any) => {
     </ReferenceField>
   );
 };
-const ToggleUsuarioButton = () => {
+
+export const ToggleUsuarioButton = () => {
   const record = useRecordContext();
   const [update, { isLoading }] = useUpdate();
   const notify = useNotify();
@@ -325,10 +317,31 @@ export const UsuarioEdit = () => (
   </Edit>
 );
 
+const SetEventoId = ({ caixa, pdv }: any) => {
+  const { setValue } = useFormContext();
+
+  useEffect(() => {
+    if (caixa?.evento_id) {
+      setValue("evento_id", caixa.evento_id, {
+        shouldDirty: true
+      });
+    }
+
+    if (pdv?.evento_id) {
+      setValue("evento_id", pdv.evento_id, {
+        shouldDirty: true
+      });
+    }
+  }, [caixa, pdv]);
+
+  return null;
+};
+
 export const UsuarioCreate = () => {
 
   const [searchParams] = useSearchParams();
   const caixa_id = searchParams.get("caixa_id");
+  const pdv_id = searchParams.get("pdv_id");
 
   const { data: caixa } = useGetOne(
     "caixas",
@@ -336,9 +349,36 @@ export const UsuarioCreate = () => {
     { enabled: !!caixa_id }
   );
 
+  const { data: pdv } = useGetOne(
+    "pontos_de_venda",
+    { id: pdv_id },
+    { enabled: !!pdv_id }
+  );
+
+  const eventoId =
+  caixa?.evento_id ??
+  pdv?.evento_id;
+
   return (
     <Create actions={<UsuarioActions />}>
-      <SimpleForm>
+      <SimpleForm
+        defaultValues={{
+          ...(caixa && {
+            papel_id: "4a43dbb0-ac8a-432e-9d9c-baaf77694b9a",
+            escopo_tipo: "caixa",
+            escopo_id: caixa_id
+          }),
+          ...(pdv && {
+            papel_id: "c011b799-a414-4132-96dc-7f33aa145325",
+            escopo_tipo: "pdv",
+            escopo_id: pdv_id
+          }),
+          ...(eventoId && {
+            evento_id: eventoId
+          })
+        
+        }}
+      >
 
         <TextInput
           source="email"
@@ -348,13 +388,25 @@ export const UsuarioCreate = () => {
 
         {/* PAPEL */}
         {caixa_id ? (
-          <TextInput
-            source="papel_codigo"
-            label="Papel"
-            defaultValue="OPERADOR_CAIXA"
-            disabled
-            fullWidth
-          />
+          <>
+            <TextInput
+              source="papel_codigo"
+              label="Papel"
+              defaultValue="OPERADOR_CAIXA"
+              disabled
+              fullWidth
+            />
+          </>
+        ) : pdv_id ? (
+          <>
+            <TextInput
+              source="papel_codigo"
+              label="Papel"
+              defaultValue="OPERADOR_PDV"
+              disabled
+              fullWidth
+            />
+          </>
         ) : (
           <ReferenceInput
             source="papel_id"
@@ -380,8 +432,9 @@ export const UsuarioCreate = () => {
 
             return (
               <EscopoSelector
-                fixedEscopo={caixa ? "caixa" : escopoFromFuncao}
-                fixedEscopoId={caixa?.id}
+                fixedEscopo={caixa ? "caixa" : pdv ? "pdv" : escopoFromFuncao}
+                fixedEscopoId={caixa?.id ?? pdv?.id}
+                fixedEventoId={eventoId}
               />
             );
           }}

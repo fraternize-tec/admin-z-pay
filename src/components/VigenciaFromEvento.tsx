@@ -31,8 +31,12 @@ export const VigenciaFromEvento = ({
     const inicio = useWatch({ control, name: "inicio" });
     const fim = useWatch({ control, name: "fim" });
 
+    const initializedRef = useRef(false);
+
     useEffect(() => {
         if (!evento) return;
+
+        initializedRef.current = false;
 
         if (inicio && typeof inicio === "string") {
             setValue("inicio", new Date(inicio));
@@ -42,7 +46,7 @@ export const VigenciaFromEvento = ({
             setValue("fim", new Date(fim));
         }
 
-        if (!inicio && !fim) {
+        if (!getValues("inicio") && !getValues("fim")) {
 
             const now = new Date();
 
@@ -170,7 +174,12 @@ export const VigenciaFromEvento = ({
                                         : field.value
                                     : null
                             }
-                            onChange={field.onChange}
+                            onChange={(value) => {
+                                setValue("inicio", value, {
+                                    shouldDirty: true,
+                                    shouldValidate: true,
+                                });
+                            }}
                             minDateTime={minDate}
                             maxDateTime={maxDate}
                             slotProps={{
@@ -199,7 +208,12 @@ export const VigenciaFromEvento = ({
                                         : field.value
                                     : null
                             }
-                            onChange={field.onChange}
+                            onChange={(value) => {
+                                setValue("fim", value, {
+                                    shouldDirty: true,
+                                    shouldValidate: true,
+                                });
+                            }}
                             minDateTime={minDate}
                             maxDateTime={maxDate}
                             slotProps={{

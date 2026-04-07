@@ -6,6 +6,7 @@ import { supabase } from '../lib/supabaseClient';
 import { BackToListButtonNavigate } from '../components/BackToListButton';
 import { Box } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
+import { UsuariosDatagrid } from '../components/UsuariosDatagrid';
 
 export const AbrirCaixaButton = () => {
     const record = useRecordContext();
@@ -114,7 +115,7 @@ const CriarUsuarioCaixaButton = () => {
 
     return (
         <Button
-            label="Criar usuário"
+            label="Adicionar Operador"
             startIcon={<PersonAddIcon />}
             onClick={handleClick}
         />
@@ -181,7 +182,7 @@ export const CaixaEdit = () => (
         </SimpleForm>
         <Show actions={false}>
             <TabbedShowLayout>
-                <Tab label="Usuários">
+                <Tab label="Operadores">
                     <UsuariosDoCaixaTab />
                 </Tab>
             </TabbedShowLayout>
@@ -201,15 +202,7 @@ const UsuariosDoCaixaTab = () => {
             reference="usuarios_por_escopo"
             target="caixa_id"
         >
-            <Datagrid rowClick="edit">
-
-                <TextField source="nome" />
-                <TextField source="email" />
-
-                <DateField source="inicio" label="Início" />
-                <DateField source="fim" label="Fim" />
-
-            </Datagrid>
+            <UsuariosDatagrid rowClick={false} disableBulkDelete={true} />
 
         </ReferenceManyField>
     );
