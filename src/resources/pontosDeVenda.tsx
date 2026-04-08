@@ -24,6 +24,7 @@ import {
     TabbedShowLayout,
     ReferenceManyField,
     usePermissions,
+    useGetList,
 } from 'react-admin';
 import { BackToListButtonNavigate } from '../components/BackToListButton';
 import { ItensDoPdv } from './itemPdv';
@@ -34,10 +35,12 @@ import { UsuariosDatagrid } from '../components/UsuariosDatagrid';
 import { getEscopos, isGlobal } from '../utils/permissionUtils';
 import { useEffect } from 'react';
 import { can } from '../auth/useCan';
+import { useFormContext } from "react-hook-form";
+
 
 /* ================= LIST ================= */
 export const PontoDeVendaList = () => {
-        const { permissions, isLoading } = usePermissions();
+    const { permissions, isLoading } = usePermissions();
     const navigate = useNavigate();
 
     if (isLoading) return null;
@@ -54,50 +57,126 @@ export const PontoDeVendaList = () => {
         "evento"
     ) || [];
 
-        useEffect(() => {
-            if (pdvsPermitidos?.length === 1 && eventosPermitidos.length === 0) {
-                navigate(`/pontos_de_venda/${pdvsPermitidos[0]}`);
-            }
-        }, [pdvsPermitidos, eventosPermitidos]);
-    
-        if (!can(permissions, "listar.pdv")) {
-            return null;
+    useEffect(() => {
+        if (pdvsPermitidos?.length === 1 && eventosPermitidos.length === 0) {
+            navigate(`/pontos_de_venda/${pdvsPermitidos[0]}`);
         }
-    
+    }, [pdvsPermitidos, eventosPermitidos]);
+
+    if (!can(permissions, "listar.pdv")) {
+        return null;
+    }
+
     return (
-            <List
-                queryOptions={
-                    !isGlobal(permissions, "listar.pdv")
-                        ? {
-                            meta: {
-                                or: [
-                                    pdvsPermitidos?.length
-                                        ? `id.in.(${pdvsPermitidos.join(',')})`
-                                        : null,
-                                    eventosPermitidos?.length
-                                        ? `evento_id.in.(${eventosPermitidos.join(',')})`
-                                        : null
-                                ]
-                                    .filter(Boolean)
-                                    .join(',')
-                            }
+        <List
+            queryOptions={
+                !isGlobal(permissions, "listar.pdv")
+                    ? {
+                        meta: {
+                            or: [
+                                pdvsPermitidos?.length
+                                    ? `id.in.(${pdvsPermitidos.join(',')})`
+                                    : null,
+                                eventosPermitidos?.length
+                                    ? `evento_id.in.(${eventosPermitidos.join(',')})`
+                                    : null
+                            ]
+                                .filter(Boolean)
+                                .join(',')
                         }
+                    }
+                    : undefined
+            }
+        >
+            <Datagrid rowClick="edit">
+                <TextField source="nome" label="Nome" />
+                <TextField source="localizacao" label="Localização" />
+
+                <ReferenceField source="evento_id" reference="eventos" label="Evento">
+                    <TextField source="nome" />
+                </ReferenceField>
+
+                <BooleanField source="ativo" label="Ativo" />
+                <DateField source="criado_em" label="Criado em" />
+            </Datagrid>
+        </List>
+    )
+};
+
+const EventoReferenceInput = ({ disabled = false }: any) => {
+
+    const { permissions, isLoading } = usePermissions();
+    const { setValue, getValues } = useFormContext();
+
+    const pdvsPermitidos = getEscopos(
+        permissions,
+        "listar.pdv",
+        "pdv"
+    ) || [];
+
+    const eventosPermitidos = getEscopos(
+        permissions,
+        "listar.pdv",
+        "evento"
+    ) || [];
+
+    const { data: pdvs } = useGetList(
+        "pontos_de_venda",
+        {
+            filter: { id: pdvsPermitidos },
+            pagination: { page: 1, perPage: 100 }
+        },
+        {
+            enabled: pdvsPermitidos.length > 0
+        }
+    );
+
+    const eventosFromPdv =
+        pdvs?.map(p => p.evento_id) ?? [];
+
+    const eventosFinal = [
+        ...new Set([
+            ...eventosPermitidos,
+            ...eventosFromPdv
+        ])
+    ];
+
+    const global = isGlobal(permissions, "listar.pdv");
+
+    // Auto select quando só tiver 1
+    useEffect(() => {
+        if (!global && eventosFinal.length === 1) {
+            const current = getValues("evento_id");
+
+            if (!current) {
+                setValue("evento_id", eventosFinal[0], {
+                    shouldDirty: true
+                });
+            }
+        }
+    }, [eventosFinal, global]);
+
+    if (isLoading) return null;
+
+    return (
+        <ReferenceInput
+            source="evento_id"
+            reference="eventos"
+            filter={!global ? { id: eventosFinal } : undefined}
+        >
+            <SelectInput
+                optionText="nome"
+                label="Evento"
+                disabled={disabled}
+                InputProps={
+                    !global && eventosFinal.length === 1
+                        ? { readOnly: true }
                         : undefined
                 }
-            >
-        <Datagrid rowClick="edit">
-            <TextField source="nome" label="Nome" />
-            <TextField source="localizacao" label="Localização" />
-
-            <ReferenceField source="evento_id" reference="eventos" label="Evento">
-                <TextField source="nome" />
-            </ReferenceField>
-
-            <BooleanField source="ativo" label="Ativo" />
-            <DateField source="criado_em" label="Criado em" />
-        </Datagrid>
-    </List>
-)};
+            />
+        </ReferenceInput>
+    );
+};
 
 /* ================= CREATE ================= */
 export const PontoDeVendaCreate = () => (
@@ -106,9 +185,7 @@ export const PontoDeVendaCreate = () => (
             <TextInput source="nome" label="Nome" fullWidth validate={required()} />
             <TextInput source="localizacao" label="Localização" fullWidth />
 
-            <ReferenceInput source="evento_id" reference="eventos">
-                <SelectInput optionText="nome" label="Evento" validate={required()} />
-            </ReferenceInput>
+            <EventoReferenceInput />
 
             <BooleanInput source="ativo" label="Ativo" defaultValue />
         </SimpleForm>
@@ -189,9 +266,7 @@ export const PontoDeVendaEdit = () => (
                 <TextInput source="nome" label="Nome" fullWidth />
                 <TextInput source="localizacao" label="Localização" fullWidth />
 
-                <ReferenceInput source="evento_id" reference="eventos">
-                    <SelectInput optionText="nome" label="Evento" />
-                </ReferenceInput>
+                <EventoReferenceInput disabled />
 
                 <BooleanInput source="ativo" label="Ativo" />
             </SimpleForm>
