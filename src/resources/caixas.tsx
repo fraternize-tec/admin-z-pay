@@ -1,4 +1,4 @@
-import { Button, useNotify, useRefresh, useRecordContext, Create, Datagrid, DateField, Edit, List, ReferenceField, ReferenceInput, required, SelectInput, SimpleForm, TextField, TextInput, TopToolbar, SaveButton, Toolbar, useRedirect, Tab, ReferenceManyField, Show, TabbedShowLayout } from 'react-admin';
+import { Button, useNotify, useRefresh, useRecordContext, Create, Datagrid, DateField, Edit, List, ReferenceField, ReferenceInput, required, SelectInput, SimpleForm, TextField, TextInput, TopToolbar, SaveButton, Toolbar, Tab, ReferenceManyField, Show, TabbedShowLayout, usePermissions } from 'react-admin';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import StopIcon from '@mui/icons-material/Stop';
 import PersonAddIcon from "@mui/icons-material/PersonAdd";
@@ -7,6 +7,9 @@ import { BackToListButtonNavigate } from '../components/BackToListButton';
 import { Box } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { UsuariosDatagrid } from '../components/UsuariosDatagrid';
+import { getEscopos, isGlobal } from '../utils/permissionUtils';
+import { useEffect } from 'react';
+import { can } from '../auth/useCan';
 
 export const AbrirCaixaButton = () => {
     const record = useRecordContext();
@@ -60,28 +63,79 @@ export const FecharCaixaButton = () => {
     );
 };
 
-export const CaixaList = () => (
-    <List>
-        <Datagrid>
-            <TextField source="nome" label="Caixa" />
+export const CaixaList = () => {
 
-            <ReferenceField source="evento_id" reference="eventos" label="Evento">
-                <TextField source="nome" />
-            </ReferenceField>
+    const { permissions, isLoading } = usePermissions();
+    const navigate = useNavigate();
 
-            <ReferenceField source="pdv_id" reference="pontos_de_venda" label="PDV">
-                <TextField source="nome" />
-            </ReferenceField>
+    if (isLoading) return null;
 
-            <TextField source="status" label="Status" />
-            <DateField source="aberto_em" label="Aberto em" />
-            <DateField source="fechado_em" label="Fechado em" />
+    const caixasPermitidos = getEscopos(
+        permissions,
+        "listar.caixa",
+        "caixa"
+    ) || [];
 
-            <AbrirCaixaButton />
-            <FecharCaixaButton />
-        </Datagrid>
-    </List>
-);
+    const eventosPermitidos = getEscopos(
+        permissions,
+        "listar.caixa",
+        "evento"
+    ) || [];
+
+    useEffect(() => {
+        if (caixasPermitidos?.length === 1 && eventosPermitidos.length === 0) {
+            navigate(`/caixas/${caixasPermitidos[0]}`);
+        }
+    }, [caixasPermitidos, eventosPermitidos]);
+
+    if (!can(permissions, "listar.caixa")) {
+        return null;
+    }
+
+    return (
+        <List
+            queryOptions={
+                !isGlobal(permissions, "listar.caixa")
+                    ? {
+                        meta: {
+                            or: [
+                                caixasPermitidos?.length
+                                    ? `id.in.(${caixasPermitidos.join(',')})`
+                                    : null,
+                                eventosPermitidos?.length
+                                    ? `evento_id.in.(${eventosPermitidos.join(',')})`
+                                    : null
+                            ]
+                                .filter(Boolean)
+                                .join(',')
+                        }
+                    }
+                    : undefined
+            }
+        >
+            <Datagrid>
+
+                <TextField source="nome" label="Caixa" />
+
+                <ReferenceField source="evento_id" reference="eventos" label="Evento">
+                    <TextField source="nome" />
+                </ReferenceField>
+
+                <ReferenceField source="pdv_id" reference="pontos_de_venda" label="PDV">
+                    <TextField source="nome" />
+                </ReferenceField>
+
+                <TextField source="status" label="Status" />
+                <DateField source="aberto_em" label="Aberto em" />
+                <DateField source="fechado_em" label="Fechado em" />
+
+                <AbrirCaixaButton />
+                <FecharCaixaButton />
+
+            </Datagrid>
+        </List>
+    );
+};
 
 export const CaixaCreate = () => (
     <Create>

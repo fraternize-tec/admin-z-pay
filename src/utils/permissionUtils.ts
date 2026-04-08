@@ -23,3 +23,16 @@ export const isAdminGlobal = (permissions: Permissao[]) =>
       p.permissao === "visualizar.relatorio" &&
       p.escopo_tipo === "global"
   );
+
+export const getEscopos = (permissions: Permissao[], permissao: string, escopoTipo?: string) =>
+  permissions
+    ?.filter(p => 
+      p.permissao === permissao &&
+      (!escopoTipo || p.escopo_tipo === escopoTipo)
+    )
+    ?.map(p => p.escopo_id);
+
+export const isGlobal = (permissions: Permissao[], permissao: string) =>
+  permissions?.some(
+    p => p.permissao === permissao && p.escopo_tipo === 'global'
+  );

@@ -69,7 +69,7 @@ export const MyMenu = () => {
       {/* ===================== */}
       {/* PDV / CAIXA           */}
       {/* ===================== */}
-      {can(permissions, "pdv.read") && (
+      {can(permissions, "listar.pdv") && (
         <MenuItemLink
           to="/pontos_de_venda"
           primaryText="PDVs"
@@ -77,7 +77,7 @@ export const MyMenu = () => {
         />
       )}
 
-      {can(permissions, "caixa.read") && (
+      {can(permissions, "listar.caixa") && (
         <MenuItemLink
           to="/caixas"
           primaryText="Caixas"
@@ -88,7 +88,7 @@ export const MyMenu = () => {
       {/* ===================== */}
       {/* ITENS                 */}
       {/* ===================== */}
-      {can(permissions, "itens.read") && (
+      {can(permissions, "listar.item") && (
         <MenuItemLink
           to="/itens"
           primaryText="Itens"

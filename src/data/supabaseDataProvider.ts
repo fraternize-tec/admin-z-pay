@@ -21,6 +21,11 @@ export const supabaseDataProvider: DataProvider = {
       .from(resource)
       .select('*', { count: 'exact' });
 
+    /* ================= META ================= */
+    if (params.meta?.or) {
+      query = query.or(params.meta.or);
+    }
+
     /* ================= FILTROS ================= */
     if (params.filter) {
       Object.entries(params.filter).forEach(([key, value]) => {
@@ -73,8 +78,13 @@ export const supabaseDataProvider: DataProvider = {
         }
 
         // igualdade
+        // igualdade
         else {
-          query = query.eq(key, value as any);
+          if (Array.isArray(value)) {
+            query = query.in(key, value);
+          } else {
+            query = query.eq(key, value as any);
+          }
         }
 
       });

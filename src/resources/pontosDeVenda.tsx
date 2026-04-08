@@ -23,6 +23,7 @@ import {
     Tab,
     TabbedShowLayout,
     ReferenceManyField,
+    usePermissions,
 } from 'react-admin';
 import { BackToListButtonNavigate } from '../components/BackToListButton';
 import { ItensDoPdv } from './itemPdv';
@@ -30,10 +31,60 @@ import AddIcon from '@mui/icons-material/Add';
 import PersonAddIcon from "@mui/icons-material/PersonAdd";
 import { useNavigate } from 'react-router-dom';
 import { UsuariosDatagrid } from '../components/UsuariosDatagrid';
+import { getEscopos, isGlobal } from '../utils/permissionUtils';
+import { useEffect } from 'react';
+import { can } from '../auth/useCan';
 
 /* ================= LIST ================= */
-export const PontoDeVendaList = () => (
-    <List>
+export const PontoDeVendaList = () => {
+        const { permissions, isLoading } = usePermissions();
+    const navigate = useNavigate();
+
+    if (isLoading) return null;
+
+    const pdvsPermitidos = getEscopos(
+        permissions,
+        "listar.pdv",
+        "pdv"
+    ) || [];
+
+    const eventosPermitidos = getEscopos(
+        permissions,
+        "listar.pdv",
+        "evento"
+    ) || [];
+
+        useEffect(() => {
+            if (pdvsPermitidos?.length === 1 && eventosPermitidos.length === 0) {
+                navigate(`/pontos_de_venda/${pdvsPermitidos[0]}`);
+            }
+        }, [pdvsPermitidos, eventosPermitidos]);
+    
+        if (!can(permissions, "listar.pdv")) {
+            return null;
+        }
+    
+    return (
+            <List
+                queryOptions={
+                    !isGlobal(permissions, "listar.pdv")
+                        ? {
+                            meta: {
+                                or: [
+                                    pdvsPermitidos?.length
+                                        ? `id.in.(${pdvsPermitidos.join(',')})`
+                                        : null,
+                                    eventosPermitidos?.length
+                                        ? `evento_id.in.(${eventosPermitidos.join(',')})`
+                                        : null
+                                ]
+                                    .filter(Boolean)
+                                    .join(',')
+                            }
+                        }
+                        : undefined
+                }
+            >
         <Datagrid rowClick="edit">
             <TextField source="nome" label="Nome" />
             <TextField source="localizacao" label="Localização" />
@@ -46,7 +97,7 @@ export const PontoDeVendaList = () => (
             <DateField source="criado_em" label="Criado em" />
         </Datagrid>
     </List>
-);
+)};
 
 /* ================= CREATE ================= */
 export const PontoDeVendaCreate = () => (

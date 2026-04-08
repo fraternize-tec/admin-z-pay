@@ -27,6 +27,7 @@ import {
   FunctionField,
   useUpdate,
   useRefresh,
+  useRedirect,
 } from 'react-admin';
 
 import { UsuarioPermissoesTab } from './usuarioPermissoesTab';
@@ -343,6 +344,9 @@ export const UsuarioCreate = () => {
   const caixa_id = searchParams.get("caixa_id");
   const pdv_id = searchParams.get("pdv_id");
 
+  const notify = useNotify();
+  const redirect = useRedirect();
+
   const { data: caixa } = useGetOne(
     "caixas",
     { id: caixa_id },
@@ -356,11 +360,31 @@ export const UsuarioCreate = () => {
   );
 
   const eventoId =
-  caixa?.evento_id ??
-  pdv?.evento_id;
+    caixa?.evento_id ??
+    pdv?.evento_id;
 
   return (
-    <Create actions={<UsuarioActions />}>
+    <Create
+      actions={<UsuarioActions />}
+      mutationOptions={{
+        onSuccess: () => {
+
+          notify("Usuário criado com sucesso", { type: "success" });
+
+          if (caixa_id) {
+            redirect(`/caixas/${caixa_id}`);
+            return;
+          }
+
+          if (pdv_id) {
+            redirect(`/pontos_de_venda/${pdv_id}`);
+            return;
+          }
+
+          redirect("list", "usuarios");
+        }
+      }}
+    >
       <SimpleForm
         defaultValues={{
           ...(caixa && {
@@ -376,7 +400,7 @@ export const UsuarioCreate = () => {
           ...(eventoId && {
             evento_id: eventoId
           })
-        
+
         }}
       >
 

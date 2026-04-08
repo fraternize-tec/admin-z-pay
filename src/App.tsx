@@ -120,28 +120,28 @@ export const App = () => (
                     </>
                 )}
 
-                {can(permissions, 'pdv.read') && (
+                {can(permissions, 'listar.pdv') && (
                     <Resource
                         name="pontos_de_venda"
                         icon={StoreIcon}
                         options={{ label: 'PDVs' }}
                         list={PontoDeVendaList}
-                        create={can(permissions, 'pdv.write') ? PontoDeVendaCreate : undefined}
-                        edit={can(permissions, 'pdv.write') ? PontoDeVendaEdit : undefined}
+                        create={can(permissions, 'listar.pdv') ? PontoDeVendaCreate : undefined}
+                        edit={can(permissions, 'listar.pdv') ? PontoDeVendaEdit : undefined}
                     />
                 )}
 
-                {can(permissions, 'itens.read') && (
+                {can(permissions, 'listar.item') && (
                     <Resource
                         name="itens"
                         icon={InventoryIcon}
                         list={ItemList}
-                        create={can(permissions, 'itens.write') ? ItemCreate : undefined}
-                        edit={can(permissions, 'itens.write') ? ItemEdit : undefined}
+                        create={can(permissions, 'criar.item') ? ItemCreate : undefined}
+                        edit={can(permissions, 'editar.item') ? ItemEdit : undefined}
                     />
                 )}
 
-                {can(permissions, 'itens.read') && (
+                {can(permissions, 'editar.item') && (
 
                     <Resource
                         name="item_pdv"
@@ -150,7 +150,7 @@ export const App = () => (
                     />
                 )}
 
-                {can(permissions, 'caixa.read') && (
+                {can(permissions, 'listar.caixa') && (
                     <Resource
                         name="caixas"
                         icon={PointOfSaleIcon}
@@ -161,7 +161,7 @@ export const App = () => (
                     />
                 )}
 
-                {can(permissions, 'usuarios.read') && (
+                {can(permissions, 'usuarios.write') && (
                     <Resource
                         name="usuarios"
                         icon={PeopleIcon}
