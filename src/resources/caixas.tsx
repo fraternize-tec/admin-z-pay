@@ -10,6 +10,7 @@ import { UsuariosDatagrid } from '../components/UsuariosDatagrid';
 import { getEscopos, isGlobal } from '../utils/permissionUtils';
 import { useEffect } from 'react';
 import { can } from '../auth/useCan';
+import { EventoReferenceInput } from '../components/EventoReferenceInput';
 
 export const AbrirCaixaButton = () => {
     const record = useRecordContext();
@@ -146,13 +147,14 @@ export const CaixaCreate = () => (
                 validate={required()}
             />
 
-            <ReferenceInput source="evento_id" reference="eventos">
-                <SelectInput optionText="nome" label="Evento" validate={required()} />
-            </ReferenceInput>
+            <EventoReferenceInput
+                permissao="listar.caixa"
+                resource="caixas"
+            />
 
-            <ReferenceInput source="pdv_id" reference="pontos_de_venda">
+            {/* <ReferenceInput source="pdv_id" reference="pontos_de_venda">
                 <SelectInput optionText="nome" label="PDV" />
-            </ReferenceInput>
+            </ReferenceInput> */}
         </SimpleForm>
     </Create>
 );
