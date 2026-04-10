@@ -1,4 +1,4 @@
-import { Card, CardContent, Typography, useMediaQuery } from '@mui/material';
+import { Box, Card, CardContent, Dialog, DialogContent, DialogTitle, Typography, useMediaQuery } from '@mui/material';
 import {
   List,
   Datagrid,
@@ -30,6 +30,13 @@ import { can } from '../auth/useCan';
 import { useNavigate } from 'react-router';
 import CreditCardIcon from '@mui/icons-material/CreditCard';
 import { EventoTaxaPrimeiraRecarga } from './eventoTaxa';
+import { useRef, useState } from 'react';
+import { QRCodeCanvas } from 'qrcode.react';
+import QrCodeIcon from '@mui/icons-material/QrCode';
+import DownloadIcon from '@mui/icons-material/Download';
+import zpayLogo from '../../public/logo.png';
+
+
 
 /* ========= LIST ========= */
 
@@ -42,6 +49,8 @@ const EventoEditActions = () => {
   return (
     <TopToolbar>
       <BackToListButton />
+
+      <EventoQRCodeButton />
 
       <Button
         label="Lotes de cartões"
@@ -172,6 +181,103 @@ export const EventoCreate = () => (
     </SimpleForm>
   </Create>
 );
+
+
+
+const EventoQRCodeButton = () => {
+  const record = useRecordContext();
+  const [open, setOpen] = useState(false);
+  const qrRef = useRef<HTMLCanvasElement>(null);
+  const qrDownloadRef = useRef<HTMLCanvasElement>(null);
+
+  if (!record) return null;
+
+  const url = `https://cards.zpay.fraternize.com.br/event/${record.id}/cardapio`;
+
+  const downloadQRCode = () => {
+    const canvas = qrDownloadRef.current;
+    if (!canvas) return;
+
+    const pngUrl = canvas
+      .toDataURL("image/png")
+      .replace("image/png", "image/octet-stream");
+
+    const downloadLink = document.createElement("a");
+    downloadLink.href = pngUrl;
+    downloadLink.download = `cardapio-evento-${record.id}.png`;
+    document.body.appendChild(downloadLink);
+    downloadLink.click();
+    document.body.removeChild(downloadLink);
+  };
+
+  return (
+    <>
+      <Button
+        label="QR Code Cardápio"
+        startIcon={<QrCodeIcon />}
+        onClick={() => setOpen(true)}
+      />
+
+      <Dialog
+        open={open}
+        onClose={() => setOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>
+          QR Code do Cardápio
+        </DialogTitle>
+
+        <DialogContent>
+          <Box
+            display="flex"
+            flexDirection="column"
+            alignItems="center"
+            gap={3}
+            p={2}
+          >
+            {/* QR CODE VISUAL */}
+            <QRCodeCanvas
+              value={url}
+              size={480}
+              includeMargin
+              imageSettings={{
+                src: zpayLogo,
+                height: 60,
+                width: 60,
+                excavate: true,
+              }}
+              ref={qrRef}
+            />
+
+            {/* QR CODE ALTA RESOLUÇÃO (INVISÍVEL) */}
+            <QRCodeCanvas
+              value={url}
+              size={2048} // Alta resolução
+              includeMargin
+              imageSettings={{
+                src: zpayLogo,
+                height: 240,
+                width: 240,
+                excavate: true,
+              }}
+              ref={qrDownloadRef}
+              style={{ display: 'none' }}
+            />
+
+            <Button
+              variant="contained"
+              startIcon={<DownloadIcon />}
+              onClick={downloadQRCode}
+              label="Download"
+            />
+
+          </Box>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+};
 
 const transformEventoUpdate = (data: any) => {
   const {
