@@ -236,6 +236,20 @@ export const supabaseDataProvider: DataProvider = {
       };
     }
 
+        if (resource === 'resetar-cartoes-lote') {
+      const { data, error } = await supabase.functions.invoke('resetar-cartoes-lote', {
+        body: params.data,
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      return {
+        data: data?.data ?? { id: params.data.cartao_id },
+      };
+    }
+
     if (resource === 'marcar-lote-impresso') {
       const { data, error } = await supabase.functions.invoke(
         'marcar-lote-impresso',

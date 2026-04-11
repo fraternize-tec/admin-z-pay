@@ -1,3 +1,4 @@
+import { Chip } from '@mui/material';
 import {
   List,
   Datagrid,
@@ -16,6 +17,11 @@ import {
   Show,
   useRecordContext,
   SelectInput,
+  SelectArrayInput,
+  FunctionField,
+  ArrayField,
+  SingleFieldList,
+  ChipField,
 } from 'react-admin';
 
 /* ================= LIST ================= */
@@ -25,6 +31,19 @@ export const FuncaoList = () => (
       <TextField source="codigo" label="Código" />
       <TextField source="descricao" label="Descrição" />
       <TextField source="escopo_tipo" label="Escopo" />
+      <FunctionField
+        label="Plataformas"
+        render={(record) =>
+          record.plataformas?.map((p: string) => (
+            <Chip
+              key={p}
+              label={p}
+              size="small"
+              sx={{ mr: 0.5 }}
+            />
+          ))
+        }
+      />
     </Datagrid>
   </List>
 );
@@ -45,6 +64,16 @@ export const FuncaoCreate = () => (
           { id: "evento", name: "Evento" },
           { id: "pdv", name: "PDV" },
           { id: "caixa", name: "Caixa" },
+        ]}
+        fullWidth
+      />
+
+      <SelectArrayInput
+        source="plataformas"
+        label="Plataformas"
+        choices={[
+          { id: "admin", name: "Admin" },
+          { id: "mobile", name: "Mobile" },
         ]}
         fullWidth
       />
@@ -108,6 +137,15 @@ export const FuncaoEdit = () => (
             { id: "evento", name: "Evento" },
             { id: "pdv", name: "PDV" },
             { id: "caixa", name: "Caixa" },
+          ]}
+          fullWidth
+        />
+        <SelectArrayInput
+          source="plataformas"
+          label="Plataformas"
+          choices={[
+            { id: "admin", name: "Admin" },
+            { id: "mobile", name: "Mobile" },
           ]}
           fullWidth
         />

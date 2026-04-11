@@ -50,6 +50,62 @@ const QrButton = ({ onClick }: { onClick: (record: any) => void }) => {
   );
 };
 
+const ResetarTodosButton = () => {
+  const { loteId } = useParams();
+  const notify = useNotify();
+  const refresh = useRefresh();
+
+  const [open, setOpen] = useState(false);
+  const [create, { isLoading }] = useCreate();
+
+  const handleConfirm = () => {
+    setOpen(false);
+
+    create(
+      'resetar-cartoes-lote',
+      {
+        data: {
+          lote_id: loteId,
+        },
+      },
+      {
+        onSuccess: (data) => {
+          notify(
+            `${data.total} cartões resetados`,
+            { type: 'success' }
+          );
+          refresh();
+        },
+        onError: () => {
+          notify('Erro ao resetar cartões', {
+            type: 'error',
+          });
+        },
+      }
+    );
+  };
+
+  return (
+    <>
+      <Button
+        label="Resetar todos"
+        color="error"
+        startIcon={<RestartAltIcon />}
+        onClick={() => setOpen(true)}
+        disabled={isLoading}
+      />
+
+      <Confirm
+        isOpen={open}
+        title="Resetar todos os cartões"
+        content="Esta ação irá resetar TODOS os cartões do lote. Deseja continuar?"
+        onConfirm={handleConfirm}
+        onClose={() => setOpen(false)}
+      />
+    </>
+  );
+};
+
 const CartaoListActions = () => {
   const navigate = useNavigate();
   const { eventoId } = useParams();
@@ -63,6 +119,8 @@ const CartaoListActions = () => {
           navigate(`/eventos/${eventoId}/lotes-cartoes`)
         }
       />
+
+      <ResetarTodosButton />
     </TopToolbar>
   );
 };
