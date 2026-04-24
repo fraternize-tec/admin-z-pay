@@ -18,7 +18,6 @@ import {
   required,
   ReferenceInput,
   FormDataConsumer,
-  Button,
   useDataProvider,
   useNotify,
   AutocompleteInput,
@@ -34,10 +33,8 @@ import { UsuarioPermissoesTab } from './usuarioPermissoesTab';
 import { EscopoSelector } from '../components/EscopoSelector';
 import { useSearchParams } from 'react-router-dom';
 import { BackToListButtonNavigate } from '../components/BackToListButton';
-import { Box, Chip } from '@mui/material';
+import { Box, Chip, Button } from '@mui/material';
 import { UsuariosDatagrid } from '../components/UsuariosDatagrid';
-import { useEffect } from 'react';
-import { useFormContext } from "react-hook-form";
 
 
 const usuarioFilters = [
@@ -58,6 +55,9 @@ export const UsuarioList = () => (
   <List filters={usuarioFilters} perPage={25}>
     <UsuariosDatagrid />
   </List>
+  //   <List resource="vw_usuarios_visiveis" filters={usuarioFilters} perPage={25}>
+  //   <UsuariosDatagrid />
+  // </List>
 );
 
 const StatusVigenciaField = (props: any) => {
@@ -123,11 +123,13 @@ const EncerrarPermissaoButton = (props: any) => {
 
   return (
     <Button
-      label="Encerrar"
+      variant="outlined"
       color="warning"
       onClick={handleClick}
       disabled={isLoading || record.fim}
-    />
+    >
+      Encerrar
+    </Button>
   );
 };
 
@@ -228,14 +230,17 @@ export const ToggleUsuarioButton = () => {
     );
   };
 
-  return (
-    <Button
-      label={record.ativo ? "Desativar" : "Ativar"}
-      color={record.ativo ? "error" : "success"}
-      onClick={handleClick}
-      disabled={isLoading}
-    />
-  );
+return (
+  <Button
+    variant="contained"
+    color={record.ativo ? "error" : "success"}
+    onClick={handleClick}
+    disabled={isLoading}
+    size="small"
+  >
+    {record.ativo ? "Desativar" : "Ativar"}
+  </Button>
+);
 };
 
 export const ReenviarConviteButton = () => {
@@ -265,12 +270,15 @@ export const ReenviarConviteButton = () => {
     }
   }
 
-  return (
-    <Button
-      label="Reenviar convite"
-      onClick={handleClick}
-    />
-  )
+return (
+  <Button
+    variant="outlined"
+    size="small"
+    onClick={handleClick}
+  >
+    Reenviar convite
+  </Button>
+);
 }
 
 /* ================= EDIT ================= */
@@ -317,26 +325,6 @@ export const UsuarioEdit = () => (
     </>
   </Edit>
 );
-
-const SetEventoId = ({ caixa, pdv }: any) => {
-  const { setValue } = useFormContext();
-
-  useEffect(() => {
-    if (caixa?.evento_id) {
-      setValue("evento_id", caixa.evento_id, {
-        shouldDirty: true
-      });
-    }
-
-    if (pdv?.evento_id) {
-      setValue("evento_id", pdv.evento_id, {
-        shouldDirty: true
-      });
-    }
-  }, [caixa, pdv]);
-
-  return null;
-};
 
 export const UsuarioCreate = () => {
 

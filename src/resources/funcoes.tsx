@@ -19,9 +19,6 @@ import {
   SelectInput,
   SelectArrayInput,
   FunctionField,
-  ArrayField,
-  SingleFieldList,
-  ChipField,
 } from 'react-admin';
 
 /* ================= LIST ================= */

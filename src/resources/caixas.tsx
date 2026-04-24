@@ -1,16 +1,57 @@
-import { Button, useNotify, useRefresh, useRecordContext, Create, Datagrid, DateField, Edit, List, ReferenceField, ReferenceInput, required, SelectInput, SimpleForm, TextField, TextInput, TopToolbar, SaveButton, Toolbar, Tab, ReferenceManyField, Show, TabbedShowLayout, usePermissions } from 'react-admin';
+import {
+    useNotify,
+    useRefresh,
+    useRecordContext,
+    Create,
+    Datagrid,
+    DateField,
+    Edit,
+    List,
+    ReferenceField,
+    required,
+    SimpleForm,
+    TextField,
+    TextInput,
+    Toolbar,
+    ReferenceManyField,
+    usePermissions,
+    TabbedForm,
+    FormTab,
+    SaveButton,
+    CreateButton,
+    FilterLiveSearch,
+    RecordContextProvider,
+    WithListContext
+} from 'react-admin';
+
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import StopIcon from '@mui/icons-material/Stop';
 import PersonAddIcon from "@mui/icons-material/PersonAdd";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+
 import { supabase } from '../lib/supabaseClient';
-import { BackToListButtonNavigate } from '../components/BackToListButton';
-import { Box } from '@mui/material';
+import { Box, Button } from '@mui/material';
+import { useTheme, useMediaQuery } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { UsuariosDatagrid } from '../components/UsuariosDatagrid';
 import { getEscopos, isGlobal } from '../utils/permissionUtils';
 import { useEffect } from 'react';
 import { can } from '../auth/useCan';
 import { EventoReferenceInput } from '../components/EventoReferenceInput';
+import { SmartToolbar } from '../components/SmartToolbar';
+import { ReenviarConviteButton, ToggleUsuarioButton } from './usuarios';
+import { InfoReferenceField } from '../components/InfoReferenceField';
+import { InfoTextField } from '../components/InfoTextField';
+
+const mobileButtonSx = {
+    minWidth: 0,
+    flexGrow: 1,
+    flexBasis: {
+        xs: '48%',
+        sm: 'auto'
+    },
+    whiteSpace: 'nowrap'
+};
 
 export const AbrirCaixaButton = () => {
     const record = useRecordContext();
@@ -20,9 +61,10 @@ export const AbrirCaixaButton = () => {
     if (!record || record.status === 'aberto') return null;
 
     const handleClick = async () => {
-        const { error } = await supabase.rpc('abrir_caixa', {
-            p_caixa_id: record.id,
-        });
+        const { error } = await supabase.rpc(
+            'abrir_caixa',
+            { p_caixa_id: record.id }
+        );
 
         if (error) notify(error.message, { type: 'error' });
         else {
@@ -32,8 +74,13 @@ export const AbrirCaixaButton = () => {
     };
 
     return (
-        <Button label="Abrir" onClick={handleClick}>
-            <PlayArrowIcon />
+        <Button
+            variant="contained"
+            startIcon={<PlayArrowIcon />}
+            onClick={handleClick}
+            sx={mobileButtonSx}
+        >
+            Abrir
         </Button>
     );
 };
@@ -46,9 +93,10 @@ export const FecharCaixaButton = () => {
     if (!record || record.status === 'fechado') return null;
 
     const handleClick = async () => {
-        const { error } = await supabase.rpc('fechar_caixa', {
-            p_caixa_id: record.id,
-        });
+        const { error } = await supabase.rpc(
+            'fechar_caixa',
+            { p_caixa_id: record.id }
+        );
 
         if (error) notify(error.message, { type: 'error' });
         else {
@@ -58,33 +106,74 @@ export const FecharCaixaButton = () => {
     };
 
     return (
-        <Button label="Fechar" onClick={handleClick}>
-            <StopIcon />
+        <Button
+            variant="contained"
+            color="error"
+            startIcon={<StopIcon />}
+            onClick={handleClick}
+            sx={mobileButtonSx}
+        >
+            Fechar
         </Button>
     );
 };
 
-export const CaixaList = () => {
+const CaixaListActions = ({
+    isSmall
+}: {
+    isSmall: boolean
+}) => (
+    <SmartToolbar>
+        <Box
+            sx={{
+                display: 'flex',
+                alignItems: 'center',
 
+                flexGrow: isSmall ? 1 : 0,
+                mr: isSmall ? 0 : 'auto',
+                mt: isSmall ? 0 : 1.5,
+                width: {
+                    xs: '100%',
+                    sm: 280
+                }
+            }}
+        >
+            <FilterLiveSearch
+                source="nome"
+                label=""
+                placeholder="Buscar caixa"
+                sx={{
+                    width: '100%'
+                }}
+            />
+        </Box>
+
+        <CreateButton />
+    </SmartToolbar>
+);
+
+export const CaixaList = () => {
     const { permissions, isLoading } = usePermissions();
     const navigate = useNavigate();
 
+    const theme = useTheme();
+    const isSmall = useMediaQuery(
+        theme.breakpoints.down('sm')
+    );
+
     if (isLoading) return null;
 
-    const caixasPermitidos = getEscopos(
-        permissions,
-        "listar.caixa",
-        "caixa"
-    ) || [];
+    const caixasPermitidos =
+        getEscopos(permissions, "listar.caixa", "caixa") || [];
 
-    const eventosPermitidos = getEscopos(
-        permissions,
-        "listar.caixa",
-        "evento"
-    ) || [];
+    const eventosPermitidos =
+        getEscopos(permissions, "listar.caixa", "evento") || [];
 
     useEffect(() => {
-        if (caixasPermitidos?.length === 1 && eventosPermitidos.length === 0) {
+        if (
+            caixasPermitidos?.length === 1 &&
+            eventosPermitidos.length === 0
+        ) {
             navigate(`/caixas/${caixasPermitidos[0]}`);
         }
     }, [caixasPermitidos, eventosPermitidos]);
@@ -95,6 +184,7 @@ export const CaixaList = () => {
 
     return (
         <List
+            actions={<CaixaListActions isSmall={isSmall} />}
             queryOptions={
                 !isGlobal(permissions, "listar.caixa")
                     ? {
@@ -114,26 +204,83 @@ export const CaixaList = () => {
                     : undefined
             }
         >
-            <Datagrid>
+            {isSmall ? (
+                <WithListContext
+                    render={({ data }) => (
+                        <Box>
+                            {data?.map((item) => (
+                                <Box
+                                    key={item.id}
+                                    onClick={() =>
+                                        navigate(`/caixas/${item.id}`)
+                                    }
+                                    sx={{
+                                        px: 2,
+                                        py: 1.5,
+                                        borderBottom: 1,
+                                        borderColor: 'divider',
+                                        cursor: 'pointer',
 
-                <TextField source="nome" label="Caixa" />
+                                        '&:hover': {
+                                            bgcolor: 'action.hover'
+                                        }
+                                    }}
+                                >
+                                    <Box fontWeight={700}>
+                                        {item.nome}
+                                    </Box>
 
-                <ReferenceField source="evento_id" reference="eventos" label="Evento">
-                    <TextField source="nome" />
-                </ReferenceField>
+                                    <Box color="text.secondary">
+                                        Status: {item.status}
+                                    </Box>
 
-                <ReferenceField source="pdv_id" reference="pontos_de_venda" label="PDV">
-                    <TextField source="nome" />
-                </ReferenceField>
+                                    {item.aberto_em && (
+                                        <Box color="text.secondary">
+                                            Aberto em: {new Date(
+                                                item.aberto_em
+                                            ).toLocaleDateString('pt-BR')}
+                                        </Box>
+                                    )}
+                                </Box>
+                            ))}
+                        </Box>
+                    )}
+                />
+            ) : (
 
-                <TextField source="status" label="Status" />
-                <DateField source="aberto_em" label="Aberto em" />
-                <DateField source="fechado_em" label="Fechado em" />
+                <Datagrid>
+                    <TextField source="nome" label="Caixa" />
 
-                <AbrirCaixaButton />
-                <FecharCaixaButton />
+                    <ReferenceField
+                        source="evento_id"
+                        reference="eventos"
+                        label="Evento"
+                    >
+                        <TextField source="nome" />
+                    </ReferenceField>
 
-            </Datagrid>
+                    <ReferenceField
+                        source="pdv_id"
+                        reference="pontos_de_venda"
+                        label="PDV"
+                    >
+                        <TextField source="nome" />
+                    </ReferenceField>
+
+                    <TextField source="status" label="Status" />
+                    <DateField
+                        source="aberto_em"
+                        label="Aberto em"
+                    />
+                    <DateField
+                        source="fechado_em"
+                        label="Fechado em"
+                    />
+
+                    <AbrirCaixaButton />
+                    <FecharCaixaButton />
+                </Datagrid>
+            )}
         </List>
     );
 };
@@ -151,10 +298,6 @@ export const CaixaCreate = () => (
                 permissao="listar.caixa"
                 resource="caixas"
             />
-
-            {/* <ReferenceInput source="pdv_id" reference="pontos_de_venda">
-                <SelectInput optionText="nome" label="PDV" />
-            </ReferenceInput> */}
         </SimpleForm>
     </Create>
 );
@@ -162,38 +305,70 @@ export const CaixaCreate = () => (
 const CriarUsuarioCaixaButton = () => {
     const record = useRecordContext();
     const navigate = useNavigate();
+    const theme = useTheme();
+    const isSmall = useMediaQuery(
+        theme.breakpoints.down('sm')
+    );
 
     if (!record) return null;
 
-    const handleClick = () => {
-        navigate(`/usuarios/create?caixa_id=${record.id}`);
-    };
+    return (
+        <Button
+            variant="contained"
+            startIcon={<PersonAddIcon />}
+            onClick={() =>
+                navigate(`/usuarios/create?caixa_id=${record.id}`)
+            }
+            sx={mobileButtonSx}
+        >
+            {isSmall ? 'Operador' : 'Adicionar Operador'}
+        </Button>
+    );
+};
+
+const VoltarButton = () => {
+    const navigate = useNavigate();
 
     return (
         <Button
-            label="Adicionar Operador"
-            startIcon={<PersonAddIcon />}
-            onClick={handleClick}
-        />
+            variant="outlined"
+            startIcon={<ArrowBackIcon />}
+            onClick={() => navigate(-1)}
+            sx={mobileButtonSx}
+        >
+            Voltar
+        </Button>
     );
 };
 
-const CaixaActions = () => {
-    return (
-        <TopToolbar>
-            <CriarUsuarioCaixaButton />
-            <BackToListButtonNavigate />
-        </TopToolbar>
-    );
-};
+const CaixaActions = () => (
+    <SmartToolbar>
+        <CriarUsuarioCaixaButton />
+        <VoltarButton />
+    </SmartToolbar>
+);
 
 const CaixaEditToolbar = () => (
-    <Toolbar sx={{ display: 'flex', justifyContent: 'space-between' }}>
-        {/* Esquerda */}
-        <SaveButton />
+    <Toolbar
+        sx={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: 1
+        }}
+    >
+        <SaveButton sx={mobileButtonSx} />
 
-        {/* Direita */}
-        <Box sx={{ display: 'flex', gap: 1 }}>
+        <Box
+            sx={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: 1,
+                width: {
+                    xs: '100%',
+                    sm: 'auto'
+                }
+            }}
+        >
             <AbrirCaixaButton />
             <FecharCaixaButton />
         </Box>
@@ -201,55 +376,65 @@ const CaixaEditToolbar = () => (
 );
 
 export const CaixaEdit = () => (
-    <Edit actions={<CaixaActions />}>
-        <SimpleForm toolbar={<CaixaEditToolbar />}>
-            {/* Único campo editável */}
-            <TextInput
-                source="nome"
-                label="Nome do Caixa"
-                validate={required()}
-                fullWidth
-            />
+    <Edit
+        actions={<CaixaActions />}
 
-            {/* Evento (somente leitura) */}
-            <ReferenceInput source="evento_id" reference="eventos">
-                <SelectInput
-                    optionText="nome"
+    >
+        <TabbedForm
+            toolbar={<CaixaEditToolbar />}
+
+        >
+            <FormTab label="Dados">
+                <TextInput
+                    source="nome"
+                    label="Nome do Caixa"
+                    validate={required()}
+                    fullWidth
+                />
+
+                <InfoReferenceField
                     label="Evento"
-                    disabled
-                    fullWidth
+                    source="evento_id"
+                    reference="eventos"
                 />
-            </ReferenceInput>
 
-            {/* PDV (somente leitura) */}
-            <ReferenceInput source="pdv_id" reference="pontos_de_venda">
-                <SelectInput
-                    optionText="nome"
+                <InfoReferenceField
                     label="PDV"
-                    disabled
-                    fullWidth
+                    source="pdv_id"
+                    reference="pontos_de_venda"
                 />
-            </ReferenceInput>
 
-            {/* Campos financeiros read-only */}
-            <TextInput source="status" label="Status" disabled fullWidth />
-            <TextInput source="aberto_em" label="Aberto em" disabled fullWidth />
-            <TextInput source="fechado_em" label="Fechado em" disabled fullWidth />
-        </SimpleForm>
-        <Show actions={false}>
-            <TabbedShowLayout>
-                <Tab label="Operadores">
-                    <UsuariosDoCaixaTab />
-                </Tab>
-            </TabbedShowLayout>
-        </Show>
+                <InfoTextField
+                    label="Status"
+                    source="status"
+                />
 
+                <InfoTextField
+                    label="Aberto em"
+                    source="aberto_em"
+                />
+
+                <InfoTextField
+                    label="Fechado em"
+                    source="fechado_em"
+                />
+            </FormTab>
+
+            <FormTab label="Operadores">
+                <UsuariosDoCaixaTab />
+            </FormTab>
+        </TabbedForm>
     </Edit>
 );
 
 const UsuariosDoCaixaTab = () => {
-
     const record = useRecordContext();
+
+    const theme = useTheme();
+
+    const isSmall = useMediaQuery(
+        theme.breakpoints.down('sm')
+    );
 
     if (!record) return null;
 
@@ -258,10 +443,52 @@ const UsuariosDoCaixaTab = () => {
             reference="usuarios_por_escopo"
             target="caixa_id"
         >
-            <UsuariosDatagrid rowClick={false} disableBulkDelete={true} />
+            {isSmall ? (
+                <WithListContext
+                    render={({ data }) => (
+                        <Box>
+                            {data?.map((user) => (
+                                <Box
+                                    key={user.id}
+                                    sx={{
+                                        py: 1.5,
+                                        borderBottom: 1,
+                                        borderColor: 'divider'
+                                    }}
+                                >
+                                    <Box fontWeight={600}>
+                                        {user.nome}
+                                    </Box>
 
+                                    <Box
+                                        fontSize="0.9rem"
+                                        color="text.secondary"
+                                    >
+                                        {user.email} • {user.status ?? 'ativo'}
+                                    </Box>
+
+                                    <Box
+                                        display="flex"
+                                        gap={1}
+                                        mt={1}
+                                        flexWrap="wrap"
+                                    >
+                                        <RecordContextProvider value={user}>
+                                            <ToggleUsuarioButton />
+                                            <ReenviarConviteButton />
+                                        </RecordContextProvider>
+                                    </Box>
+                                </Box>
+                            ))}
+                        </Box>
+                    )}
+                />
+            ) : (
+                <UsuariosDatagrid
+                    rowClick={false}
+                    disableBulkDelete
+                />
+            )}
         </ReferenceManyField>
     );
 };
-
-
