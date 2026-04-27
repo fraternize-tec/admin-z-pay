@@ -1,8 +1,9 @@
 import { Box, Card, CardContent, Typography } from "@mui/material";
-import { ReferenceManyField, TextField, NumberField, BooleanField, SimpleForm, NumberInput, required, BooleanInput, Datagrid, Edit, EditButton, Create, TextInput, useDataProvider, useNotify, useRedirect, ReferenceField, useGetOne, useRecordContext, TopToolbar } from "react-admin";
+import { ReferenceManyField, TextField, NumberField, BooleanField, SimpleForm, required, BooleanInput, Datagrid, Edit, EditButton, Create, TextInput, useDataProvider, useNotify, useRedirect, ReferenceField, useGetOne, useRecordContext } from "react-admin";
 import { useSearchParams } from "react-router-dom";
 import { BackToListButtonNavigate } from "../components/BackToListButton";
 import { CurrencyInput } from "../components/CurrencyInputRA";
+import { SmartToolbar } from "../components/SmartToolbar";
 
 
 export const ItensDoPdv = () => (
@@ -25,9 +26,9 @@ export const ItensDoPdv = () => (
 
 const ItemPdvAction = () => {
     return (
-        <TopToolbar>
+        <SmartToolbar>
             <BackToListButtonNavigate />
-        </TopToolbar>
+        </SmartToolbar>
     );
 };
 
@@ -159,7 +160,7 @@ const ItemPdvForm = ({ context }: any) => {
                 autoFocus={!isEdit}
             />
 
-            <CurrencyInput 
+            <CurrencyInput
                 source="preco"
                 label="Preço no PDV"
                 validate={required()}

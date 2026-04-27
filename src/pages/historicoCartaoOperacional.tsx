@@ -17,13 +17,15 @@ import {
   Box,
   Autocomplete,
   IconButton,
-  Menu,
-  MenuItem,
   Dialog,
+  Button,
+  useMediaQuery,
+  useTheme,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from "@mui/material";
-import MoreVertIcon from "@mui/icons-material/MoreVert";
-import BlockIcon from "@mui/icons-material/Block";
-import RestartAltIcon from "@mui/icons-material/RestartAlt";
+import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import CancelIcon from "@mui/icons-material/Cancel";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import QrCodeScannerIcon from "@mui/icons-material/QrCodeScanner";
@@ -52,9 +54,15 @@ export default function HistoricoCartaoOperacional() {
   const [resetConfirm, setResetConfirm] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
   const [scanOpen, setScanOpen] = useState(false);
+  const [rulesOpen, setRulesOpen] =
+    useState(false);
 
-  const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
-  const openMenu = Boolean(menuAnchor);
+
+  const theme = useTheme();
+
+  const isSmall = useMediaQuery(
+    theme.breakpoints.down("sm")
+  );
 
 
   const Field = ({ label, children }: any) => (
@@ -247,7 +255,7 @@ export default function HistoricoCartaoOperacional() {
               {/* Evento */}
               <Box sx={{ flex: "1 1 180px" }}>
                 <Field label="Evento">
-                  <Typography>{cartao.evento?.nome}</Typography>
+                  <Typography>{cartao.evento_nome}</Typography>
                 </Field>
               </Box>
 
@@ -277,81 +285,65 @@ export default function HistoricoCartaoOperacional() {
 
               {/* Ações */}
               <Box
-                sx={{
-                  flex: "0 0 auto",
-                  marginLeft: "auto",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 1,
-                }}
+                display="flex"
+                gap={1}
+                flexWrap="wrap"
               >
-                <IconButton onClick={refreshTela} title="Atualizar dados do cartão">
-                  <RefreshIcon
-                    sx={{ animation: loading ? "spin 1s linear infinite" : "none" }}
-                  />
-                </IconButton>
-
-                <IconButton
-                  onClick={(e) => setMenuAnchor(e.currentTarget)}
-                  title="Ações do cartão"
+                <Button
+                  variant="contained"
+                  startIcon={<RefreshIcon />}
+                  onClick={refreshTela}
+                  size="small"
                 >
-                  <MoreVertIcon />
-                </IconButton>
+                  {isSmall ? "Atualizar" : "Atualizar dados"}
+                </Button>
 
-                <Menu
-                  anchorEl={menuAnchor}
-                  open={openMenu}
-                  onClose={() => setMenuAnchor(null)}
-                >
-                  {can(permissions, "devolver.saldo") && (
-                    <MenuItem
-                      onClick={() => {
-                        setMenuAnchor(null);
-                        setDevolverOpen(true);
-                      }}
-                      sx={{ color: "error.main" }}
-                    >
-                      💸 Devolver saldo
-                    </MenuItem>
-                  )}
-
-                  {can(permissions, "dar.cortesia") && (<MenuItem
-                    onClick={() => {
-                      setMenuAnchor(null);
-                      setCortesiaOpen(true);
-                    }}
+                {can(permissions, "dar.cortesia") && (
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    onClick={() => setCortesiaOpen(true)}
                   >
-                    💰 Dar cortesia
-                  </MenuItem>
-                  )}
+                    {isSmall ? "💰 Cortesia" : "💰 Dar cortesia"}
+                  </Button>
+                )}
 
-                  {can(permissions, "bloquear.cartao") && (
-                    <MenuItem
-                      onClick={() => {
-                        setMenuAnchor(null);
-                        toggleBloqueio();
-                      }}
-                      disabled={actionLoading}
-                    >
-                      <BlockIcon fontSize="small" sx={{ mr: 1 }} />
-                      {cartao.bloqueado ? "Desbloquear cartão" : "Bloquear cartão"}
-                    </MenuItem>
-                  )}
+                {can(permissions, "devolver.saldo") && (
+                  <Button
+                    variant="outlined"
+                    color="error"
+                    size="small"
+                    onClick={() => setDevolverOpen(true)}
+                  >
+                    {isSmall ? "💸 Devolver" : "💸 Devolver saldo"}
+                  </Button>
+                )}
 
-                  {can(permissions, "resetar.cartao") && (
-                    <MenuItem
-                      onClick={() => {
-                        setMenuAnchor(null);
-                        setResetConfirm(true);
-                      }}
-                      sx={{ color: "warning.main" }}
-                    >
-                      <RestartAltIcon fontSize="small" sx={{ mr: 1 }} />
-                      Resetar cartão
-                    </MenuItem>
-                  )}
-                </Menu>
+                {can(permissions, "bloquear.cartao") && (
+                  <Button
+                    variant="outlined"
+                    color="warning"
+                    size="small"
+                    onClick={toggleBloqueio}
+                  >
+                    {cartao.bloqueado
+                      ? (isSmall ? "🔓 Desbloquear" : "🔓 Desbloquear cartão")
+                      : (isSmall ? "🔒 Bloquear" : "🔒 Bloquear cartão")}
+                  </Button>
+                )}
+
+                {can(permissions, "resetar.cartao") && (
+                  <Button
+                    variant="outlined"
+                    color="warning"
+                    size="small"
+                    onClick={() => setResetConfirm(true)}
+                  >
+                    {isSmall ? "🔄 Resetar" : "🔄 Resetar cartão"}
+                  </Button>
+                )}
               </Box>
+
             </Box>
           </CardContent>
 
@@ -365,7 +357,22 @@ export default function HistoricoCartaoOperacional() {
       {cartao && (
         <Card>
           <CardContent>
-            <Typography variant="h6">📜 Histórico financeiro</Typography>
+            <Box
+              display="flex"
+              alignItems="center"
+              justifyContent="space-between"
+            >
+              <Typography variant="h6">
+                📜 Histórico financeiro
+              </Typography>
+
+              <IconButton
+                size="small"
+                onClick={() => setRulesOpen(true)}
+              >
+                <InfoOutlinedIcon fontSize="small" />
+              </IconButton>
+            </Box>
             <Divider sx={{ my: 1 }} />
 
             <List>
@@ -527,6 +534,42 @@ export default function HistoricoCartaoOperacional() {
           }}
           onClose={() => setScanOpen(false)}
         />
+      </Dialog>
+      <Dialog
+        open={rulesOpen}
+        onClose={() => setRulesOpen(false)}
+        fullWidth
+        maxWidth="sm"
+      >
+        <DialogTitle>
+          Regras de cancelamento
+        </DialogTitle>
+
+        <DialogContent dividers>
+          <Box component="ul" sx={{ pl: 2, m: 0 }}>
+            <li>
+              A última recarga pode ser cancelada enquanto não houver consumo subsequente.
+            </li>
+
+            <li>
+              Consumos podem ser cancelados completamente ou parcialmente. Cancelamentos parciais ficam registrados no histórico.
+            </li>
+
+            <li>
+              Taxas e devoluções não podem ser cancelados.
+            </li>
+
+            <li>
+              Toda ação gera auditoria.
+            </li>
+          </Box>
+        </DialogContent>
+
+        <DialogActions>
+          <Button onClick={() => setRulesOpen(false)}>
+            Fechar
+          </Button>
+        </DialogActions>
       </Dialog>
     </Box>
   );

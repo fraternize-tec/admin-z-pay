@@ -12,7 +12,6 @@ import {
   Edit,
   TopToolbar,
   ListBase,
-  Button,
   Confirm,
   useDataProvider,
   useNotify,
@@ -30,25 +29,26 @@ import { useState } from 'react';
 import CreditCardIcon from '@mui/icons-material/CreditCard';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import { Chip } from '@mui/material';
+import { Button, Chip } from '@mui/material';
 import { CartoesDoLoteButton } from './cartoes';
 import { ExportarCartoesPdf } from './exportarCartoesPdf';
 import { supabase } from '../lib/supabaseClient';
 import { ExportarCartoesPdfDialog } from './exportarCartoesPdfDialog';
 import { BackToListButtonNavigate } from '../components/BackToListButton';
+import { SmartToolbar } from '../components/SmartToolbar';
 
 
 const LoteListActions = () => {
   const { eventoId } = useParams();
 
   return (
-    <TopToolbar>
+    <SmartToolbar>
       <BackToListButtonNavigate />
       <CreateButton
         resource="lotes_cartoes"
         to={`/eventos/${eventoId}/lotes-cartoes/create`}
       />
-    </TopToolbar>
+    </SmartToolbar>
   );
 };
 
@@ -138,10 +138,12 @@ export const GerarCartoesButton = ({ record }: ActionProps) => {
   return (
     <>
       <Button
-        label="Gerar cartões"
+        variant="outlined"
         startIcon={<CreditCardIcon />}
         onClick={() => setOpen(true)}
-      />
+      >
+        Gerar cartões
+      </Button>
 
       <Confirm
         isOpen={open}
@@ -207,10 +209,11 @@ const ExportarPdfButton = ({ record }: ActionProps) => {
   return (
     <>
       <Button
-        label="Exportar cartões"
-        startIcon={<PictureAsPdfIcon />}
+        variant="outlined" startIcon={<PictureAsPdfIcon />}
         onClick={() => setOpen(true)}
-      />
+      >
+        Exportar cartões
+      </Button>
 
       {open && (
         <ExportarCartoesPdfDialog
@@ -244,15 +247,16 @@ const DeleteLoteButton = ({ record }: ActionProps) => {
   if (record.total_cartoes > 0) {
     return (
       <Button
-        label="Excluir"
-        disabled
+variant="outlined"        disabled
         onClick={() =>
           notify(
             'Não é possível excluir um lote com cartões gerados',
             { type: 'warning' }
           )
         }
-      />
+      >
+        Excluir
+      </Button>
     );
   }
 
@@ -278,9 +282,11 @@ const MarcarImpressoButton = ({ record }: ActionProps) => {
 
   return (
     <Button
-      label="Marcar como impresso"
+      variant="outlined"
       onClick={handleClick}
-    />
+    >
+      Marcar como impresso
+    </Button>
   );
 };
 
@@ -291,12 +297,14 @@ const BackToEventoLotesButton = ({ record }: ActionProps) => {
 
   return (
     <Button
-      label="Voltar"
+      variant="outlined"
       startIcon={<ArrowBackIcon />}
       onClick={() =>
         navigate(`/eventos/${record.evento_id}/lotes-cartoes`)
       }
-    />
+    >
+      Voltar
+    </Button>
   );
 };
 

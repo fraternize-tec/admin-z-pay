@@ -35,6 +35,7 @@ import { useSearchParams } from 'react-router-dom';
 import { BackToListButtonNavigate } from '../components/BackToListButton';
 import { Box, Chip, Button } from '@mui/material';
 import { UsuariosDatagrid } from '../components/UsuariosDatagrid';
+import { SmartToolbar } from '../components/SmartToolbar';
 
 
 const usuarioFilters = [
@@ -44,9 +45,9 @@ const usuarioFilters = [
 
 const UsuarioActions = () => {
   return (
-    <TopToolbar>
+    <SmartToolbar>
       <BackToListButtonNavigate />
-    </TopToolbar>
+    </SmartToolbar>
   );
 };
 

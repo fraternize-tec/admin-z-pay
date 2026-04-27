@@ -221,7 +221,7 @@ export const PontoDeVendaList = () => {
 /* ================= CREATE ================= */
 
 export const PontoDeVendaCreate = () => (
-    <Create>
+    <Create actions={<PdvActionsCreate />}>
         <SimpleForm>
             <TextInput
                 source="nome"
@@ -293,9 +293,15 @@ const VoltarButton = () => {
     );
 };
 
-const PdvActions = () => (
+const PdvActionsEdit = () => (
     <SmartToolbar>
         <CriarUsuarioPdvButton />
+        <VoltarButton />
+    </SmartToolbar>
+);
+
+const PdvActionsCreate = () => (
+    <SmartToolbar>
         <VoltarButton />
     </SmartToolbar>
 );
@@ -388,7 +394,7 @@ const UsuariosDoPdvTab = () => {
 /* ================= EDIT ================= */
 
 export const PontoDeVendaEdit = () => (
-    <Edit actions={<PdvActions />}>
+    <Edit actions={<PdvActionsEdit />}>
         <TabbedForm toolbar={<PdvToolbar />}>
             <FormTab label="Dados">
                 <TextInput

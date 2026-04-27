@@ -1,17 +1,20 @@
 // components/BackToListButton.tsx
-import { Button, useResourceContext } from 'react-admin';
+import { useResourceContext } from 'react-admin';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { useNavigate } from 'react-router';
+import { Button } from '@mui/material';
 
 export const BackToListButton = () => {
   const resource = useResourceContext();
 
   return (
     <Button
-      label="Voltar"
+      variant="outlined"
       startIcon={<ArrowBackIcon />}
       href={`/#/${resource}`}
-    />
+    >
+      Voltar
+    </Button>
   );
 };
 
@@ -20,9 +23,11 @@ export const BackToListButtonNavigate = () => {
 
   return (
     <Button
-      label="Voltar"
+      variant="outlined"
       startIcon={<ArrowBackIcon />}
       onClick={() => navigate(-1)}
-    />
+    >
+      Voltar
+    </Button>
   );
 };

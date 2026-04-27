@@ -1,4 +1,4 @@
-import { Box, Card, CardContent, Dialog, DialogContent, DialogTitle, Typography, useMediaQuery } from '@mui/material';
+import { Box, Button, Card, CardContent, Dialog, DialogContent, DialogTitle, Typography, useMediaQuery } from '@mui/material';
 import {
   List,
   Datagrid,
@@ -14,12 +14,10 @@ import {
   SelectInput,
   required,
   SimpleList,
-  TopToolbar,
   usePermissions,
   Toolbar,
   SaveButton,
   DeleteButton,
-  Button,
   useRecordContext,
   FormDataConsumer,
   NumberInput,
@@ -29,14 +27,23 @@ import { BackToListButton } from '../components/BackToListButton';
 import { can } from '../auth/useCan';
 import { useNavigate } from 'react-router';
 import CreditCardIcon from '@mui/icons-material/CreditCard';
-import { EventoTaxaPrimeiraRecarga } from './eventoTaxa';
 import { useRef, useState } from 'react';
 import { QRCodeCanvas } from 'qrcode.react';
 import QrCodeIcon from '@mui/icons-material/QrCode';
 import DownloadIcon from '@mui/icons-material/Download';
-import zpayLogo from '../../public/logo.png';
+import zpayLogo from '/logo.png';
+import { SmartToolbar } from '../components/SmartToolbar';
 
 
+const EventoActions = () => {
+
+  return (
+    <SmartToolbar>
+      <BackToListButton />
+
+    </SmartToolbar>
+  );
+}
 
 /* ========= LIST ========= */
 
@@ -47,27 +54,31 @@ const EventoEditActions = () => {
   if (!record) return null;
 
   return (
-    <TopToolbar>
+    <SmartToolbar>
       <BackToListButton />
 
-      <EventoQRCodeButton />
-
       <Button
-        label="Lotes de cartões"
+        variant="contained"
         startIcon={<CreditCardIcon />}
         onClick={() =>
           navigate(`/eventos/${record.id}/lotes-cartoes`)
         }
-      />
+      >
+        Lotes de cartões
+      </Button>
 
       <Button
-        label="Cartões emergenciais"
+        variant="outlined"
         startIcon={<CreditCardIcon />}
         onClick={() =>
           navigate(`/eventos/${record.id}/cartoes-emergenciais`)
         }
-      />
-    </TopToolbar>
+      >
+        Cartões emergenciais
+      </Button>
+
+      <EventoQRCodeButton />
+    </SmartToolbar>
   );
 };
 
@@ -117,6 +128,7 @@ const transformEventoCreate = (data: any) => {
 
 export const EventoCreate = () => (
   <Create
+    actions={<EventoActions />}
     mutationMode="pessimistic"
     transform={transformEventoCreate}
     mutationOptions={{
@@ -213,10 +225,12 @@ const EventoQRCodeButton = () => {
   return (
     <>
       <Button
-        label="QR Code Cardápio"
+        variant='outlined'
         startIcon={<QrCodeIcon />}
         onClick={() => setOpen(true)}
-      />
+      >
+        QR Code Cardápio
+      </Button>
 
       <Dialog
         open={open}
@@ -269,8 +283,9 @@ const EventoQRCodeButton = () => {
               variant="contained"
               startIcon={<DownloadIcon />}
               onClick={downloadQRCode}
-              label="Download"
-            />
+            >
+              Download
+            </Button>
 
           </Box>
         </DialogContent>
@@ -320,12 +335,14 @@ export const EventoLotesButton = () => {
 
   return (
     <Button
-      label="Lotes de cartões"
+      variant="contained"
       startIcon={<CreditCardIcon />}
       onClick={() =>
         navigate(`/eventos/${record.id}/lotes-cartoes`)
       }
-    />
+    >
+      Lotes de cartões
+    </Button>
   );
 };
 
