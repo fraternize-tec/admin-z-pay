@@ -44,7 +44,7 @@ const SAFE_MARGIN = 4;
 /* ================================================== */
 
 const ARTE_PROPRIO_URL =
-  'https://aazveowyyfmpdfwwjiqp.supabase.co/storage/v1/object/public/cartoes-artes/proprios/frente.png';
+  'https://api.zpay.fraternize.com.br/storage/v1/object/public/cartoes-artes/proprios/frente.png';
 
 /* ---------------- BUSCA PAGINADA ---------------- */
 async function buscarTodosCartoes(queryBase: any) {

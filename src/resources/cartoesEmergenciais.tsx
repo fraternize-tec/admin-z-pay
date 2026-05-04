@@ -6,7 +6,6 @@ import {
     BooleanField,
     DateField,
     Pagination,
-    TopToolbar,
     Button,
     useRecordContext,
     useNotify,
@@ -23,6 +22,7 @@ import { Chip } from '@mui/material';
 import { useState } from 'react';
 import { BackToListButtonNavigate } from '../components/BackToListButton';
 import { CartaoQrDialog } from './cartoes';
+import { SmartToolbar } from '../components/SmartToolbar';
 
 /* ===================================================== */
 /* STATUS DO VÍNCULO */
@@ -44,9 +44,9 @@ const StatusVinculoField = () => {
 /* ===================================================== */
 const CartoesEventoActions = () => {
     return (
-        <TopToolbar>
+        <SmartToolbar>
             <BackToListButtonNavigate />
-        </TopToolbar>
+        </SmartToolbar>
     );
 };
 

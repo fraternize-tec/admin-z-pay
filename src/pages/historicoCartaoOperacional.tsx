@@ -363,7 +363,7 @@ export default function HistoricoCartaoOperacional() {
               justifyContent="space-between"
             >
               <Typography variant="h6">
-                📜 Histórico financeiro
+                📜 Histórico e Cancelamento de Transações
               </Typography>
 
               <IconButton

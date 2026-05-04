@@ -31,6 +31,7 @@ import BlockIcon from '@mui/icons-material/Block';
 import { DesvincularCartoesLoteModal } from './desvincularCartoesLoteModal';
 import { ExportarCartoesPdf } from './exportarCartoesPdf';
 import { BackToListButtonNavigate } from '../components/BackToListButton';
+import { SmartToolbar } from '../components/SmartToolbar';
 
 const GerarCartoesPropriosButton = () => {
   const [open, setOpen] = useState(false);
@@ -138,10 +139,10 @@ export const CartoesPropriosList = () => {
   return (
     <>
       <ListBase resource="vw_cartoes_proprios" perPage={25}>
-        <TopToolbar>
+        <SmartToolbar>
           <GerarCartoesPropriosButton />
           <ExportarCartoesPropriosButton />
-        </TopToolbar>
+        </SmartToolbar>
 
         <Datagrid rowClick="show">
           <StatusCartaoProprioField />
@@ -239,10 +240,10 @@ const VincularEventoButton = ({ onOpen }: { onOpen: (cartao: any) => void }) => 
 };
 
 const CartaoProprioShowActions = () => (
-  <TopToolbar>
+  <SmartToolbar>
     <BackToListButtonNavigate />
     <CancelarCartaoProprioButton />
-  </TopToolbar>
+  </SmartToolbar>
 );
 
 export const CartaoProprioShow = () => (

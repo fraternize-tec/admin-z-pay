@@ -233,7 +233,6 @@ export const ToggleUsuarioButton = () => {
 
 return (
   <Button
-    variant="contained"
     color={record.ativo ? "error" : "success"}
     onClick={handleClick}
     disabled={isLoading}
@@ -273,7 +272,6 @@ export const ReenviarConviteButton = () => {
 
 return (
   <Button
-    variant="outlined"
     size="small"
     onClick={handleClick}
   >

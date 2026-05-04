@@ -22,14 +22,16 @@ import {
     CreateButton,
     FilterLiveSearch,
     WithListContext,
-    RecordContextProvider
+    RecordContextProvider,
+    useListContext,
+    useGetList
 } from 'react-admin';
 
 import AddIcon from '@mui/icons-material/Add';
 import PersonAddIcon from "@mui/icons-material/PersonAdd";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 
-import { Box, Button } from '@mui/material';
+import { Autocomplete, Box, Button, TextField as MuiTextField } from '@mui/material';
 import { useTheme, useMediaQuery } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { useEffect } from 'react';
@@ -56,31 +58,66 @@ const mobileButtonSx = {
 
 /* ================= LIST ACTIONS ================= */
 
-const PdvListActions = ({
-    isSmall
-}: {
-    isSmall: boolean
-}) => (
+export const EventoFilterInline = () => {
+    const { filterValues, setFilters } = useListContext();
+
+    const { data } = useGetList("eventos", {
+        pagination: { page: 1, perPage: 25 },
+        sort: { field: "nome", order: "ASC" }
+    });
+
+    return (
+        <Autocomplete
+            size="small"
+            options={data ?? []}
+            getOptionLabel={(option) => option.nome || ""}
+            value={
+                data?.find(e => e.id === filterValues.evento_id) || null
+            }
+            onChange={(_, value) =>
+                setFilters(
+                    {
+                        ...filterValues,
+                        evento_id: value?.id
+                    },
+                    {}
+                )
+            }
+            sx={{ minWidth: 200 }}
+            renderInput={(params) => (
+                <MuiTextField
+                    {...params}
+                    placeholder="Evento"
+                />
+            )}
+        />
+    );
+};
+
+const PdvListActions = ({ isSmall }: { isSmall: boolean }) => (
     <SmartToolbar>
         <Box
             sx={{
                 display: 'flex',
                 alignItems: 'center',
+                gap: 1,
                 flexGrow: isSmall ? 1 : 0,
                 mr: isSmall ? 0 : 'auto',
                 mt: isSmall ? 0 : 1.5,
                 width: {
                     xs: '100%',
-                    sm: 280
+                    sm: 400
                 }
             }}
         >
             <FilterLiveSearch
                 source="nome"
                 label=""
-                placeholder="Buscar PDV"
-                sx={{ width: '100%' }}
+                placeholder="Nome"
+                sx={{ flex: 1 }}
             />
+
+            <EventoFilterInline />
         </Box>
 
         <CreateButton />
@@ -322,7 +359,9 @@ const PdvToolbar = () => (
 
 const PdvItensTab = () => (
     <>
+    <Box mb={2} display="flex" justifyContent="flex-end">
         <AddItemToPdvButton />
+    </Box>
         <ItensDoPdv />
     </>
 );

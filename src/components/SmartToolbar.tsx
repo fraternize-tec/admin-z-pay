@@ -31,7 +31,6 @@ export const SmartToolbar = ({ children }: any) => {
           whiteSpace: 'nowrap',
           textOverflow: 'ellipsis',
           overflow: 'hidden',
-          borderRadius: 2,
 
           mt: isMobile ? 0 : 1.5,
 

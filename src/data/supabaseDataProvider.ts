@@ -32,6 +32,32 @@ export const supabaseDataProvider: DataProvider = {
 
         if (!value) return;
 
+        if (key.includes('_')) {
+          const [field, operator] = key.split('_');
+
+          switch (operator) {
+            case 'ilike':
+              query = query.ilike(field, `%${value}%`);
+              return;
+
+            case 'eqi':
+              query = query.ilike(field, String(value)); // match exato case-insensitive
+              return;
+
+            case 'gte':
+              query = query.gte(field, value);
+              return;
+
+            case 'lte':
+              query = query.lte(field, value);
+              return;
+
+            case 'in':
+              query = query.in(field, value as any[]);
+              return;
+          }
+        }
+
         // 🔥 AUTOCOMPLETE (q)
         if (key === 'q') {
 
@@ -236,7 +262,7 @@ export const supabaseDataProvider: DataProvider = {
       };
     }
 
-        if (resource === 'resetar-cartoes-lote') {
+    if (resource === 'resetar-cartoes-lote') {
       const { data, error } = await supabase.functions.invoke('resetar-cartoes-lote', {
         body: params.data,
       });

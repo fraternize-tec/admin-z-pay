@@ -10,7 +10,6 @@ import {
   required,
   TextInput,
   Edit,
-  TopToolbar,
   ListBase,
   Confirm,
   useDataProvider,
@@ -343,7 +342,7 @@ const EditActions = () => {
   if (!record || !view) return null;
 
   return (
-    <TopToolbar>
+    <SmartToolbar>
       <BackToEventoLotesButton record={view} />
 
       {view.status_lote === 'criado' && (
@@ -365,7 +364,7 @@ const EditActions = () => {
       {view.status_lote === 'criado' && (
         <DeleteLoteButton record={view} />
       )}
-    </TopToolbar>
+    </SmartToolbar>
   );
 };
 

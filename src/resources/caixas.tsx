@@ -42,6 +42,7 @@ import { SmartToolbar } from '../components/SmartToolbar';
 import { ReenviarConviteButton, ToggleUsuarioButton } from './usuarios';
 import { InfoReferenceField } from '../components/InfoReferenceField';
 import { InfoTextField } from '../components/InfoTextField';
+import { EventoFilterInline } from './pontosDeVenda';
 
 const mobileButtonSx = {
     minWidth: 0,
@@ -75,7 +76,6 @@ export const AbrirCaixaButton = () => {
 
     return (
         <Button
-            variant="contained"
             startIcon={<PlayArrowIcon />}
             onClick={handleClick}
             sx={mobileButtonSx}
@@ -107,7 +107,6 @@ export const FecharCaixaButton = () => {
 
     return (
         <Button
-            variant="contained"
             color="error"
             startIcon={<StopIcon />}
             onClick={handleClick}
@@ -128,24 +127,26 @@ const CaixaListActions = ({
             sx={{
                 display: 'flex',
                 alignItems: 'center',
-
+                gap: 1,
                 flexGrow: isSmall ? 1 : 0,
                 mr: isSmall ? 0 : 'auto',
                 mt: isSmall ? 0 : 1.5,
                 width: {
                     xs: '100%',
-                    sm: 280
+                    sm: 400
                 }
             }}
         >
             <FilterLiveSearch
                 source="nome"
                 label=""
-                placeholder="Buscar caixa"
+                placeholder="Nome"
                 sx={{
-                    width: '100%'
+                    flex: 1,
                 }}
             />
+
+            <EventoFilterInline />
         </Box>
 
         <CreateButton />

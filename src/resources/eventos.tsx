@@ -58,16 +58,6 @@ const EventoEditActions = () => {
       <BackToListButton />
 
       <Button
-        variant="contained"
-        startIcon={<CreditCardIcon />}
-        onClick={() =>
-          navigate(`/eventos/${record.id}/lotes-cartoes`)
-        }
-      >
-        Lotes de cartões
-      </Button>
-
-      <Button
         variant="outlined"
         startIcon={<CreditCardIcon />}
         onClick={() =>
@@ -78,6 +68,16 @@ const EventoEditActions = () => {
       </Button>
 
       <EventoQRCodeButton />
+
+      <Button
+        variant="contained"
+        startIcon={<CreditCardIcon />}
+        onClick={() =>
+          navigate(`/eventos/${record.id}/lotes-cartoes`)
+        }
+      >
+        Lotes de cartões
+      </Button>
     </SmartToolbar>
   );
 };

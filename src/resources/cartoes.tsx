@@ -1,12 +1,13 @@
-import { BooleanField, Button, Confirm, Datagrid, ListBase, NumberField, Pagination, TextField, TopToolbar, useCreate, useDataProvider, useNotify, useRecordContext, useRefresh } from 'react-admin';
+import { BooleanField, Confirm, Datagrid, ListBase, NumberField, Pagination, TextField, TopToolbar, useCreate, useDataProvider, useNotify, useRecordContext, useRefresh } from 'react-admin';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Dialog, DialogTitle, DialogContent, Box, Typography } from '@mui/material';
+import { Dialog, DialogTitle, DialogContent, Box, Typography, Button } from '@mui/material';
 import { QRCodeCanvas } from 'qrcode.react';
 import { useState } from 'react';
 import QrCodeIcon from '@mui/icons-material/QrCode';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import CreditCardIcon from '@mui/icons-material/CreditCard';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
+import { SmartToolbar } from '../components/SmartToolbar';
 
 interface PropsEdit {
   record?: any;
@@ -22,14 +23,16 @@ export const CartoesDoLoteButton = ({ record }: PropsEdit) => {
 
   return (
     <Button
-      label="Cartões do lote"
+      variant="contained"
       startIcon={<CreditCardIcon />}
       onClick={() =>
         navigate(
           `/eventos/${record.evento_id}/lotes-cartoes/${record.id}/cartoes`
         )
       }
-    />
+    >
+      Cartões do lote
+    </Button>
   );
 };
 
@@ -40,13 +43,14 @@ const QrButton = ({ onClick }: { onClick: (record: any) => void }) => {
 
   return (
     <Button
-      label="QR"
       startIcon={<QrCodeIcon />}
       onClick={(e) => {
         e.stopPropagation();
         onClick(record);
       }}
-    />
+    >
+      QR
+    </Button>
   );
 };
 
@@ -88,12 +92,14 @@ const ResetarTodosButton = () => {
   return (
     <>
       <Button
-        label="Resetar todos"
+        variant="outlined"
         color="error"
         startIcon={<RestartAltIcon />}
         onClick={() => setOpen(true)}
         disabled={isLoading}
-      />
+      >
+        Resetar todos
+      </Button>
 
       <Confirm
         isOpen={open}
@@ -111,17 +117,19 @@ const CartaoListActions = () => {
   const { eventoId } = useParams();
 
   return (
-    <TopToolbar>
+    <SmartToolbar>
       <Button
-        label="Voltar"
+        variant="outlined"
         startIcon={<ArrowBackIcon />}
         onClick={() =>
           navigate(`/eventos/${eventoId}/lotes-cartoes`)
         }
-      />
+      >
+        Voltar
+      </Button>
 
       <ResetarTodosButton />
-    </TopToolbar>
+    </SmartToolbar>
   );
 };
 
@@ -246,9 +254,10 @@ export const BloquearButton = () => {
 
   return (
     <Button
-      label={record.bloqueado ? 'Desbloquear' : 'Bloquear'}
       onClick={handleClick}
-    />
+    >
+      {record.bloqueado ? 'Desbloquear' : 'Bloquear'}
+    </Button>
   );
 };
 
@@ -287,12 +296,13 @@ export const ResetarButton = () => {
   return (
     <>
       <Button
-        label="Resetar"
         color="error"
         startIcon={<RestartAltIcon />}
         onClick={() => setOpen(true)}
         disabled={isLoading}
-      />
+      >
+        Resetar
+      </Button>
 
       <Confirm
         isOpen={open}
