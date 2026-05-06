@@ -40,6 +40,7 @@ import { CartoesPropriosEventoList } from './resources/cartoesEmergenciais';
 import HistoricoCartaoOperacional from './pages/historicoCartaoOperacional';
 import { ItemPdvCreate, ItemPdvEdit } from './resources/itemPdv';
 import { DashboardFinanceiroEvento } from './resources/dashboard';
+import MobileLoginPage from './pages/MobileLoginPage';
 
 export const App = () => (
     <Admin
@@ -81,6 +82,11 @@ export const App = () => (
             <Route
                 path="/dashboard-financeiro"
                 element={<DashboardFinanceiroEvento />}
+            />
+
+            <Route
+                path="/mobile-login"
+                element={<MobileLoginPage />}
             />
         </CustomRoutes>
         {(permissions) => (
