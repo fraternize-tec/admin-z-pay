@@ -13,7 +13,7 @@ export const ItensDoPdv = () => (
         label="Itens deste PDV"
     >
         <Datagrid bulkActionButtons={false}>
-            <ReferenceField source="item_id" reference="itens" label="Item">
+            <ReferenceField source="item_id" reference="itens" label="Item" link={false}>
                 <TextField source="nome" />
             </ReferenceField>
 
@@ -44,21 +44,18 @@ export const ItemPdvCreate = () => {
 
     const handleSubmit = async (values: any) => {
         try {
-            const { data: item } = await dataProvider.create("itens", {
-                data: {
-                    nome: values.nome_item,
-                    preco_padrao: values.preco,
-                    evento_id: context.evento_id,
-                },
-            });
-
             await dataProvider.create("item_pdv", {
-                data: {
-                    pdv_id: context.pdv_id,
-                    item_id: item.id,
-                    preco: values.preco,
-                    ativo: values.ativo,
+                meta: {
+                    rpc: "upsert_item_pdv"
                 },
+                data: {
+                    p_item_pdv_id: null,
+                    p_evento_id: context.evento_id,
+                    p_pdv_id: context.pdv_id,
+                    p_nome: values.nome_item,
+                    p_preco: Number(values.preco),
+                    p_ativo: Boolean(values.ativo)
+                }
             });
 
             notify("Item criado e vinculado ao PDV");
@@ -69,7 +66,7 @@ export const ItemPdvCreate = () => {
     };
 
     return (
-        <Create actions={<BackToListButtonNavigate />}>
+        <Create actions={<ItemPdvAction />}>
             <SimpleForm onSubmit={handleSubmit} defaultValues={{ ativo: true }}>
                 <ItemPdvForm context={context} />
             </SimpleForm>
@@ -84,23 +81,29 @@ export const ItemPdvEdit = () => {
 
     const handleSubmit = async (values: any) => {
         try {
-            await dataProvider.update("itens", {
-                id: values.item_id,
-                data: { nome: values.nome_item },
-                previousData: { id: values.item_id, nome: values.nome_item },
+            const { data: pdv } = await dataProvider.getOne("pontos_de_venda", {
+                id: values.pdv_id
             });
+
+            const payload = {
+                p_item_pdv_id: values.id,
+                p_evento_id: pdv.evento_id, 
+                p_pdv_id: values.pdv_id,
+                p_nome: values.nome_item?.trim(),
+                p_preco: Number(values.preco),
+                p_ativo: Boolean(values.ativo)
+            };
 
             await dataProvider.update("item_pdv", {
                 id: values.id,
-                data: {
-                    preco: values.preco,
-                    ativo: values.ativo,
-                },
                 previousData: values,
+                meta: { rpc: "upsert_item_pdv" },
+                data: payload
             });
 
             notify("Item atualizado com sucesso");
             redirect("edit", "pontos_de_venda", values.pdv_id);
+
         } catch (error: any) {
             notify(error.message, { type: "error" });
         }

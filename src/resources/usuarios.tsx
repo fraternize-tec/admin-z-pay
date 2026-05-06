@@ -22,7 +22,6 @@ import {
   useNotify,
   AutocompleteInput,
   useGetOne,
-  TopToolbar,
   FunctionField,
   useUpdate,
   useRefresh,

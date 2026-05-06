@@ -454,10 +454,7 @@ export const PontoDeVendaEdit = () => (
                     reference="eventos"
                 />
 
-                <InfoTextField
-                    label="Ativo"
-                    source="ativo"
-                />
+                <BooleanInput source="ativo" label="Ativo" />
             </FormTab>
 
             <FormTab label="Cardápio">

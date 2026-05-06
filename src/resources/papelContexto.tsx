@@ -22,11 +22,12 @@ import { EscopoSelector } from '../components/EscopoSelector';
 import { VigenciaFromEvento } from '../components/VigenciaFromEvento';
 import { Box, Chip, Divider, Typography } from '@mui/material';
 import { useMemo } from 'react';
+import { SmartToolbar } from '../components/SmartToolbar';
 
 const PapelContextoActions = () => (
-  <TopToolbar>
+  <SmartToolbar>
     <BackToListButtonNavigate />
-  </TopToolbar>
+  </SmartToolbar>
 );
 
 export const PapelContextoCreate = () => {
