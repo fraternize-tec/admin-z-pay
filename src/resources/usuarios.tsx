@@ -394,6 +394,9 @@ export const UsuarioCreate = () => {
           source="email"
           fullWidth
           validate={required()}
+          parse={(value) =>
+            value ? value.trim().toLowerCase() : value
+          }
         />
 
         {/* PAPEL */}
