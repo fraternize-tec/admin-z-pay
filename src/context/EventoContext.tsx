@@ -17,6 +17,8 @@ import {
 type Evento = {
   id: string;
   nome: string;
+  inicio: Date;
+  fim: Date;
 };
 
 type EventoContextType = {
@@ -83,7 +85,7 @@ export const EventoProvider = ({
 
         let query = supabase
           .from("eventos")
-          .select("id,nome")
+          .select("id,nome,inicio,fim")
           .order("nome");
 
         if (!isAdmin) {

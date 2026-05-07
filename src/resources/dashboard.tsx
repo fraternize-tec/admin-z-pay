@@ -23,6 +23,8 @@ import { supabase } from "../lib/supabaseClient";
 import { exportarDashboardPdf } from "./exportarDashboardPdf";
 import { useEvento } from "../context/EventoContext";
 import { EventoSelector } from "../components/EventoSelector";
+import { isAdminGlobal } from "../utils/permissionUtils";
+import { usePermissions } from "react-admin";
 
 // ============================
 // Tipagens
@@ -117,11 +119,11 @@ const atalhos = [
     },
   },
   {
-    label: "Últimas 24 horas",
+    label: "Últimas 12 horas",
     getRange: () => {
       const now = new Date();
       return {
-        inicio: new Date(now.getTime() - 24 * 60 * 60 * 1000),
+        inicio: new Date(now.getTime() - 12 * 60 * 60 * 1000),
         fim: now,
       };
     },
@@ -358,55 +360,77 @@ const ResumoFinanceiro = ({ data }: { data: FinanceiroResumo }) => {
 // Filtro de período brasileiro
 // ============================
 
-const FiltroPeriodo = ({ inicio, fim, setInicio, setFim, onAplicar }: any) => (
-  <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={ptBR}>
-    <Card sx={{ mb: 3, borderRadius: 4, boxShadow: 1 }}>
-      <CardContent>
-        <Typography variant="subtitle2" fontWeight={700} mb={2}>
-          Período de análise
-        </Typography>
+const FiltroPeriodo = ({ evento, inicio, fim, setInicio, setFim, onAplicar }: any) => {
+  const { isAdmin } = useEvento();
 
-        <Stack direction={{ xs: "column", md: "row" }} spacing={2} alignItems="center" mb={2}>
-          <DateTimePicker
-            label="Data inicial"
-            value={inicio}
-            onChange={(v) => setInicio(v)}
-            slotProps={{ textField: { size: "small" } }}
-          />
+  const inicioEvento = evento?.inicio
+    ? new Date(evento.inicio)
+    : undefined;
 
-          <DateTimePicker
-            label="Data final"
-            value={fim}
-            onChange={(v) => setFim(v)}
-            slotProps={{ textField: { size: "small" } }}
-          />
+  return (
 
-          <Button variant="contained" onClick={onAplicar} sx={{ height: 40 }}>
-            Aplicar
-          </Button>
-        </Stack>
+    <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={ptBR}>
+      <Card sx={{ mb: 3, borderRadius: 4, boxShadow: 1 }}>
+        <CardContent>
+          <Typography variant="subtitle2" fontWeight={700} mb={2}>
+            Período de análise
+          </Typography>
 
-        {/* Atalhos rápidos */}
-        <Stack direction="row" spacing={1} flexWrap="wrap">
-          {atalhos.map((a) => (
-            <Button
-              key={a.label}
-              size="small"
-              variant="outlined"
-              onClick={() => {
-                const r = a.getRange();
-                setInicio(r.inicio);
-                setFim(r.fim);
+          <Stack direction={{ xs: "column", md: "row" }} spacing={2} alignItems="center" mb={2}>
+            <DateTimePicker
+              label="Data inicial"
+              value={inicio}
+              onChange={(v) => {
+                if (
+                  !isAdmin &&
+                  inicioEvento &&
+                  v &&
+                  v < inicioEvento
+                ) {
+                  setInicio(inicioEvento);
+                  return;
+                }
+
+                setInicio(v);
               }}
-            >
-              {a.label}
+              minDateTime={!isAdmin ? inicioEvento : undefined}
+              slotProps={{ textField: { size: "small" } }}
+            />
+
+            <DateTimePicker
+              label="Data final"
+              value={fim}
+              onChange={(v) => setFim(v)}
+              slotProps={{ textField: { size: "small" } }}
+            />
+
+            <Button variant="contained" onClick={onAplicar} sx={{ height: 40 }}>
+              Aplicar
             </Button>
-          ))}
-        </Stack>
-      </CardContent>
-    </Card>
-  </LocalizationProvider>
-);
+          </Stack>
+
+          {/* Atalhos rápidos */}
+          <Stack direction="row" spacing={1} flexWrap="wrap">
+            {atalhos.map((a) => (
+              <Button
+                key={a.label}
+                size="small"
+                variant="outlined"
+                onClick={() => {
+                  const r = a.getRange();
+                  setInicio(r.inicio);
+                  setFim(r.fim);
+                }}
+              >
+                {a.label}
+              </Button>
+            ))}
+          </Stack>
+        </CardContent>
+      </Card>
+    </LocalizationProvider>
+  );
+};
 
 // ============================
 // PDV → Accordion detalhado
@@ -777,7 +801,7 @@ export const DashboardFinanceiroEvento = () => {
         </CardContent>
       </Card>
 
-      <FiltroPeriodo inicio={inicio} fim={fim} setInicio={setInicio} setFim={setFim} onAplicar={carregar} />
+      <FiltroPeriodo evento={eventoAtual} inicio={inicio} fim={fim} setInicio={setInicio} setFim={setFim} onAplicar={carregar} />
 
       <ResumoFinanceiro data={data.financeiro} />
 
