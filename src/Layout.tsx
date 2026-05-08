@@ -1,69 +1,121 @@
 import type { ReactNode } from "react";
 import {
   Layout as RALayout,
-  CheckForApplicationUpdate
+  CheckForApplicationUpdate,
+  AppBar,
 } from "react-admin";
 
-import { useMediaQuery, useTheme } from "@mui/material";
+import {
+  useMediaQuery,
+  useTheme,
+} from "@mui/material";
 
-export const MyLayout = ({ children }: { children: ReactNode }) => {
+import { useLocation } from "react-router-dom";
+import { MyMenu } from "./layout/MyMenu";
+
+export const MyLayout = ({
+  children,
+}: {
+  children: ReactNode;
+}) => {
   const theme = useTheme();
-  const isSmall = useMediaQuery(theme.breakpoints.down("sm"));
+
+  const isSmall = useMediaQuery(
+    theme.breakpoints.down("sm")
+  );
+
+  const location = useLocation();
+
+  const isBingoTelao =
+    location.pathname === "/bingo/telao";
 
   return (
-    <RALayout
-      sx={{
-        /* TOOLBAR SUPERIOR */
-        "& .RaTopToolbar-root": {
-          width: "100%",
-          display: "flex",
-          flexWrap: "wrap",
-          gap: 1,
-          justifyContent: isSmall ? "stretch" : "flex-end",
-        },
+      <RALayout
+        appBar={
+          isBingoTelao ? () => null : AppBar
+        }
+        menu={
+          isBingoTelao ? () => null : MyMenu
+        }
+        sx={{
+          ...(isBingoTelao && {
+            "& .RaLayout-appFrame": {
+              marginTop: "0px !important",
+            },
 
-        "& .RaTopToolbar-root .MuiButton-root": {
-          flex: isSmall ? "1 1 100%" : "0 0 auto",
-          whiteSpace: "nowrap",
-        },
+            "& .RaLayout-contentWithSidebar": {
+              marginLeft: "0px !important",
+            },
 
-        /* TOOLBAR FORM SAVE */
-        "& .RaToolbar-root": {
-          display: "flex",
-          flexWrap: "wrap",
-          gap: 1,
-        },
+            "& .RaLayout-content": {
+              padding: "0px !important",
+              margin: "0px !important",
+            },
 
-        "& .RaToolbar-root .MuiButton-root": {
-          flex: isSmall ? "1 1 100%" : "0 0 auto",
-        },
+            "& .RaLayout-main": {
+              padding: "0px !important",
+              margin: "0px !important",
+            },
+          }),
 
-        /* DATAGRID */
-        "& .RaDatagrid-root": {
-          overflowX: "auto",
-        },
+          /* TOOLBAR SUPERIOR */
+          "& .RaTopToolbar-root": {
+            width: "100%",
+            display: "flex",
+            flexWrap: "wrap",
+            gap: 1,
+            justifyContent: isSmall
+              ? "stretch"
+              : "flex-end",
+          },
 
-        /* TABS */
-        "& .MuiTabs-root": {
-          overflowX: "auto",
-        },
+          "& .RaTopToolbar-root .MuiButton-root":
+            {
+              flex: isSmall
+                ? "1 1 100%"
+                : "0 0 auto",
+              whiteSpace: "nowrap",
+            },
 
-        "& .MuiTab-root": {
-          minWidth: isSmall ? 120 : 90,
-        },
+          /* TOOLBAR FORM SAVE */
+          "& .RaToolbar-root": {
+            display: "flex",
+            flexWrap: "wrap",
+            gap: 1,
+          },
 
-        /* FORMS */
-        "& .MuiFormControl-root": {
-          minWidth: 0,
-        },
+          "& .RaToolbar-root .MuiButton-root": {
+            flex: isSmall
+              ? "1 1 100%"
+              : "0 0 auto",
+          },
 
-        "& .RaSimpleForm-root": {
-          width: "100%",
-        },
-      }}
-    >
-      {children}
-      <CheckForApplicationUpdate />
-    </RALayout>
+          /* DATAGRID */
+          "& .RaDatagrid-root": {
+            overflowX: "auto",
+          },
+
+          /* TABS */
+          "& .MuiTabs-root": {
+            overflowX: "auto",
+          },
+
+          "& .MuiTab-root": {
+            minWidth: isSmall ? 120 : 90,
+          },
+
+          /* FORMS */
+          "& .MuiFormControl-root": {
+            minWidth: 0,
+          },
+
+          "& .RaSimpleForm-root": {
+            width: "100%",
+          },
+        }}
+      >
+        {children}
+        <CheckForApplicationUpdate />
+      </RALayout>
   );
 };

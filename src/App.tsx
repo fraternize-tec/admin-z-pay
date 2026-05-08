@@ -41,6 +41,7 @@ import HistoricoCartaoOperacional from './pages/historicoCartaoOperacional';
 import { ItemPdvCreate, ItemPdvEdit } from './resources/itemPdv';
 import { DashboardFinanceiroEvento } from './resources/dashboard';
 import MobileLoginPage from './pages/MobileLoginPage';
+import BingoTelao from './pages/bingo/BingoTelao';
 
 export const App = () => (
     <Admin
@@ -88,6 +89,8 @@ export const App = () => (
                 path="/mobile-login"
                 element={<MobileLoginPage />}
             />
+
+            <Route path="/bingo/telao" element={<BingoTelao />} />
         </CustomRoutes>
         {(permissions) => (
             <>
