@@ -54,6 +54,89 @@ const QrButton = ({ onClick }: { onClick: (record: any) => void }) => {
   );
 };
 
+const formatarMensagemResultado = (data: any) => {
+  const acao = data.operacao === 'reset'
+    ? 'resetados'
+    : 'limpos';
+
+  const valor = new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+  }).format(Number(data.valor_total_zerado || 0));
+
+  return `${data.total} cartões ${acao}. ` +
+    `${data.total_com_saldo} tinham saldo. ` +
+    `Total zerado: ${valor}`;
+};
+
+const LimparTodosButton = () => {
+  const { loteId } = useParams();
+  const notify = useNotify();
+  const refresh = useRefresh();
+
+  const [open, setOpen] = useState(false);
+  const [create, { isLoading }] = useCreate();
+
+  const handleConfirm = () => {
+    setOpen(false);
+
+    create(
+      'resetar-cartoes-lote',
+      {
+        data: {
+          lote_id: loteId,
+          reset_economico: false, // limpeza simples
+        },
+      },
+      {
+        onSuccess: (data: any) => {
+          notify(formatarMensagemResultado(data), {
+            type: 'success',
+          });
+          refresh();
+        },
+        onError: () => {
+          notify('Erro ao limpar cartões', {
+            type: 'error',
+          });
+        },
+      }
+    );
+  };
+
+  return (
+    <>
+      <Button
+        variant="outlined"
+        color="warning"
+        onClick={() => setOpen(true)}
+        disabled={isLoading}
+      >
+        Limpar todos
+      </Button>
+
+      <Confirm
+        isOpen={open}
+        title="Limpar todos os cartões"
+        content={
+          <>
+            <strong>Atenção!</strong>
+            <br />
+            Esta ação irá:
+            <ul>
+              <li>Zerar o saldo de todos os cartões do lote</li>
+              <li>Não permitirá cobrar a taxa novamente</li>
+            </ul>
+            Deseja continuar?
+          </>
+        }
+        onConfirm={handleConfirm}
+        onClose={() => setOpen(false)}
+      />
+    </>
+  );
+};
+
 const ResetarTodosButton = () => {
   const { loteId } = useParams();
   const notify = useNotify();
@@ -70,14 +153,14 @@ const ResetarTodosButton = () => {
       {
         data: {
           lote_id: loteId,
+          reset_economico: true, // reset completo
         },
       },
       {
-        onSuccess: (data) => {
-          notify(
-            `${data.total} cartões resetados`,
-            { type: 'success' }
-          );
+        onSuccess: (data: any) => {
+          notify(formatarMensagemResultado(data), {
+            type: 'success',
+          });
           refresh();
         },
         onError: () => {
@@ -104,7 +187,19 @@ const ResetarTodosButton = () => {
       <Confirm
         isOpen={open}
         title="Resetar todos os cartões"
-        content="Esta ação irá resetar TODOS os cartões do lote. Deseja continuar?"
+        content={
+          <>
+            <strong>Atenção!</strong>
+            <br />
+            Esta ação irá:
+            <ul>
+              <li>Zerar o saldo de todos os cartões do lote</li>
+              <li>Permitir cobrar a taxa novamente</li>
+              <li>Desbloquear todos os cartões</li>
+            </ul>
+            Deseja continuar?
+          </>
+        }
         onConfirm={handleConfirm}
         onClose={() => setOpen(false)}
       />
@@ -128,6 +223,7 @@ const CartaoListActions = () => {
         Voltar
       </Button>
 
+      <LimparTodosButton />
       <ResetarTodosButton />
     </SmartToolbar>
   );
@@ -154,6 +250,7 @@ export const CartaoList = () => {
           <TextField source="status" />
 
           <BloquearButton />
+          <LimparButton />
           <ResetarButton />
           <QrButton onClick={setSelected} />
         </Datagrid>
@@ -261,6 +358,75 @@ export const BloquearButton = () => {
   );
 };
 
+export const LimparButton = () => {
+  const record = useRecordContext();
+  const notify = useNotify();
+  const refresh = useRefresh();
+
+  const [open, setOpen] = useState(false);
+  const [create, { isLoading }] = useCreate();
+
+  if (!record) return null;
+
+  const handleConfirm = () => {
+    setOpen(false);
+
+    create(
+      'resetar-cartao',
+      {
+        data: {
+          cartao_id: record.id,
+          reset_economico: false, // limpeza simples
+        },
+      },
+      {
+        onSuccess: () => {
+          notify('Cartão limpo com sucesso', {
+            type: 'success',
+          });
+          refresh();
+        },
+        onError: () => {
+          notify('Erro ao limpar cartão', {
+            type: 'error',
+          });
+        },
+      }
+    );
+  };
+
+  return (
+    <>
+      <Button
+        color="warning"
+        onClick={() => setOpen(true)}
+        disabled={isLoading}
+      >
+        Limpar
+      </Button>
+
+      <Confirm
+        isOpen={open}
+        title="Limpar cartão"
+        content={
+          <>
+            <strong>Atenção!</strong>
+            <br />
+            Esta ação irá:
+            <ul>
+              <li>Zerar o saldo do cartão</li>
+              <li>Não permitirá cobrar a taxa novamente</li>
+            </ul>
+            Deseja continuar?
+          </>
+        }
+        onConfirm={handleConfirm}
+        onClose={() => setOpen(false)}
+      />
+    </>
+  );
+};
+
 export const ResetarButton = () => {
   const record = useRecordContext();
   const notify = useNotify();
@@ -279,15 +445,20 @@ export const ResetarButton = () => {
       {
         data: {
           cartao_id: record.id,
+          reset_economico: true, // reset completo
         },
       },
       {
         onSuccess: () => {
-          notify('Cartão resetado com sucesso', { type: 'success' });
+          notify('Cartão resetado com sucesso', {
+            type: 'success',
+          });
           refresh();
         },
         onError: () => {
-          notify('Erro ao resetar cartão', { type: 'error' });
+          notify('Erro ao resetar cartão', {
+            type: 'error',
+          });
         },
       }
     );
@@ -314,7 +485,7 @@ export const ResetarButton = () => {
             Esta ação irá:
             <ul>
               <li>Zerar o saldo do cartão</li>
-              <li>Remover vínculo com o usuário</li>
+              <li>Permitir cobrar a taxa novamente</li>
               <li>Manter o cartão ativo para novo uso</li>
             </ul>
             Deseja continuar?
@@ -326,4 +497,3 @@ export const ResetarButton = () => {
     </>
   );
 };
-
