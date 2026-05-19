@@ -22,13 +22,20 @@ import {
   ImageField,
   ImageInput,
   useGetOne,
+  useGetList,
+  BooleanInput,
+  BooleanField,
 } from 'react-admin';
-import { useNavigate, useParams } from 'react-router';
+import { useLocation, useNavigate, useParams } from 'react-router';
 import { useState } from 'react';
 import CreditCardIcon from '@mui/icons-material/CreditCard';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import { Button, Chip } from '@mui/material';
+import LinkIcon from '@mui/icons-material/Link';
+import LinkOffIcon from '@mui/icons-material/LinkOff';
+import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
+import CallSplitIcon from '@mui/icons-material/CallSplit';
+import { Autocomplete, Button, Checkbox, Chip, Dialog, DialogActions, DialogContent, DialogTitle, FormControl, FormControlLabel, FormLabel, TextField as MuiTextField, Radio, RadioGroup } from '@mui/material';
 import { CartoesDoLoteButton } from './cartoes';
 import { ExportarCartoesPdf } from './exportarCartoesPdf';
 import { supabase } from '../lib/supabaseClient';
@@ -71,13 +78,49 @@ export const LoteStatusField = () => {
   }
 };
 
-export const LoteCartaoList = () => {
+export const LoteCartaoProprioList = () => (
+  <ListBase
+    resource="vw_lotes_cartoes_proprios"
+    perPage={25}
+  >
+    <SmartToolbar>
+      <BackToListButtonNavigate />
+      <CreateButton
+        resource="lotes_cartoes"
+        to="/lotes_cartoes/create?tipo=proprio"
+      />
+    </SmartToolbar>
+
+    <Datagrid rowClick={(id, resource, record) =>
+      `/lotes_cartoes/${record.id}`
+    }>
+      <LoteStatusField />
+      <ReferenceField
+        source="evento_atual_id"
+        reference="eventos"
+        label="Evento atual"
+      >
+        <TextField source="nome" />
+      </ReferenceField>
+      <TextField source="nome" />
+      <TextField source="prefixo_codigo" />
+      <NumberField source="sequencial_inicio" />
+      <NumberField source="sequencial_fim" />
+      <NumberField source="quantidade" />
+      <DateField source="criado_em" showTime />
+    </Datagrid>
+
+    <Pagination />
+  </ListBase>
+);
+
+export const LoteCartaoListEvento = () => {
   const { eventoId } = useParams();
 
   return (
     <ListBase
-      resource="vw_lotes_cartoes_status"
-      filter={{ evento_id: eventoId }}
+      resource="vw_lotes_cartoes_evento"
+      filter={{ evento_atual_id: eventoId }}
       perPage={25}
     >
       <LoteListActions />
@@ -88,15 +131,19 @@ export const LoteCartaoList = () => {
         }
       >
         <LoteStatusField />
-        <ReferenceField source="evento_id" reference="eventos">
+        <ReferenceField source="evento_atual_id" reference="eventos">
           <TextField source="nome" />
         </ReferenceField>
-
+        <TextField source="nome" />
         <TextField source="prefixo_codigo" />
         <NumberField source="sequencial_inicio" />
         <NumberField source="sequencial_fim" />
         <NumberField source="quantidade" />
         <DateField source="criado_em" showTime />
+        <BooleanField
+          source="cobra_taxa_primeira_recarga"
+          label="Cobra taxa"
+        />
       </Datagrid>
 
       <Pagination />
@@ -158,30 +205,62 @@ export const GerarCartoesButton = ({ record }: ActionProps) => {
 export const LoteCartaoCreate = () => {
   const { eventoId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const params = new URLSearchParams(location.search);
+  const tipo = params.get('tipo');
+
+  const isProprio = tipo === 'proprio';
+
+  const handleBack = () => {
+    if (isProprio) {
+      navigate('/vw_lotes_cartoes_proprios');
+    } else {
+      navigate(`/eventos/${eventoId}/lotes-cartoes`);
+    }
+  };
 
   return (
     <Create
       resource="lotes_cartoes"
+      actions={
+        <SmartToolbar>
+          <BackToListButtonNavigate />
+        </SmartToolbar>
+      }
       transform={(data) => ({
         ...data,
-        evento_id: eventoId,
+        prefixo_codigo: isProprio
+          ? 'ZPAY'
+          : data.prefixo_codigo,
+
+        evento_id: isProprio ? null : eventoId,
+        tipo_lote: isProprio ? 'proprio' : 'evento',
       })}
       mutationOptions={{
         onSuccess: () => {
-          navigate(`/eventos/${eventoId}/lotes-cartoes`);
+          handleBack();
         },
       }}
     >
       <SimpleForm
         defaultValues={{
-          evento_id: eventoId,
+          prefixo_codigo: isProprio ? 'ZPAY' : '',
+          cobra_taxa_primeira_recarga: true,
         }}
       >
+        <TextInput
+          source="nome"
+          label="Nome do lote"
+          fullWidth
+        />
+
         <TextInput
           source="prefixo_codigo"
           label="Prefixo do cartão"
           validate={required()}
           fullWidth
+          disabled={isProprio}
         />
 
         <NumberInput
@@ -192,6 +271,12 @@ export const LoteCartaoCreate = () => {
         <NumberInput
           source="quantidade"
           validate={required()}
+        />
+
+        <BooleanInput
+          source="cobra_taxa_primeira_recarga"
+          label="Cobrar taxa na primeira recarga"
+          defaultValue={true}
         />
       </SimpleForm>
     </Create>
@@ -246,7 +331,7 @@ const DeleteLoteButton = ({ record }: ActionProps) => {
   if (record.total_cartoes > 0) {
     return (
       <Button
-variant="outlined"        disabled
+        variant="outlined" disabled
         onClick={() =>
           notify(
             'Não é possível excluir um lote com cartões gerados',
@@ -345,6 +430,26 @@ const EditActions = () => {
     <SmartToolbar>
       <BackToEventoLotesButton record={view} />
 
+      {view.tipo_lote === 'proprio' && (
+        <>
+          <BackToListButtonNavigate />
+          <DividirLoteButton record={view} />
+        </>
+      )}
+
+      {view.tipo_lote === 'proprio' &&
+        !view.evento_atual_id && (
+          <VincularLoteEventoButton record={view} />
+        )}
+
+      {view.tipo_lote === 'proprio' &&
+        view.evento_atual_id && (
+          <>
+            <TransferirLoteEventoButton record={view} />
+            <DesvincularLoteButton record={view} />
+          </>
+        )}
+
       {view.status_lote === 'criado' && (
         <GerarCartoesButton record={view} />
       )}
@@ -380,10 +485,18 @@ export const LoteCartaoEdit = () => {
       mutationMode="pessimistic"
       redirect={false}
       transform={async (data) => {
-        const updates: any = {};
+        // Começa com os campos editáveis
+        const updates: any = {
+          nome: data.nome,
+          cobra_taxa_primeira_recarga:
+            data.cobra_taxa_primeira_recarga,
+        };
 
-        const upload = async (file: any, nome: string) => {
-          const path = `eventos/${data.evento_id}/lotes/${data.id}/${nome}.png`;
+        const upload = async (
+          file: any,
+          nomeArquivo: string
+        ) => {
+          const path = `eventos/${data.evento_id}/lotes/${data.id}/${nomeArquivo}.png`;
 
           const { error } = await supabase.storage
             .from('cartoes-artes')
@@ -402,15 +515,22 @@ export const LoteCartaoEdit = () => {
           return `${url.publicUrl}?v=${Date.now()}`;
         };
 
-
-        if (data.arte_frente_file) {
+        // Upload da arte frente
+        if (
+          data.arte_frente_file &&
+          data.arte_frente_file.rawFile
+        ) {
           updates.arte_frente_url = await upload(
             data.arte_frente_file,
             'frente'
           );
         }
 
-        if (data.arte_verso_file) {
+        // Upload da arte verso
+        if (
+          data.arte_verso_file &&
+          data.arte_verso_file.rawFile
+        ) {
           updates.arte_verso_url = await upload(
             data.arte_verso_file,
             'verso'
@@ -421,12 +541,42 @@ export const LoteCartaoEdit = () => {
       }}
     >
       <SimpleForm>
-        <TextInput source="prefixo_codigo" disabled fullWidth />
-        <NumberInput source="sequencial_inicio" disabled />
-        <NumberInput source="sequencial_fim" disabled />
-        <NumberInput source="quantidade" disabled />
+        <TextInput
+          source="nome"
+          label="Nome do lote"
+          fullWidth
+        />
 
-        <ImageInput source="arte_frente_file" label="Arte frente">
+        <TextInput
+          source="prefixo_codigo"
+          disabled
+          fullWidth
+        />
+
+        <NumberInput
+          source="sequencial_inicio"
+          disabled
+        />
+
+        <NumberInput
+          source="sequencial_fim"
+          disabled
+        />
+
+        <NumberInput
+          source="quantidade"
+          disabled
+        />
+
+        <BooleanInput
+          source="cobra_taxa_primeira_recarga"
+          label="Cobrar taxa na primeira recarga"
+        />
+
+        <ImageInput
+          source="arte_frente_file"
+          label="Arte frente"
+        >
           <ImageField source="src" />
         </ImageInput>
 
@@ -435,7 +585,10 @@ export const LoteCartaoEdit = () => {
           label="Arte frente atual"
         />
 
-        <ImageInput source="arte_verso_file" label="Arte verso">
+        <ImageInput
+          source="arte_verso_file"
+          label="Arte verso"
+        >
           <ImageField source="src" />
         </ImageInput>
 
@@ -448,3 +601,553 @@ export const LoteCartaoEdit = () => {
   );
 };
 
+interface ActionProps {
+  record?: any;
+}
+
+export const VincularLoteEventoButton = ({
+  record,
+}: ActionProps) => {
+  const [open, setOpen] = useState(false);
+  const [eventoId, setEventoId] =
+    useState<string | null>(null);
+
+  const dataProvider = useDataProvider();
+  const notify = useNotify();
+  const refresh = useRefresh();
+
+  const { data: eventos = [], isLoading } = useGetList(
+    'eventos',
+    {
+      pagination: { page: 1, perPage: 100 },
+      sort: { field: 'nome', order: 'ASC' },
+      filter: { ativo: true },
+    }
+  );
+
+  if (!record) return null;
+  if (record.tipo_lote !== 'proprio') return null;
+  if (record.status_lote === 'criado') return null;
+
+  const handleConfirm = async () => {
+    if (!eventoId) {
+      notify('Selecione um evento', {
+        type: 'warning',
+      });
+      return;
+    }
+
+    try {
+      await dataProvider.create(
+        'vincular-lote-evento',
+        {
+          data: {
+            lote_id: record.id,
+            evento_id: eventoId,
+          },
+        }
+      );
+
+      notify('Lote vinculado com sucesso', {
+        type: 'success',
+      });
+
+      setOpen(false);
+      setEventoId(null);
+      refresh();
+    } catch (error: any) {
+      notify(
+        error?.body?.error ||
+        'Erro ao vincular lote',
+        {
+          type: 'error',
+        }
+      );
+    }
+  };
+
+  return (
+    <>
+      <Button
+        variant="outlined"
+        startIcon={<LinkIcon />}
+        onClick={() => setOpen(true)}
+      >
+        Vincular a evento
+      </Button>
+
+      <Dialog
+        open={open}
+        onClose={() => setOpen(false)}
+        fullWidth
+        maxWidth="sm"
+      >
+        <DialogTitle>
+          Vincular lote ao evento
+        </DialogTitle>
+
+        <DialogContent sx={{ pt: 2 }}>
+          <Autocomplete
+            options={eventos}
+            loading={isLoading}
+            getOptionLabel={(option) =>
+              option.nome ?? ''
+            }
+            value={
+              eventos.find(
+                (e) => e.id === eventoId
+              ) ?? null
+            }
+            onChange={(_, value) =>
+              setEventoId(value?.id ?? null)
+            }
+            renderInput={(params) => (
+              <MuiTextField
+                {...params}
+                label="Evento"
+                fullWidth
+                margin="normal"
+              />
+            )}
+          />
+        </DialogContent>
+
+        <DialogActions>
+          <Button
+            onClick={() => setOpen(false)}
+          >
+            Cancelar
+          </Button>
+
+          <Button
+            variant="contained"
+            onClick={handleConfirm}
+            disabled={!eventoId}
+          >
+            Vincular
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </>
+  );
+};
+
+
+
+export const DesvincularLoteButton = ({
+  record,
+}: ActionProps) => {
+  const [open, setOpen] = useState(false);
+  const [zerarSaldo, setZerarSaldo] = useState(true);
+
+  const dataProvider = useDataProvider();
+  const notify = useNotify();
+  const refresh = useRefresh();
+
+  if (!record) return null;
+  if (record.tipo_lote !== 'proprio') return null;
+  if (!record.evento_atual_id) return null;
+
+  const handleConfirm = async () => {
+    try {
+      await dataProvider.create(
+        'desvincular-lote-evento',
+        {
+          data: {
+            lote_id: record.id,
+            zerar_saldo: zerarSaldo,
+          },
+        }
+      );
+
+      notify('Lote desvinculado com sucesso', {
+        type: 'success',
+      });
+
+      setOpen(false);
+      refresh();
+    } catch (error: any) {
+      notify(
+        error?.body?.error ||
+        'Erro ao desvincular lote',
+        {
+          type: 'error',
+        }
+      );
+    }
+  };
+
+  return (
+    <>
+      <Button
+        variant="outlined"
+        color="warning"
+        startIcon={<LinkOffIcon />}
+        onClick={() => setOpen(true)}
+      >
+        Devolver ao estoque
+      </Button>
+
+      <Dialog open={open} onClose={() => setOpen(false)}>
+        <DialogTitle>Devolver lote ao estoque</DialogTitle>
+
+        <DialogContent>
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={zerarSaldo}
+                onChange={(e) =>
+                  setZerarSaldo(e.target.checked)
+                }
+              />
+            }
+            label="Limpar saldo dos cartões"
+          />
+        </DialogContent>
+
+        <DialogActions>
+          <Button onClick={() => setOpen(false)}>
+            Cancelar
+          </Button>
+          <Button
+            variant="contained"
+            onClick={handleConfirm}
+          >
+            Confirmar
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </>
+  );
+};
+
+export const TransferirLoteEventoButton = ({
+  record,
+}: ActionProps) => {
+  const [open, setOpen] = useState(false);
+  const [eventoId, setEventoId] = useState<string | null>(null);
+  const [zerarSaldo, setZerarSaldo] = useState(false);
+
+  const dataProvider = useDataProvider();
+  const notify = useNotify();
+  const refresh = useRefresh();
+
+  const { data: eventos = [], isLoading } = useGetList(
+    'eventos',
+    {
+      pagination: { page: 1, perPage: 100 },
+      sort: { field: 'nome', order: 'ASC' },
+      filter: { ativo: true },
+    }
+  );
+
+  if (!record) return null;
+  if (record.tipo_lote !== 'proprio') return null;
+  if (!record.evento_atual_id) return null;
+
+  const handleClose = () => {
+    setOpen(false);
+    setEventoId(null);
+    setZerarSaldo(false);
+  };
+
+  const handleConfirm = async () => {
+    if (!eventoId) {
+      notify('Selecione o evento de destino', {
+        type: 'warning',
+      });
+      return;
+    }
+
+    try {
+      await dataProvider.create('transferir-lote-evento', {
+        data: {
+          lote_id: record.id,
+          evento_id: eventoId,
+          zerar_saldo: zerarSaldo,
+        },
+      });
+
+      notify('Lote transferido com sucesso', {
+        type: 'success',
+      });
+
+      handleClose();
+      refresh();
+    } catch (error: any) {
+      notify(
+        error?.body?.error ??
+        'Erro ao transferir lote',
+        {
+          type: 'error',
+        }
+      );
+    }
+  };
+
+  return (
+    <>
+      <Button
+        variant="outlined"
+        startIcon={<SwapHorizIcon />}
+        onClick={() => setOpen(true)}
+      >
+        Transferir
+      </Button>
+
+      <Dialog
+        open={open}
+        onClose={handleClose}
+        fullWidth
+        maxWidth="sm"
+      >
+        <DialogTitle>
+          Transferir lote para outro evento
+        </DialogTitle>
+
+        <DialogContent sx={{ pt: 2 }}>
+          <Autocomplete
+            options={eventos.filter(
+              (e) => e.id !== record.evento_atual_id
+            )}
+            loading={isLoading}
+            getOptionLabel={(option) =>
+              option.nome ?? ''
+            }
+            value={
+              eventos.find(
+                (e) => e.id === eventoId
+              ) ?? null
+            }
+            onChange={(_, value) =>
+              setEventoId(value?.id ?? null)
+            }
+            renderInput={(params) => (
+              <MuiTextField
+                {...params}
+                label="Evento destino"
+                fullWidth
+                margin="normal"
+              />
+            )}
+          />
+
+          <FormControlLabel
+            sx={{ mt: 1 }}
+            control={
+              <Checkbox
+                checked={zerarSaldo}
+                onChange={(e) =>
+                  setZerarSaldo(
+                    e.target.checked
+                  )
+                }
+              />
+            }
+            label="Limpar saldo dos cartões"
+          />
+        </DialogContent>
+
+        <DialogActions>
+          <Button onClick={handleClose}>
+            Cancelar
+          </Button>
+
+          <Button
+            variant="contained"
+            onClick={handleConfirm}
+            disabled={!eventoId}
+          >
+            Transferir
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </>
+  );
+};
+
+export const DividirLoteButton = ({
+  record,
+}: ActionProps) => {
+  const [open, setOpen] = useState(false);
+  const [modo, setModo] = useState<
+    'intervalo' | 'nao_utilizados'
+  >('intervalo');
+  const [sequencialInicio, setSequencialInicio] =
+    useState<string>('');
+  const [sequencialFim, setSequencialFim] =
+    useState<string>('');
+
+  const dataProvider = useDataProvider();
+  const notify = useNotify();
+  const refresh = useRefresh();
+
+  if (!record) return null;
+  if ((record.total_cartoes ?? 0) <= 1) return null;
+  if (record.status_lote === 'criado') return null;
+
+  const handleClose = () => {
+    setOpen(false);
+    setModo('intervalo');
+    setSequencialInicio('');
+    setSequencialFim('');
+  };
+
+  const handleConfirm = async () => {
+    if (modo === 'intervalo') {
+      if (!sequencialInicio || !sequencialFim) {
+        notify(
+          'Informe o sequencial inicial e final',
+          { type: 'warning' }
+        );
+        return;
+      }
+
+      if (
+        Number(sequencialFim) <
+        Number(sequencialInicio)
+      ) {
+        notify(
+          'O sequencial final deve ser maior ou igual ao inicial',
+          { type: 'warning' }
+        );
+        return;
+      }
+    }
+
+    try {
+      await dataProvider.create(
+        'dividir-lote-cartoes',
+        {
+          data: {
+            lote_id: record.id,
+            modo,
+            ...(modo === 'intervalo'
+              ? {
+                sequencial_inicio: Number(
+                  sequencialInicio
+                ),
+                sequencial_fim: Number(
+                  sequencialFim
+                ),
+              }
+              : {}),
+          },
+        }
+      );
+
+      notify('Lote dividido com sucesso', {
+        type: 'success',
+      });
+
+      handleClose();
+      refresh();
+    } catch (error: any) {
+      notify(
+        error?.body?.error ??
+        'Erro ao dividir lote',
+        {
+          type: 'error',
+        }
+      );
+    }
+  };
+
+  return (
+    <>
+      <Button
+        variant="outlined"
+        startIcon={<CallSplitIcon />}
+        onClick={() => setOpen(true)}
+      >
+        Dividir lote
+      </Button>
+
+      <Dialog
+        open={open}
+        onClose={handleClose}
+        fullWidth
+        maxWidth="sm"
+      >
+        <DialogTitle>
+          Dividir lote de cartões
+        </DialogTitle>
+
+        <DialogContent sx={{ pt: 2 }}>
+          <FormControl component="fieldset" fullWidth>
+            <FormLabel component="legend">
+              Critério de divisão
+            </FormLabel>
+
+            <RadioGroup
+              value={modo}
+              onChange={(e) =>
+                setModo(
+                  e.target
+                    .value as
+                  | 'intervalo'
+                  | 'nao_utilizados'
+                )
+              }
+            >
+              <FormControlLabel
+                value="intervalo"
+                control={<Radio />}
+                label="Por intervalo de sequência"
+              />
+
+              <FormControlLabel
+                value="nao_utilizados"
+                control={<Radio />}
+                label="Cartões não utilizados no evento atual"
+              />
+            </RadioGroup>
+          </FormControl>
+
+          {modo === 'intervalo' && (
+            <>
+              <MuiTextField
+                label="Sequencial inicial"
+                type="number"
+                fullWidth
+                margin="normal"
+                value={sequencialInicio}
+                onChange={(e) =>
+                  setSequencialInicio(
+                    e.target.value
+                  )
+                }
+              />
+
+              <MuiTextField
+                label="Sequencial final"
+                type="number"
+                fullWidth
+                margin="normal"
+                value={sequencialFim}
+                onChange={(e) =>
+                  setSequencialFim(
+                    e.target.value
+                  )
+                }
+              />
+            </>
+          )}
+        </DialogContent>
+
+        <DialogActions>
+          <Button onClick={handleClose}>
+            Cancelar
+          </Button>
+
+          <Button
+            variant="contained"
+            onClick={handleConfirm}
+          >
+            Dividir
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </>
+  );
+};

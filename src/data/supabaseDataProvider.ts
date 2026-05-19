@@ -234,6 +234,49 @@ export const supabaseDataProvider: DataProvider = {
       };
     }
 
+    if (resource === 'vincular-lote-evento') {
+      const { data, error } = await supabase.functions.invoke(
+        'vincular-lote-evento',
+        {
+          body: params.data,
+        }
+      );
+
+      if (error) {
+        throw error;
+      }
+
+      return data;
+    }
+
+    if (resource === 'desvincular-lote-evento') {
+      const { data, error } = await supabase.functions.invoke(
+        'desvincular-lote-evento',
+        {
+          body: params.data,
+        }
+      );
+
+      if (error) {
+        throw error;
+      }
+
+      return data;
+    }
+
+    if (resource === 'transferir-lote-evento') {
+      const { data, error } = await supabase.functions.invoke(
+        'transferir-lote-evento',
+        {
+          body: params.data,
+        }
+      );
+
+      if (error) throw error;
+
+      return data;
+    }
+
     if (resource === 'bloquear-cartao') {
       const { data, error } = await supabase.functions.invoke('bloquear-cartao', {
         body: params.data,
@@ -260,6 +303,20 @@ export const supabaseDataProvider: DataProvider = {
       return {
         data: data?.data ?? { id: params.data.cartao_id },
       };
+    }
+
+    if (resource === 'dividir-lote-cartoes') {
+      const { data, error } =
+        await supabase.functions.invoke(
+          'dividir-lote-cartoes',
+          {
+            body: params.data,
+          }
+        );
+
+      if (error) throw error;
+
+      return data;
     }
 
     if (resource === 'resetar-cartoes-lote') {

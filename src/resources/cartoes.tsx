@@ -209,16 +209,23 @@ const ResetarTodosButton = () => {
 
 const CartaoListActions = () => {
   const navigate = useNavigate();
-  const { eventoId } = useParams();
+  const { eventoId, loteId } = useParams();
+  
+    const handleBack = () => {
+    if (eventoId != "null") {
+      navigate(`/eventos/${eventoId}/lotes-cartoes`);
+      return;
+    }
+
+    navigate(`/lotes_cartoes/${loteId}`);
+  };
 
   return (
     <SmartToolbar>
       <Button
         variant="outlined"
         startIcon={<ArrowBackIcon />}
-        onClick={() =>
-          navigate(`/eventos/${eventoId}/lotes-cartoes`)
-        }
+        onClick={handleBack}
       >
         Voltar
       </Button>

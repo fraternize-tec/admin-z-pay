@@ -57,16 +57,6 @@ const EventoEditActions = () => {
     <SmartToolbar>
       <BackToListButton />
 
-      <Button
-        variant="outlined"
-        startIcon={<CreditCardIcon />}
-        onClick={() =>
-          navigate(`/eventos/${record.id}/cartoes-emergenciais`)
-        }
-      >
-        Cartões emergenciais
-      </Button>
-
       <EventoQRCodeButton />
 
       <Button

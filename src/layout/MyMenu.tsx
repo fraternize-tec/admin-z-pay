@@ -4,6 +4,7 @@ import StoreIcon from "@mui/icons-material/Store";
 import InventoryIcon from "@mui/icons-material/Inventory";
 import PointOfSaleIcon from "@mui/icons-material/PointOfSale";
 import PeopleIcon from "@mui/icons-material/People";
+import AddCardIcon from "@mui/icons-material/AddCard";
 import CreditCardIcon from "@mui/icons-material/CreditCard";
 import VpnKeyIcon from "@mui/icons-material/VpnKey";
 import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
@@ -39,9 +40,9 @@ export const MyMenu = () => {
 
       {can(permissions, "eventos.read") && (
         <MenuItemLink
-          to="/vw_cartoes_proprios"
+          to="/vw_lotes_cartoes_proprios"
           primaryText="Cartões Próprios"
-          leftIcon={<CreditCardIcon />}
+          leftIcon={<AddCardIcon />}
         />
       )}
 

@@ -32,7 +32,7 @@ import CreditCardIcon from '@mui/icons-material/CreditCard';
 import { i18nProvider } from './i18n/i18nProvider';
 import { lightTheme, darkTheme } from './theme/theme';
 import { PapelPermissaoCreate } from './resources/papelPermissoes';
-import { LoteCartaoList, LoteCartaoCreate, LoteCartaoEdit } from './resources/lotesCartoes';
+import { LoteCartaoCreate, LoteCartaoEdit, LoteCartaoListEvento, LoteCartaoProprioCreate, LoteCartaoProprioList } from './resources/lotesCartoes';
 import { Route } from 'react-router';
 import { CartaoList } from './resources/cartoes';
 import { CartaoProprioShow, CartoesPropriosList } from './resources/cartoesProprios';
@@ -57,7 +57,7 @@ export const App = () => (
         <CustomRoutes>
             <Route
                 path="/eventos/:eventoId/lotes-cartoes"
-                element={<LoteCartaoList />}
+                element={<LoteCartaoListEvento />}
             />
 
             <Route
@@ -119,11 +119,10 @@ export const App = () => (
 
 
                         <Resource
-                            name="vw_cartoes_proprios"
+                            name="vw_lotes_cartoes_proprios"
                             icon={CreditCardIcon}
                             options={{ label: 'Cartões Próprios' }}
-                            list={CartoesPropriosList}
-                            show={CartaoProprioShow}
+                            list={LoteCartaoProprioList}
                         />
 
                     </>

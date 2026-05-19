@@ -4,7 +4,6 @@ import {
   Datagrid,
   TextField,
   NumberField,
-  TopToolbar,
   Button,
   useRecordContext,
   useNotify,
