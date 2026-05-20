@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Box,
   Card,
@@ -13,6 +13,12 @@ import {
   AccordionDetails,
   Stack,
   useTheme,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  MenuItem,
+  TextField as MuiTextField,
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { LocalizationProvider, DateTimePicker } from "@mui/x-date-pickers";
@@ -20,11 +26,14 @@ import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { ptBR } from "date-fns/locale";
 import { subDays, startOfDay, endOfDay } from "date-fns";
 import { supabase } from "../lib/supabaseClient";
-import { exportarDashboardPdf } from "./exportarDashboardPdf";
+import { exportarDashboardPdf } from "../export/exportarDashboardPdf";
 import { useEvento } from "../context/EventoContext";
 import { EventoSelector } from "../components/EventoSelector";
 import { isAdminGlobal } from "../utils/permissionUtils";
-import { usePermissions } from "react-admin";
+import { TextField, usePermissions } from "react-admin";
+import { filtrarDashboardData } from "../export/filtrarDashboardData";
+import { exportarDashboardCsv } from "../export/exportarDashboardCsv";
+import { exportarDashboardExcel } from "../export/exportarDashboardExcel";
 
 // ============================
 // Tipagens
@@ -712,6 +721,7 @@ export const DashboardFinanceiroEvento = () => {
   const [fim, setFim] = useState<Date | null>(now);
 
   const [gerandoPdf, setGerandoPdf] = useState(false);
+  const [exportDialogOpen, setExportDialogOpen] = useState(false);
 
   const carregar = async () => {
     if (!inicio || !fim) return;
@@ -760,6 +770,13 @@ export const DashboardFinanceiroEvento = () => {
         <Typography variant="h5" fontWeight={900}>
           Relatório Financeiro
         </Typography>
+
+        <Button
+          variant="outlined"
+          onClick={() => setExportDialogOpen(true)}
+        >
+          Exportar
+        </Button>
 
         <Button
           variant="outlined"
@@ -828,6 +845,167 @@ export const DashboardFinanceiroEvento = () => {
       <Divider sx={{ my: 4 }} />
 
       <TabelaUltimas data={data.ultimas_transacoes} />
+
+      <ExportDialog
+        open={exportDialogOpen}
+        onClose={() => setExportDialogOpen(false)}
+        data={data}
+        onExport={async ({ scope, selected, format }) => {
+          const filtered = filtrarDashboardData(
+            data,
+            scope,
+            selected
+          );
+
+          if (format === "pdf") {
+            await exportarDashboardPdf(
+              filtered,
+              inicio!,
+              fim!,
+              eventoAtual?.nome ?? ""
+            );
+          }
+
+          if (format === "csv") {
+            await exportarDashboardCsv(
+              filtered,
+              eventoAtual?.nome ?? ""
+            );
+          }
+
+          if (format === "xlsx") {
+            await exportarDashboardExcel(
+              filtered,
+              eventoAtual?.nome ?? ""
+            );
+          }
+        }}
+      />
     </Box>
   );
 };
+
+
+type ExportScope = "all" | "pdv" | "caixa" | "operador";
+type ExportFormat = "pdf" | "csv" | "xlsx";
+
+type Props = {
+  open: boolean;
+  onClose: () => void;
+  data: DashboardData;
+  onExport: (options: {
+    scope: ExportScope;
+    selected: string;
+    format: ExportFormat;
+  }) => Promise<void>;
+};
+
+export function ExportDialog({
+  open,
+  onClose,
+  data,
+  onExport,
+}: Props) {
+  const [scope, setScope] = useState<ExportScope>("all");
+  const [selected, setSelected] = useState("");
+  const [format, setFormat] = useState<ExportFormat>("pdf");
+  const [loading, setLoading] = useState(false);
+
+  const options = useMemo(() => {
+    switch (scope) {
+      case "pdv":
+        return data.itens_por_pdv.map((p) => p.nome_pdv);
+      case "caixa":
+        return data.recargas_por_caixa.map((c) => c.nome_caixa);
+      case "operador":
+        return data.recargas_por_operador.map(
+          (o) => o.operador_nome
+        );
+      default:
+        return [];
+    }
+  }, [scope, data]);
+
+  const handleExport = async () => {
+    setLoading(true);
+    try {
+      await onExport({ scope, selected, format });
+      onClose();
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
+      <DialogTitle>Exportar Relatório</DialogTitle>
+
+      <DialogContent>
+        <Stack spacing={3} sx={{ mt: 1 }}>
+          <MuiTextField
+            select
+            label="Formato"
+            value={format}
+            onChange={(e) =>
+              setFormat(e.target.value as ExportFormat)
+            }
+            fullWidth
+          >
+            <MenuItem value="pdf">PDF</MenuItem>
+            <MenuItem value="csv">CSV</MenuItem>
+            <MenuItem value="xlsx">Excel (.xlsx)</MenuItem>
+          </MuiTextField>
+
+          <MuiTextField
+            select
+            label="Escopo"
+            value={scope}
+            onChange={(e) => {
+              setScope(e.target.value as ExportScope);
+              setSelected("");
+            }}
+            fullWidth
+          >
+            <MenuItem value="all">Relatório Completo</MenuItem>
+            <MenuItem value="pdv">PDV Específico</MenuItem>
+            <MenuItem value="caixa">Caixa Específico</MenuItem>
+            <MenuItem value="operador">
+              Operador Específico
+            </MenuItem>
+          </MuiTextField>
+
+          {scope !== "all" && (
+            <MuiTextField
+              select
+              label="Selecionar"
+              value={selected}
+              onChange={(e) => setSelected(e.target.value)}
+              fullWidth
+            >
+              {options.map((option) => (
+                <MenuItem key={option} value={option}>
+                  {option}
+                </MenuItem>
+              ))}
+            </MuiTextField>
+          )}
+        </Stack>
+      </DialogContent>
+
+      <DialogActions>
+        <Button onClick={onClose}>Cancelar</Button>
+
+        <Button
+          variant="contained"
+          onClick={handleExport}
+          disabled={
+            loading ||
+            (scope !== "all" && !selected)
+          }
+        >
+          {loading ? "Exportando..." : "Exportar"}
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+}

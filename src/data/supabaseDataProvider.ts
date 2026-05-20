@@ -229,9 +229,7 @@ export const supabaseDataProvider: DataProvider = {
         throw error;
       }
 
-      return {
-        data: data ?? {},
-      };
+      return data;
     }
 
     if (resource === 'vincular-lote-evento') {

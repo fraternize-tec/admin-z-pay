@@ -120,7 +120,7 @@ export const LoteCartaoListEvento = () => {
   return (
     <ListBase
       resource="vw_lotes_cartoes_evento"
-      filter={{ evento_atual_id: eventoId }}
+      filter={{ evento_referencia_id: eventoId }}
       perPage={25}
     >
       <LoteListActions />
@@ -131,15 +131,22 @@ export const LoteCartaoListEvento = () => {
         }
       >
         <LoteStatusField />
-        <ReferenceField source="evento_atual_id" reference="eventos">
+
+        <ReferenceField
+          source="evento_atual_id"
+          reference="eventos"
+          label="Evento atual"
+        >
           <TextField source="nome" />
         </ReferenceField>
+
         <TextField source="nome" />
         <TextField source="prefixo_codigo" />
         <NumberField source="sequencial_inicio" />
         <NumberField source="sequencial_fim" />
         <NumberField source="quantidade" />
         <DateField source="criado_em" showTime />
+
         <BooleanField
           source="cobra_taxa_primeira_recarga"
           label="Cobra taxa"

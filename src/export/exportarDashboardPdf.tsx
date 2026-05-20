@@ -33,14 +33,14 @@ export const exportarDashboardPdf = async (
 
   let y = 20;
 
-  const money = (v: number) =>
-    v.toLocaleString("pt-BR", {
+  const money = (v?: number | null) =>
+    Number(v ?? 0).toLocaleString("pt-BR", {
       style: "currency",
       currency: "BRL",
     });
 
-  const number = (v: number) =>
-    v.toLocaleString("pt-BR");
+  const number = (v?: number | null) =>
+    Number(v ?? 0).toLocaleString("pt-BR");
 
   const ensurePage = (space = 15) => {
     if (y + space > 280) {
@@ -135,154 +135,169 @@ export const exportarDashboardPdf = async (
   // =============================
   // RESUMO FINANCEIRO (NOVO MODELO)
   // =============================
-  section("Resumo Financeiro");
+  if (
+    data.financeiro &&
+    Object.keys(data.financeiro).length > 0
+  ) {
+    section("Resumo Financeiro");
 
-  const f = data.financeiro;
+    const f = data.financeiro;
 
-  const possuiTaxa = (f.taxas_arrecadadas ?? 0) > 0;
-  const possuiCortesias = (f.cortesias ?? 0) > 0;
+    const possuiTaxa = (f.taxas_arrecadadas ?? 0) > 0;
+    const possuiCortesias = (f.cortesias ?? 0) > 0;
 
-  // fluxo financeiro
-  flowLine("Recebido Bruto", f.valor_bruto_recebido);
-  if (possuiTaxa) {
-    flowLine("Taxas do Evento", f.taxas_arrecadadas, "minus");
+    // fluxo financeiro
+    flowLine("Recebido Bruto", f.valor_bruto_recebido);
+    if (possuiTaxa) {
+      flowLine("Taxas do Evento", f.taxas_arrecadadas, "minus");
+    }
+
+    if (possuiCortesias) {
+      flowLine("Cortesias", f.cortesias);
+    }
+
+    flowLine("Carregado em Cartões", f.valor_liquido_cartoes, "result");
+
+    y += 2;
+
+    flowLine("Consumido", f.total_consumido, "minus");
+
+    if ((f.devolucoes ?? 0) > 0) {
+      flowLine("Devoluções", f.devolucoes, "minus");
+    }
+
+    // destaque final
+    doc.setFont("Poppins", "bold");
+    doc.setFontSize(12);
+
+    flowLine("Saldo em Circulação", f.saldo_evento, "result");
+
+    y += 8;
   }
-
-  if (possuiCortesias) {
-    flowLine("Cortesias", f.cortesias);
-  }
-
-  flowLine("Carregado em Cartões", f.valor_liquido_cartoes, "result");
-
-  y += 2;
-
-  flowLine("Consumido", f.total_consumido, "minus");
-
-  if ((f.devolucoes ?? 0) > 0) {
-    flowLine("Devoluções", f.devolucoes, "minus");
-  }
-
-  // destaque final
-  doc.setFont("Poppins", "bold");
-  doc.setFontSize(12);
-
-  flowLine("Saldo em Circulação", f.saldo_evento, "result");
-
-  y += 8;
 
   // =============================
   // INDICADORES OPERACIONAIS
   // =============================
-  section("Indicadores Operacionais");
+  if (
+    data.cartoes &&
+    Object.keys(data.cartoes).length > 0
+  ) {
+    section("Indicadores Operacionais");
 
-  line(
-    "Cartões Utilizados",
-    number(data.cartoes.total_cartoes_utilizados),
-    true
-  );
+    line(
+      "Cartões Utilizados",
+      number(data.cartoes.total_cartoes_utilizados),
+      true
+    );
 
-  line(
-    "Cartões do Evento",
-    number(data.cartoes.cartoes_evento)
-  );
+    line(
+      "Cartões do Evento",
+      number(data.cartoes.cartoes_evento)
+    );
 
-  line(
-    "Cartões Emergenciais",
-    number(data.cartoes.cartoes_emergenciais)
-  );
+    line(
+      "Cartões Emergenciais",
+      number(data.cartoes.cartoes_emergenciais)
+    );
 
-  y += 6;
-
+    y += 6;
+  }
   // =============================
   // CAIXAS
   // =============================
-  section("Recargas por Caixa");
+  if ((data.recargas_por_caixa ?? []).length > 0) {
+    section("Recargas por Caixa");
 
-  data.recargas_por_caixa.forEach((cx: any) => {
-    line(cx.nome_caixa, money(cx.total_recargas), true);
+    data.recargas_por_caixa.forEach((cx: any) => {
+      line(cx.nome_caixa, money(cx.total_recargas), true);
 
-    // métricas operacionais do caixa
-    const infoCaixa = [];
+      // métricas operacionais do caixa
+      const infoCaixa = [];
 
-    if (cx.cartoes_utilizados != null)
-      infoCaixa.push(`${number(cx.cartoes_utilizados)} cartões`);
+      if (cx.cartoes_utilizados != null)
+        infoCaixa.push(`${number(cx.cartoes_utilizados)} cartões`);
 
-    if (infoCaixa.length) {
-      doc.setFont("Inter", "normal");
-      doc.setFontSize(9);
-      doc.setTextColor(...COLORS.petrolBlueSoft);
+      if (infoCaixa.length) {
+        doc.setFont("Inter", "normal");
+        doc.setFontSize(9);
+        doc.setTextColor(...COLORS.petrolBlueSoft);
 
-      doc.text(infoCaixa.join(" • "), 18, y);
-      y += 5;
+        doc.text(infoCaixa.join(" • "), 18, y);
+        y += 5;
 
-      doc.setTextColor(...COLORS.petrolBlueDark);
-    }
+        doc.setTextColor(...COLORS.petrolBlueDark);
+      }
 
-    cx.formas_pagamento.forEach((fp: any) => {
-      subLine(fp.forma, money(fp.total));
+      cx.formas_pagamento.forEach((fp: any) => {
+        subLine(fp.forma, money(fp.total));
+      });
+
+      doc.setDrawColor(220);
+      doc.line(14, y - 2, 196, y - 2);
+      y += 4;
     });
-
-    doc.setDrawColor(220);
-    doc.line(14, y - 2, 196, y - 2);
-    y += 4;
-  });
+  }
 
   // =============================
   // OPERADORES
   // =============================
-  section("Recargas por Operador");
+  if ((data.recargas_por_operador ?? []).length > 0) {
+    section("Recargas por Operador");
 
-  data.recargas_por_operador.forEach((op: any) => {
-    line(op.operador_nome, money(op.total_recargas), true);
+    data.recargas_por_operador.forEach((op: any) => {
+      line(op.operador_nome, money(op.total_recargas), true);
 
-    const infoOperador = [
-      `${number(op.qtd_recargas)} recargas`,
-    ];
+      const infoOperador = [
+        `${number(op.qtd_recargas)} recargas`,
+      ];
 
-    if (op.cartoes_utilizados != null)
-      infoOperador.push(`${number(op.cartoes_utilizados)} cartões`);
+      if (op.cartoes_utilizados != null)
+        infoOperador.push(`${number(op.cartoes_utilizados)} cartões`);
 
-    doc.setFont("Inter", "normal");
-    doc.setFontSize(9);
-    doc.setTextColor(...COLORS.petrolBlueSoft);
+      doc.setFont("Inter", "normal");
+      doc.setFontSize(9);
+      doc.setTextColor(...COLORS.petrolBlueSoft);
 
-    doc.text(infoOperador.join(" • "), 18, y);
-    y += 5;
+      doc.text(infoOperador.join(" • "), 18, y);
+      y += 5;
 
-    doc.setTextColor(...COLORS.petrolBlueDark);
+      doc.setTextColor(...COLORS.petrolBlueDark);
 
-    op.formas_pagamento.forEach((fp: any) => {
-      subLine(fp.forma, money(fp.total));
+      op.formas_pagamento.forEach((fp: any) => {
+        subLine(fp.forma, money(fp.total));
+      });
+
+      doc.setDrawColor(220);
+      doc.line(14, y - 2, 196, y - 2);
+      y += 4;
     });
-
-    doc.setDrawColor(220);
-    doc.line(14, y - 2, 196, y - 2);
-    y += 4;
-  });
+  }
 
   // =============================
   // PDVS
   // =============================
-  section("Vendas por PDV");
+  if ((data.itens_por_pdv ?? []).length > 0) {
+    section("Vendas por PDV");
 
-  data.itens_por_pdv.forEach((pdv: any) => {
-    line(pdv.nome_pdv, money(pdv.total_vendas), true);
+    data.itens_por_pdv.forEach((pdv: any) => {
+      line(pdv.nome_pdv, money(pdv.total_vendas), true);
 
-    pdv.itens.forEach((item: any) => {
-      if (!item.quantidade) return;
+      pdv.itens.forEach((item: any) => {
+        if (!item.quantidade) return;
 
-      const label =
-        item.valor_unitario != null
-          ? `${item.item_nome} — ${money(item.valor_unitario)} (${item.quantidade})`
-          : `${item.item_nome} (${item.quantidade})`;
+        const label =
+          item.valor_unitario != null
+            ? `${item.item_nome} — ${money(item.valor_unitario)} (${item.quantidade})`
+            : `${item.item_nome} (${item.quantidade})`;
 
-      subLine(label, money(item.valor_total));
+        subLine(label, money(item.valor_total));
+      });
+
+      doc.setDrawColor(220);
+      doc.line(14, y - 2, 196, y - 2);
+      y += 4;
     });
-
-    doc.setDrawColor(220);
-    doc.line(14, y - 2, 196, y - 2);
-    y += 4;
-  });
+  }
 
   doc.save("relatorio-financeiro-evento.pdf");
 };

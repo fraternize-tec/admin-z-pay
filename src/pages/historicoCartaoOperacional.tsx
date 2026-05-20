@@ -91,11 +91,17 @@ export default function HistoricoCartaoOperacional() {
   // 📜 extrato
   // ============================
   async function carregarExtrato(id: string) {
-    const { data } = await supabase
-      .from("vw_extrato_meio_acesso")
-      .select("*")
-      .eq("meio_id", id)
-      .order("criado_em", { ascending: false });
+    const { data, error } = await supabase.rpc(
+      "fn_extrato_meio_acesso",
+      {
+        p_meio_id: id,
+      }
+    );
+
+    if (error) {
+      console.error("Erro ao carregar extrato:", error);
+      throw error;
+    }
 
     setExtrato(data || []);
   }
