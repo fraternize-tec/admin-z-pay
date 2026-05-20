@@ -34,6 +34,7 @@ import { TextField, usePermissions } from "react-admin";
 import { filtrarDashboardData } from "../export/filtrarDashboardData";
 import { exportarDashboardCsv } from "../export/exportarDashboardCsv";
 import { exportarDashboardExcel } from "../export/exportarDashboardExcel";
+import ExportDialog, { ExportOptions } from "../export/ExportDialog";
 
 // ============================
 // Tipagens
@@ -850,14 +851,10 @@ export const DashboardFinanceiroEvento = () => {
         open={exportDialogOpen}
         onClose={() => setExportDialogOpen(false)}
         data={data}
-        onExport={async ({ scope, selected, format }) => {
-          const filtered = filtrarDashboardData(
-            data,
-            scope,
-            selected
-          );
+        onExport={async (options: ExportOptions) => {
+          const filtered = filtrarDashboardData(data, options);
 
-          if (format === "pdf") {
+          if (options.format === "pdf") {
             await exportarDashboardPdf(
               filtered,
               inicio!,
@@ -866,14 +863,14 @@ export const DashboardFinanceiroEvento = () => {
             );
           }
 
-          if (format === "csv") {
+          if (options.format === "csv") {
             await exportarDashboardCsv(
               filtered,
               eventoAtual?.nome ?? ""
             );
           }
 
-          if (format === "xlsx") {
+          if (options.format === "xlsx") {
             await exportarDashboardExcel(
               filtered,
               eventoAtual?.nome ?? ""
@@ -884,128 +881,3 @@ export const DashboardFinanceiroEvento = () => {
     </Box>
   );
 };
-
-
-type ExportScope = "all" | "pdv" | "caixa" | "operador";
-type ExportFormat = "pdf" | "csv" | "xlsx";
-
-type Props = {
-  open: boolean;
-  onClose: () => void;
-  data: DashboardData;
-  onExport: (options: {
-    scope: ExportScope;
-    selected: string;
-    format: ExportFormat;
-  }) => Promise<void>;
-};
-
-export function ExportDialog({
-  open,
-  onClose,
-  data,
-  onExport,
-}: Props) {
-  const [scope, setScope] = useState<ExportScope>("all");
-  const [selected, setSelected] = useState("");
-  const [format, setFormat] = useState<ExportFormat>("pdf");
-  const [loading, setLoading] = useState(false);
-
-  const options = useMemo(() => {
-    switch (scope) {
-      case "pdv":
-        return data.itens_por_pdv.map((p) => p.nome_pdv);
-      case "caixa":
-        return data.recargas_por_caixa.map((c) => c.nome_caixa);
-      case "operador":
-        return data.recargas_por_operador.map(
-          (o) => o.operador_nome
-        );
-      default:
-        return [];
-    }
-  }, [scope, data]);
-
-  const handleExport = async () => {
-    setLoading(true);
-    try {
-      await onExport({ scope, selected, format });
-      onClose();
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
-      <DialogTitle>Exportar Relatório</DialogTitle>
-
-      <DialogContent>
-        <Stack spacing={3} sx={{ mt: 1 }}>
-          <MuiTextField
-            select
-            label="Formato"
-            value={format}
-            onChange={(e) =>
-              setFormat(e.target.value as ExportFormat)
-            }
-            fullWidth
-          >
-            <MenuItem value="pdf">PDF</MenuItem>
-            <MenuItem value="csv">CSV</MenuItem>
-            <MenuItem value="xlsx">Excel (.xlsx)</MenuItem>
-          </MuiTextField>
-
-          <MuiTextField
-            select
-            label="Escopo"
-            value={scope}
-            onChange={(e) => {
-              setScope(e.target.value as ExportScope);
-              setSelected("");
-            }}
-            fullWidth
-          >
-            <MenuItem value="all">Relatório Completo</MenuItem>
-            <MenuItem value="pdv">PDV Específico</MenuItem>
-            <MenuItem value="caixa">Caixa Específico</MenuItem>
-            <MenuItem value="operador">
-              Operador Específico
-            </MenuItem>
-          </MuiTextField>
-
-          {scope !== "all" && (
-            <MuiTextField
-              select
-              label="Selecionar"
-              value={selected}
-              onChange={(e) => setSelected(e.target.value)}
-              fullWidth
-            >
-              {options.map((option) => (
-                <MenuItem key={option} value={option}>
-                  {option}
-                </MenuItem>
-              ))}
-            </MuiTextField>
-          )}
-        </Stack>
-      </DialogContent>
-
-      <DialogActions>
-        <Button onClick={onClose}>Cancelar</Button>
-
-        <Button
-          variant="contained"
-          onClick={handleExport}
-          disabled={
-            loading ||
-            (scope !== "all" && !selected)
-          }
-        >
-          {loading ? "Exportando..." : "Exportar"}
-        </Button>
-      </DialogActions>
-    </Dialog>
-  );
-}
