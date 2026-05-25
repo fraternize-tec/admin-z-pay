@@ -1,10 +1,10 @@
 import {
-  FormControl,
-  Select,
-  MenuItem,
   Typography,
   Box,
+  TextField,
+  Autocomplete,
 } from "@mui/material";
+
 import { useEvento } from "../context/EventoContext";
 
 export const EventoSelector = () => {
@@ -17,7 +17,7 @@ export const EventoSelector = () => {
 
   if (loading) return null;
 
-  // ✅ Se só existir 1 evento → mostrar nome fixo
+  // Se só existir 1 evento
   if (eventosDisponiveis.length === 1 && eventoAtual) {
     return (
       <Box
@@ -36,21 +36,28 @@ export const EventoSelector = () => {
     );
   }
 
-  // ✅ Se tiver mais de 1 → mostrar seletor
+  // Se tiver mais de 1
   if (eventosDisponiveis.length > 1) {
     return (
-      <FormControl size="small" sx={{ minWidth: 240 }}>
-        <Select
-          value={eventoAtual?.id ?? ""}
-          onChange={(e) => setEventoAtual(e.target.value)}
-        >
-          {eventosDisponiveis.map((ev) => (
-            <MenuItem key={ev.id} value={ev.id}>
-              {ev.nome}
-            </MenuItem>
-          ))}
-        </Select>
-      </FormControl>
+      <Autocomplete
+        size="small"
+        sx={{ minWidth: 280 }}
+        options={eventosDisponiveis}
+        value={eventoAtual ?? null}
+        getOptionLabel={(option) => option.nome || ""}
+        isOptionEqualToValue={(option, value) =>
+          option.id === value.id
+        }
+        onChange={(_, value) => {
+          setEventoAtual(value?.id ?? "");
+        }}
+        renderInput={(params) => (
+          <TextField
+            {...params}
+            placeholder="Selecionar evento"
+          />
+        )}
+      />
     );
   }
 

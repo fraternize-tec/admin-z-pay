@@ -24,8 +24,7 @@ import {
     WithListContext,
     RecordContextProvider,
     useListContext,
-    useGetList
-} from 'react-admin';
+    useGetList} from 'react-admin';
 
 import AddIcon from '@mui/icons-material/Add';
 import PersonAddIcon from "@mui/icons-material/PersonAdd";
@@ -34,7 +33,7 @@ import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { Autocomplete, Box, Button, TextField as MuiTextField } from '@mui/material';
 import { useTheme, useMediaQuery } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
-import { useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import { UsuariosDatagrid } from '../components/UsuariosDatagrid';
 import { getEscopos, isGlobal } from '../utils/permissionUtils';
@@ -42,9 +41,10 @@ import { can } from '../auth/useCan';
 import { EventoReferenceInput } from '../components/EventoReferenceInput';
 import { SmartToolbar } from '../components/SmartToolbar';
 import { InfoReferenceField } from '../components/InfoReferenceField';
-import { InfoTextField } from '../components/InfoTextField';
 import { ItensDoPdv } from './itemPdv';
 import { ReenviarConviteButton, ToggleUsuarioButton } from './usuarios';
+
+import { debounce } from "lodash";
 
 const mobileButtonSx = {
     minWidth: 0,
@@ -61,29 +61,56 @@ const mobileButtonSx = {
 export const EventoFilterInline = () => {
     const { filterValues, setFilters } = useListContext();
 
-    const { data } = useGetList("eventos", {
+    const [search, setSearch] = useState("");
+    const [debouncedSearch, setDebouncedSearch] = useState("");
+
+    const debouncer = useMemo(
+        () =>
+            debounce((value: string) => {
+                setDebouncedSearch(value);
+            }, 400),
+        []
+    );
+
+    useEffect(() => {
+        debouncer(search);
+
+        return () => debouncer.cancel();
+    }, [search, debouncer]);
+
+    const { data = [], isLoading } = useGetList("eventos", {
         pagination: { page: 1, perPage: 25 },
-        sort: { field: "nome", order: "ASC" }
+        sort: { field: "nome", order: "ASC" },
+        filter: {
+            nome_ilike: debouncedSearch
+        }
     });
 
     return (
         <Autocomplete
             size="small"
-            options={data ?? []}
+            loading={isLoading}
+            options={data}
+            sx={{ minWidth: 250 }}
+            filterOptions={(x) => x}
             getOptionLabel={(option) => option.nome || ""}
             value={
-                data?.find(e => e.id === filterValues.evento_id) || null
+                data.find(
+                    (e) => e.id === filterValues.evento_id
+                ) || null
             }
-            onChange={(_, value) =>
+            onInputChange={(_, value) => {
+                setSearch(value);
+            }}
+            onChange={(_, value) => {
                 setFilters(
                     {
                         ...filterValues,
-                        evento_id: value?.id
+                        evento_id: value?.id || undefined
                     },
                     {}
-                )
-            }
-            sx={{ minWidth: 200 }}
+                );
+            }}
             renderInput={(params) => (
                 <MuiTextField
                     {...params}
@@ -93,7 +120,6 @@ export const EventoFilterInline = () => {
         />
     );
 };
-
 const PdvListActions = ({ isSmall }: { isSmall: boolean }) => (
     <SmartToolbar>
         <Box

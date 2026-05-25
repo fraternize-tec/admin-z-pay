@@ -778,26 +778,6 @@ export const DashboardFinanceiroEvento = () => {
         >
           Exportar
         </Button>
-
-        <Button
-          variant="outlined"
-          disabled={gerandoPdf}
-          onClick={async () => {
-            setGerandoPdf(true);
-            await exportarDashboardPdf(
-              data,
-              inicio!,
-              fim!,
-              eventoAtual?.nome ?? ""
-            );
-            setGerandoPdf(false);
-          }}
-          startIcon={
-            gerandoPdf ? <CircularProgress size={16} /> : undefined
-          }
-        >
-          {gerandoPdf ? "Gerando..." : "Exportar PDF"}
-        </Button>
       </Box>
 
       <Card

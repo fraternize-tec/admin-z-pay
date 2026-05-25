@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { usePermissions, useGetList, ReferenceInput, SelectInput } from "react-admin";
+import { usePermissions, useGetList, ReferenceInput, SelectInput, AutocompleteInput } from "react-admin";
 import { getEscopos, isGlobal } from "../utils/permissionUtils";
 import { useFormContext } from "react-hook-form";
 
@@ -67,9 +67,13 @@ export const EventoReferenceInput = ({
       reference="eventos"
       filter={!global ? { id: eventosFinal } : undefined}
     >
-      <SelectInput
+      <AutocompleteInput
         optionText="nome"
+        filterToQuery={(searchText) => ({
+            nome_ilike: searchText
+        })}
         label="Evento"
+        fullWidth
         disabled={disabled}
         sx={
           !global && eventosFinal.length === 1
