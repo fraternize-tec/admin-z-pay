@@ -19,6 +19,8 @@ import {
   DialogTitle,
   MenuItem,
   TextField as MuiTextField,
+  ToggleButton,
+  ToggleButtonGroup,
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { LocalizationProvider, DateTimePicker } from "@mui/x-date-pickers";
@@ -119,9 +121,24 @@ type DashboardData = {
 
 const atalhos = [
   {
+    label: "Hoje",
+    getRange: () => {
+      const now = new Date();
+
+      const inicio = new Date(now);
+      inicio.setHours(0, 0, 0, 0);
+
+      const fim = new Date(now);
+      fim.setHours(23, 59, 59, 999);
+
+      return { inicio, fim };
+    },
+  },
+  {
     label: "Última hora",
     getRange: () => {
       const now = new Date();
+
       return {
         inicio: new Date(now.getTime() - 60 * 60 * 1000),
         fim: now,
@@ -132,6 +149,7 @@ const atalhos = [
     label: "Últimas 12 horas",
     getRange: () => {
       const now = new Date();
+
       return {
         inicio: new Date(now.getTime() - 12 * 60 * 60 * 1000),
         fim: now,
@@ -142,23 +160,47 @@ const atalhos = [
     label: "Últimos 7 dias",
     getRange: () => {
       const now = new Date();
-      return {
-        inicio: new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000),
-        fim: now,
-      };
+
+      const inicio = new Date(now);
+      inicio.setDate(now.getDate() - 7);
+      inicio.setHours(0, 0, 0, 0);
+
+      const fim = new Date(now);
+      fim.setHours(23, 59, 59, 999);
+
+      return { inicio, fim };
     },
   },
   {
     label: "Últimos 30 dias",
     getRange: () => {
       const now = new Date();
-      return {
-        inicio: new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000),
-        fim: now,
-      };
+
+      const inicio = new Date(now);
+      inicio.setDate(now.getDate() - 30);
+      inicio.setHours(0, 0, 0, 0);
+
+      const fim = new Date(now);
+      fim.setHours(23, 59, 59, 999);
+
+      return { inicio, fim };
     },
   },
 ];
+
+const rangesIguais = (
+  aInicio: Date | null,
+  aFim: Date | null,
+  bInicio: Date,
+  bFim: Date
+) => {
+  if (!aInicio || !aFim) return false;
+
+  return (
+    Math.abs(aInicio.getTime() - bInicio.getTime()) < 1000 &&
+    Math.abs(aFim.getTime() - bFim.getTime()) < 1000
+  );
+};
 
 const CardsOperacionais = ({
   cartoes,
@@ -370,27 +412,56 @@ const ResumoFinanceiro = ({ data }: { data: FinanceiroResumo }) => {
 // Filtro de período brasileiro
 // ============================
 
-const FiltroPeriodo = ({ evento, inicio, fim, setInicio, setFim, onAplicar }: any) => {
+const FiltroPeriodo = ({
+  evento,
+  inicio,
+  fim,
+  setInicio,
+  setFim,
+  onAplicar,
+}: any) => {
   const { isAdmin } = useEvento();
 
   const inicioEvento = evento?.inicio
     ? new Date(evento.inicio)
     : undefined;
 
-  return (
+  const [atalhoSelecionado, setAtalhoSelecionado] =
+    useState("Hoje");
 
-    <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={ptBR}>
-      <Card sx={{ mb: 3, borderRadius: 4, boxShadow: 1 }}>
+  return (
+    <LocalizationProvider
+      dateAdapter={AdapterDateFns}
+      adapterLocale={ptBR}
+    >
+      <Card
+        sx={{
+          mb: 3,
+          borderRadius: 4,
+          boxShadow: 1,
+        }}
+      >
         <CardContent>
-          <Typography variant="subtitle2" fontWeight={700} mb={2}>
+          <Typography
+            variant="subtitle2"
+            fontWeight={700}
+            mb={2}
+          >
             Período de análise
           </Typography>
 
-          <Stack direction={{ xs: "column", md: "row" }} spacing={2} alignItems="center" mb={2}>
+          <Stack
+            direction={{ xs: "column", md: "row" }}
+            spacing={2}
+            alignItems="center"
+            mb={2}
+          >
             <DateTimePicker
               label="Data inicial"
               value={inicio}
               onChange={(v) => {
+                setAtalhoSelecionado("");
+
                 if (
                   !isAdmin &&
                   inicioEvento &&
@@ -403,39 +474,77 @@ const FiltroPeriodo = ({ evento, inicio, fim, setInicio, setFim, onAplicar }: an
 
                 setInicio(v);
               }}
-              minDateTime={!isAdmin ? inicioEvento : undefined}
-              slotProps={{ textField: { size: "small" } }}
+              minDateTime={
+                !isAdmin ? inicioEvento : undefined
+              }
+              slotProps={{
+                textField: { size: "small" },
+              }}
             />
 
             <DateTimePicker
               label="Data final"
               value={fim}
-              onChange={(v) => setFim(v)}
-              slotProps={{ textField: { size: "small" } }}
+              onChange={(v) => {
+                setAtalhoSelecionado("");
+                setFim(v);
+              }}
+              slotProps={{
+                textField: { size: "small" },
+              }}
             />
 
-            <Button variant="contained" onClick={onAplicar} sx={{ height: 40 }}>
+            <Button
+              variant="contained"
+              onClick={onAplicar}
+              sx={{ height: 40 }}
+            >
               Aplicar
             </Button>
           </Stack>
 
-          {/* Atalhos rápidos */}
-          <Stack direction="row" spacing={1} flexWrap="wrap">
-            {atalhos.map((a) => (
-              <Button
-                key={a.label}
-                size="small"
-                variant="outlined"
-                onClick={() => {
-                  const r = a.getRange();
-                  setInicio(r.inicio);
-                  setFim(r.fim);
-                }}
-              >
-                {a.label}
-              </Button>
-            ))}
-          </Stack>
+          <ToggleButtonGroup
+            exclusive
+            value={atalhoSelecionado}
+            size="small"
+            sx={{
+              flexWrap: "wrap",
+              gap: 0.5,
+            }}
+          >
+            {atalhos.map((a) => {
+              const range = a.getRange();
+
+              const ativo =
+                atalhoSelecionado === a.label ||
+                rangesIguais(
+                  inicio,
+                  fim,
+                  range.inicio,
+                  range.fim
+                );
+
+              return (
+                <ToggleButton
+                  key={a.label}
+                  value={a.label}
+                  selected={ativo}
+                  onClick={() => {
+                    const r = a.getRange();
+
+                    setInicio(r.inicio);
+                    setFim(r.fim);
+                    setAtalhoSelecionado(a.label);
+                  }}
+                  sx={{
+                    textTransform: "none",
+                  }}
+                >
+                  {a.label}
+                </ToggleButton>
+              );
+            })}
+          </ToggleButtonGroup>
         </CardContent>
       </Card>
     </LocalizationProvider>
