@@ -824,13 +824,16 @@ export const DashboardFinanceiroEvento = () => {
 
   const now = new Date();
 
+  const rangeInicial = atalhos[0].getRange();
+
   const [inicio, setInicio] = useState<Date | null>(
-    new Date(now.getTime() - 60 * 60 * 1000) // 1h atrás
+    rangeInicial.inicio
   );
 
-  const [fim, setFim] = useState<Date | null>(now);
+  const [fim, setFim] = useState<Date | null>(
+    rangeInicial.fim
+  );
 
-  const [gerandoPdf, setGerandoPdf] = useState(false);
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
 
   const carregar = async () => {
