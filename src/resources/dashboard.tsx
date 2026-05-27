@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Box,
   Card,
@@ -13,26 +13,18 @@ import {
   AccordionDetails,
   Stack,
   useTheme,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-  MenuItem,
-  TextField as MuiTextField,
   ToggleButton,
   ToggleButtonGroup,
+  useMediaQuery,
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { LocalizationProvider, DateTimePicker } from "@mui/x-date-pickers";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { ptBR } from "date-fns/locale";
-import { subDays, startOfDay, endOfDay } from "date-fns";
 import { supabase } from "../lib/supabaseClient";
 import { exportarDashboardPdf } from "../export/exportarDashboardPdf";
 import { useEvento } from "../context/EventoContext";
 import { EventoSelector } from "../components/EventoSelector";
-import { isAdminGlobal } from "../utils/permissionUtils";
-import { TextField, usePermissions } from "react-admin";
 import { filtrarDashboardData } from "../export/filtrarDashboardData";
 import { exportarDashboardCsv } from "../export/exportarDashboardCsv";
 import { exportarDashboardExcel } from "../export/exportarDashboardExcel";
@@ -214,7 +206,16 @@ const CardsOperacionais = ({
     });
 
   return (
-    <Box display="flex" gap={2} mb={2} flexWrap="wrap">
+    <Box
+      display="grid"
+      gridTemplateColumns={{
+        xs: "1fr",
+        sm: "repeat(2,1fr)",
+        md: "repeat(3,1fr)",
+      }}
+      gap={2}
+      mb={2}
+    >
       <CardMetrica
         titulo="Cartões Utilizados"
         valor={cartoes.total_cartoes_utilizados}
@@ -251,9 +252,12 @@ const CardMetrica = ({
 }) => (
   <Card
     sx={{
-      borderRadius: 3,
+      borderRadius: 2,
       flex: 1,
-      minWidth: 200,
+      minWidth: {
+        xs: "100%",
+        sm: 200,
+      },
       border: "1px solid",
       borderColor: "divider",
       position: "relative",
@@ -343,7 +347,7 @@ const ResumoFinanceiro = ({ data }: { data: FinanceiroResumo }) => {
   return (
     <Card
       sx={{
-        borderRadius: 4,
+        borderRadius: 2,
         mb: 3,
         bgcolor: "background.paper", // ✅ adapta ao tema
         border: "1px solid",
@@ -361,8 +365,12 @@ const ResumoFinanceiro = ({ data }: { data: FinanceiroResumo }) => {
         <Box
           mt={3}
           display="grid"
-          gridTemplateColumns="repeat(auto-fit, minmax(180px,1fr))"
-          gap={2}
+          gridTemplateColumns={{
+            xs: "1fr",
+            sm: "repeat(2,1fr)",
+            md: "repeat(auto-fit, minmax(180px,1fr))"
+          }}
+          gap={{ xs: 1.5, md: 2 }}
         >
           {items.map((item, i) => (
             !item.oculto && (
@@ -370,7 +378,7 @@ const ResumoFinanceiro = ({ data }: { data: FinanceiroResumo }) => {
                 key={i}
                 sx={{
                   p: 2,
-                  borderRadius: 3,
+                  borderRadius: 2,
                   bgcolor: "background.default",
                   border: "1px solid",
                   borderColor: "divider",
@@ -437,7 +445,7 @@ const FiltroPeriodo = ({
       <Card
         sx={{
           mb: 3,
-          borderRadius: 4,
+          borderRadius: 2,
           boxShadow: 1,
         }}
       >
@@ -450,11 +458,15 @@ const FiltroPeriodo = ({
             Período de análise
           </Typography>
 
-          <Stack
-            direction={{ xs: "column", md: "row" }}
-            spacing={2}
-            alignItems="center"
+          <Box
+            display="grid"
+            gridTemplateColumns={{
+              xs: "1fr",
+              md: "repeat(3,minmax(0,1fr)) auto",
+            }}
+            gap={2}
             mb={2}
+            alignItems="start"
           >
             <DateTimePicker
               label="Data inicial"
@@ -478,7 +490,13 @@ const FiltroPeriodo = ({
                 !isAdmin ? inicioEvento : undefined
               }
               slotProps={{
-                textField: { size: "small" },
+                textField: {
+                  size: "small",
+                  fullWidth: true,
+                  sx: {
+                    minWidth: 0,
+                  },
+                },
               }}
             />
 
@@ -490,61 +508,102 @@ const FiltroPeriodo = ({
                 setFim(v);
               }}
               slotProps={{
-                textField: { size: "small" },
+                textField: {
+                  size: "small",
+                  fullWidth: true,
+                  sx: {
+                    minWidth: 0,
+                  },
+                },
               }}
             />
 
             <Button
               variant="contained"
               onClick={onAplicar}
-              sx={{ height: 40 }}
+              fullWidth
+              sx={{
+                height: 40,
+                minWidth: 0,
+              }}
             >
               Aplicar
             </Button>
-          </Stack>
+          </Box>
 
-          <ToggleButtonGroup
-            exclusive
-            value={atalhoSelecionado}
-            size="small"
+          <Box
             sx={{
-              flexWrap: "wrap",
-              gap: 0.5,
+              overflowX: "auto",
+              WebkitOverflowScrolling: "touch",
+              pb: 1,
             }}
           >
-            {atalhos.map((a) => {
-              const range = a.getRange();
+            <Box
+              display="flex"
+              flexWrap="wrap"
+              gap={1}
+            >
+              {atalhos.map((a) => {
+                const range = a.getRange();
 
-              const ativo =
-                atalhoSelecionado === a.label ||
-                rangesIguais(
-                  inicio,
-                  fim,
-                  range.inicio,
-                  range.fim
+                const ativo =
+                  atalhoSelecionado === a.label ||
+                  rangesIguais(
+                    inicio,
+                    fim,
+                    range.inicio,
+                    range.fim
+                  );
+
+                return (
+                  <Button
+                    key={a.label}
+                    size="small"
+                    variant={
+                      ativo
+                        ? "contained"
+                        : "text"
+                    }
+                    color={
+                      ativo
+                        ? "primary"
+                        : "inherit"
+                    }
+                    onClick={() => {
+                      const r = a.getRange();
+
+                      setInicio(r.inicio);
+                      setFim(r.fim);
+                      setAtalhoSelecionado(a.label);
+                    }}
+                    sx={{
+                      textTransform: "none",
+                      borderRadius: 999,
+                      flexShrink: 0,
+
+                      minWidth: "unset",
+
+                      px: 1.5,
+                      py: 0.5,
+
+                      fontSize: "0.8rem",
+                      fontWeight: 600,
+
+                      boxShadow: "none",
+
+                      opacity: ativo ? 1 : 0.8,
+
+                      "&:hover": {
+                        boxShadow: "none",
+                      },
+                    }}
+                  >
+                    {a.label}
+                  </Button>
                 );
-
-              return (
-                <ToggleButton
-                  key={a.label}
-                  value={a.label}
-                  selected={ativo}
-                  onClick={() => {
-                    const r = a.getRange();
-
-                    setInicio(r.inicio);
-                    setFim(r.fim);
-                    setAtalhoSelecionado(a.label);
-                  }}
-                  sx={{
-                    textTransform: "none",
-                  }}
-                >
-                  {a.label}
-                </ToggleButton>
-              );
-            })}
-          </ToggleButtonGroup>
+              })}
+            </Box>
+          </Box>
         </CardContent>
       </Card>
     </LocalizationProvider>
@@ -555,7 +614,17 @@ const FiltroPeriodo = ({
 // PDV → Accordion detalhado
 // ============================
 
-const TabelaPDV = ({ data }: { data: PDV[] }) => {
+const TabelaPDV = ({
+  data,
+}: {
+  data: PDV[];
+}) => {
+  const theme = useTheme();
+
+  const mobile = useMediaQuery(
+    theme.breakpoints.down("sm")
+  );
+
   const money = (v: number) =>
     v.toLocaleString("pt-BR", {
       style: "currency",
@@ -563,93 +632,399 @@ const TabelaPDV = ({ data }: { data: PDV[] }) => {
     });
 
   return (
-    <Card sx={{ borderRadius: 4, boxShadow: 1 }}>
+    <Card sx={{ borderRadius: 2, boxShadow: 1 }}>
       <CardContent>
-        <Typography variant="h6" fontWeight={800} mb={2}>
+        <Typography
+          variant="h6"
+          fontWeight={800}
+          mb={2}
+        >
           Vendas por PDV
         </Typography>
 
         {(data ?? []).map((pdv, i) => {
-          // agrupa por nome do item
-          const itensAgrupados = Object.values(
-            pdv.itens.reduce((acc: any, item) => {
-              if (!acc[item.item_nome]) acc[item.item_nome] = [];
-              acc[item.item_nome].push(item);
-              return acc;
-            }, {})
-          );
+          const itensAgrupados =
+            Object.values(
+              pdv.itens.reduce(
+                (acc: any, item) => {
+                  if (
+                    !acc[item.item_nome]
+                  ) {
+                    acc[item.item_nome] =
+                      [];
+                  }
+
+                  acc[
+                    item.item_nome
+                  ].push(item);
+
+                  return acc;
+                },
+                {}
+              )
+            );
 
           return (
-            <Accordion key={i} disableGutters>
-              <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                <Box display="flex" justifyContent="space-between" width="100%">
-                  <Typography fontWeight={700}>
+            <Accordion
+              key={i}
+              disableGutters
+            >
+              <AccordionSummary
+                expandIcon={
+                  <ExpandMoreIcon />
+                }
+                sx={{
+                  "& .MuiAccordionSummary-content":
+                  {
+                    minWidth: 0,
+                  },
+                }}
+              >
+                <Box
+                  display="flex"
+                  flexDirection={{
+                    xs: "column",
+                    sm: "row",
+                  }}
+                  gap={1}
+                  justifyContent="space-between"
+                  alignItems={{
+                    xs: "flex-start",
+                    sm: "center",
+                  }}
+                  width="100%"
+                >
+                  <Typography
+                    fontWeight={700}
+                    sx={{
+                      wordBreak:
+                        "break-word",
+                      overflowWrap:
+                        "anywhere",
+                    }}
+                  >
                     {pdv.nome_pdv}
                   </Typography>
 
-                  <Typography fontWeight={700} color="primary">
-                    {money(pdv.total_vendas ?? 0)}
+                  <Typography
+                    fontWeight={700}
+                    color="primary"
+                  >
+                    {money(
+                      pdv.total_vendas ??
+                      0
+                    )}
                   </Typography>
                 </Box>
               </AccordionSummary>
 
-              <AccordionDetails>
-                <Box component="table" width="100%">
-                  <thead>
-                    <tr>
-                      <th style={{ textAlign: "left", padding: 6 }}>
-                        Item
-                      </th>
-                      <th style={{ textAlign: "right", padding: 6 }}>
-                        Preço
-                      </th>
-                      <th style={{ textAlign: "right", padding: 6 }}>
-                        Qtd
-                      </th>
-                      <th style={{ textAlign: "right", padding: 6 }}>
-                        Total
-                      </th>
-                    </tr>
-                  </thead>
+              <AccordionDetails
+                sx={{
+                  px: {
+                    xs: 1,
+                    sm: 2,
+                  },
+                }}
+              >
+                {mobile ? (
+                  <Stack spacing={1.2}>
+                    {itensAgrupados.map(
+                      (
+                        grupo: any,
+                        idx
+                      ) => {
+                        const mudouPreco =
+                          grupo.length >
+                          1;
 
-                  <tbody>
-                    {itensAgrupados.map((grupo: any, idx) => {
-                      const mudouPreco = grupo.length > 1;
+                        return grupo.map(
+                          (
+                            item: ItemPDV,
+                            j: number
+                          ) => (
+                            <Card
+                              key={`${idx}-${j}`}
+                              variant="outlined"
+                              sx={{
+                                borderRadius: 1,
+                              }}
+                            >
+                              <CardContent
+                                sx={{
+                                  py: 1.5,
+                                  "&:last-child":
+                                  {
+                                    pb: 1.5,
+                                  },
+                                }}
+                              >
+                                <Stack
+                                  spacing={
+                                    1
+                                  }
+                                >
+                                  <Box
+                                    display="flex"
+                                    justifyContent="space-between"
+                                    alignItems="flex-start"
+                                    gap={1}
+                                  >
+                                    <Box
+                                      minWidth={
+                                        0
+                                      }
+                                    >
+                                      <Typography
+                                        fontWeight={
+                                          700
+                                        }
+                                        sx={{
+                                          wordBreak:
+                                            "break-word",
+                                        }}
+                                      >
+                                        {
+                                          item.item_nome
+                                        }
+                                      </Typography>
 
-                      return grupo.map((item: ItemPDV, j: number) => (
-                        <tr key={`${idx}-${j}`}>
-                          <td style={{ padding: 6 }}>
-                            {j === 0 && (
-                              <Box display="flex" alignItems="center" gap={1}>
-                                {item.item_nome}
+                                      {mudouPreco &&
+                                        j ===
+                                        0 && (
+                                          <Chip
+                                            size="small"
+                                            color="warning"
+                                            label="preço alterado"
+                                            sx={{
+                                              mt: 0.5,
+                                            }}
+                                          />
+                                        )}
+                                    </Box>
 
-                                {mudouPreco && (
-                                  <Chip
-                                    size="small"
-                                    color="warning"
-                                    label="preço alterado"
-                                  />
-                                )}
-                              </Box>
-                            )}
-                          </td>
+                                    <Typography
+                                      fontWeight={
+                                        800
+                                      }
+                                    >
+                                      {money(
+                                        item.valor_total
+                                      )}
+                                    </Typography>
+                                  </Box>
 
-                          <td style={{ padding: 6, textAlign: "right" }}>
-                            {money(item.valor_unitario)}
-                          </td>
+                                  <Box
+                                    display="grid"
+                                    gridTemplateColumns="repeat(2,1fr)"
+                                    gap={
+                                      1
+                                    }
+                                  >
+                                    <Box>
+                                      <Typography
+                                        variant="caption"
+                                        color="text.secondary"
+                                      >
+                                        Preço
+                                      </Typography>
 
-                          <td style={{ padding: 6, textAlign: "right" }}>
-                            {item.quantidade}
-                          </td>
+                                      <Typography variant="body2">
+                                        {money(
+                                          item.valor_unitario
+                                        )}
+                                      </Typography>
+                                    </Box>
 
-                          <td style={{ padding: 6, textAlign: "right" }}>
-                            {money(item.valor_total)}
-                          </td>
-                        </tr>
-                      ));
-                    })}
-                  </tbody>
-                </Box>
+                                    <Box>
+                                      <Typography
+                                        variant="caption"
+                                        color="text.secondary"
+                                      >
+                                        Quantidade
+                                      </Typography>
+
+                                      <Typography variant="body2">
+                                        {
+                                          item.quantidade
+                                        }
+                                      </Typography>
+                                    </Box>
+                                  </Box>
+                                </Stack>
+                              </CardContent>
+                            </Card>
+                          )
+                        );
+                      }
+                    )}
+                  </Stack>
+                ) : (
+                  <Box
+  component="table"
+  sx={{
+    width: "100%",
+    borderCollapse: "separate",
+    borderSpacing: 0,
+
+    "& thead th": {
+      fontSize: 12,
+      fontWeight: 700,
+      color: "text.secondary",
+      backgroundColor: "action.hover",
+      borderBottom: "1px solid",
+      borderColor: "divider",
+    },
+
+    "& tbody td": {
+      borderBottom: "1px solid",
+      borderColor: "divider",
+    },
+
+    "& tbody tr:last-child td": {
+      borderBottom: "none",
+    },
+
+    "& tbody tr:hover": {
+      backgroundColor: "action.hover",
+    },
+  }}
+>
+                    <thead>
+                      <tr>
+                        <th
+                          style={{
+                            textAlign:
+                              "left",
+                            padding: 8,
+                          }}
+                        >
+                          Item
+                        </th>
+
+                        <th
+                          style={{
+                            textAlign:
+                              "right",
+                            padding: 8,
+                          }}
+                        >
+                          Preço
+                        </th>
+
+                        <th
+                          style={{
+                            textAlign:
+                              "right",
+                            padding: 8,
+                          }}
+                        >
+                          Qtd
+                        </th>
+
+                        <th
+                          style={{
+                            textAlign:
+                              "right",
+                            padding: 8,
+                          }}
+                        >
+                          Total
+                        </th>
+                      </tr>
+                    </thead>
+
+                    <tbody>
+                      {itensAgrupados.map(
+                        (
+                          grupo: any,
+                          idx
+                        ) => {
+                          const mudouPreco =
+                            grupo.length >
+                            1;
+
+                          return grupo.map(
+                            (
+                              item: ItemPDV,
+                              j: number
+                            ) => (
+                              <tr
+                                key={`${idx}-${j}`}
+                              >
+                                <td
+                                  style={{
+                                    padding: 8,
+                                  }}
+                                >
+                                  {j ===
+                                    0 && (
+                                      <Box
+                                        display="flex"
+                                        alignItems="center"
+                                        gap={
+                                          1
+                                        }
+                                        flexWrap="wrap"
+                                      >
+                                        {
+                                          item.item_nome
+                                        }
+
+                                        {mudouPreco && (
+                                          <Chip
+                                            size="small"
+                                            color="warning"
+                                            label="preço alterado"
+                                          />
+                                        )}
+                                      </Box>
+                                    )}
+                                </td>
+
+                                <td
+                                  style={{
+                                    padding: 8,
+                                    textAlign:
+                                      "right",
+                                  }}
+                                >
+                                  {money(
+                                    item.valor_unitario
+                                  )}
+                                </td>
+
+                                <td
+                                  style={{
+                                    padding: 8,
+                                    textAlign:
+                                      "right",
+                                  }}
+                                >
+                                  {
+                                    item.quantidade
+                                  }
+                                </td>
+
+                                <td
+                                  style={{
+                                    padding: 8,
+                                    textAlign:
+                                      "right",
+                                    fontWeight: 700,
+                                  }}
+                                >
+                                  {money(
+                                    item.valor_total
+                                  )}
+                                </td>
+                              </tr>
+                            )
+                          );
+                        }
+                      )}
+                    </tbody>
+                  </Box>
+                )}
               </AccordionDetails>
             </Accordion>
           );
@@ -663,156 +1038,695 @@ const TabelaPDV = ({ data }: { data: PDV[] }) => {
 // Caixa → Accordion detalhado
 // ============================
 
-const TabelaCaixa = ({ data }: { data: Caixa[] }) => (
-  <Card sx={{ borderRadius: 4, boxShadow: 1 }}>
-    <CardContent>
-      <Typography variant="h6" fontWeight={800} mb={2}>
-        Recargas por Caixa
-      </Typography>
+const TabelaCaixa = ({
+  data,
+}: {
+  data: Caixa[];
+}) => {
+  const theme = useTheme();
 
-      {(data ?? []).map((cx, i) => (
-        <Accordion key={i} disableGutters>
-          <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-            <Box display="flex" justifyContent="space-between" width="100%">
-              <Typography fontWeight={700}>{cx.nome_caixa}</Typography>
-              <Typography variant="caption" color="text.secondary">
-                {cx.cartoes_utilizados ?? 0} cartões
-              </Typography>
-              <Typography fontWeight={700} color="success.main">
-                {(cx.total_recargas ?? 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
-              </Typography>
-            </Box>
-          </AccordionSummary>
+  const mobile = useMediaQuery(
+    theme.breakpoints.down("sm")
+  );
 
-          <AccordionDetails>
-            <Box component="table" width="100%" sx={{ borderCollapse: "collapse" }}>
-              <thead>
-                <tr>
-                  <th style={{ textAlign: "left", padding: 6 }}>Forma</th>
-                  <th style={{ textAlign: "right", padding: 6 }}>Total</th>
-                </tr>
-              </thead>
-              <tbody>
-                {(cx.formas_pagamento ?? []).map((fp, idx) => (
-                  <tr key={idx}>
-                    <td style={{ padding: 6 }}>{fp.forma}</td>
-                    <td style={{ padding: 6, textAlign: "right" }}>
-                      {fp.total.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </Box>
-          </AccordionDetails>
-        </Accordion>
-      ))}
-    </CardContent>
-  </Card>
-);
+  const money = (v: number) =>
+    v.toLocaleString("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    });
 
-const TabelaOperador = ({ data }: { data: Operador[] }) => (
-  <Card sx={{ borderRadius: 4, boxShadow: 1 }}>
-    <CardContent>
-      <Typography variant="h6" fontWeight={800} mb={2}>
-        Recargas por Operador
-      </Typography>
+  return (
+    <Card sx={{ borderRadius: 2, boxShadow: 1 }}>
+      <CardContent>
+        <Typography
+          variant="h6"
+          fontWeight={800}
+          mb={2}
+        >
+          Recargas por Caixa
+        </Typography>
 
-      {(data ?? []).map((op, i) => (
-        <Accordion key={i} disableGutters>
-          <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-            <Box display="flex" justifyContent="space-between" width="100%">
-              <Box>
-                <Typography fontWeight={700}>
-                  {op.operador_nome}
+        {(data ?? []).map((cx, i) => (
+          <Accordion
+            key={i}
+            disableGutters
+          >
+            <AccordionSummary
+              expandIcon={<ExpandMoreIcon />}
+              sx={{
+                "& .MuiAccordionSummary-content": {
+                  minWidth: 0,
+                },
+              }}
+            >
+              <Box
+                display="flex"
+                flexDirection={{
+                  xs: "column",
+                  sm: "row",
+                }}
+                gap={1}
+                justifyContent="space-between"
+                alignItems={{
+                  xs: "flex-start",
+                  sm: "center",
+                }}
+                width="100%"
+              >
+                <Typography
+                  fontWeight={700}
+                  sx={{
+                    wordBreak: "break-word",
+                    overflowWrap: "anywhere",
+                  }}
+                >
+                  {cx.nome_caixa}
                 </Typography>
 
-                <Typography variant="caption" color="text.secondary">
-                  {op.qtd_recargas} recargas • {op.cartoes_utilizados ?? 0} cartões
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                >
+                  {cx.cartoes_utilizados ?? 0} cartões
+                </Typography>
+
+                <Typography
+                  fontWeight={700}
+                  color="success.main"
+                >
+                  {money(
+                    cx.total_recargas ?? 0
+                  )}
                 </Typography>
               </Box>
+            </AccordionSummary>
 
-              <Typography fontWeight={700} color="success.main">
-                {op.total_recargas.toLocaleString("pt-BR", {
-                  style: "currency",
-                  currency: "BRL",
-                })}
-              </Typography>
-            </Box>
-          </AccordionSummary>
+            <AccordionDetails
+              sx={{
+                px: { xs: 1, sm: 2 },
+              }}
+            >
+              {mobile ? (
+                <Stack spacing={1.2}>
+                  {(cx.formas_pagamento ?? []).map(
+                    (fp, idx) => (
+                      <Card
+                        key={idx}
+                        variant="outlined"
+                        sx={{
+                          borderRadius: 1,
+                        }}
+                      >
+                        <CardContent
+                          sx={{
+                            py: 1.5,
+                            "&:last-child": {
+                              pb: 1.5,
+                            },
+                          }}
+                        >
+                          <Box
+                            display="flex"
+                            justifyContent="space-between"
+                            alignItems="center"
+                            gap={1}
+                          >
+                            <Typography
+                              variant="body2"
+                              fontWeight={600}
+                              sx={{
+                                wordBreak:
+                                  "break-word",
+                              }}
+                            >
+                              {fp.forma}
+                            </Typography>
 
-          <AccordionDetails>
-            <Box component="table" width="100%">
-              <thead>
-                <tr>
-                  <th style={{ textAlign: "left", padding: 6 }}>Forma</th>
-                  <th style={{ textAlign: "right", padding: 6 }}>Total</th>
-                </tr>
-              </thead>
-              <tbody>
-                {(op.formas_pagamento ?? []).map((fp, idx) => (
-                  <tr key={idx}>
-                    <td style={{ padding: 6 }}>{fp.forma}</td>
-                    <td style={{ padding: 6, textAlign: "right" }}>
-                      {fp.total.toLocaleString("pt-BR", {
-                        style: "currency",
-                        currency: "BRL",
-                      })}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </Box>
-          </AccordionDetails>
-        </Accordion>
-      ))}
-    </CardContent>
-  </Card>
-);
+                            <Typography
+                              fontWeight={700}
+                            >
+                              {money(fp.total)}
+                            </Typography>
+                          </Box>
+                        </CardContent>
+                      </Card>
+                    )
+                  )}
+                </Stack>
+              ) : (
+                <Box
+  component="table"
+  sx={{
+    width: "100%",
+    borderCollapse: "separate",
+    borderSpacing: 0,
+
+    "& thead th": {
+      fontSize: 12,
+      fontWeight: 700,
+      color: "text.secondary",
+      backgroundColor: "action.hover",
+      borderBottom: "1px solid",
+      borderColor: "divider",
+    },
+
+    "& tbody td": {
+      borderBottom: "1px solid",
+      borderColor: "divider",
+    },
+
+    "& tbody tr:last-child td": {
+      borderBottom: "none",
+    },
+
+    "& tbody tr:hover": {
+      backgroundColor: "action.hover",
+    },
+  }}
+>
+                  <thead>
+                    <tr>
+                      <th
+                        style={{
+                          textAlign: "left",
+                          padding: 8,
+                        }}
+                      >
+                        Forma
+                      </th>
+
+                      <th
+                        style={{
+                          textAlign: "right",
+                          padding: 8,
+                        }}
+                      >
+                        Total
+                      </th>
+                    </tr>
+                  </thead>
+
+                  <tbody>
+                    {(cx.formas_pagamento ??
+                      []).map((fp, idx) => (
+                        <tr key={idx}>
+                          <td
+                            style={{
+                              padding: 8,
+                            }}
+                          >
+                            {fp.forma}
+                          </td>
+
+                          <td
+                            style={{
+                              padding: 8,
+                              textAlign:
+                                "right",
+                              fontWeight: 700,
+                            }}
+                          >
+                            {money(fp.total)}
+                          </td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </Box>
+              )}
+            </AccordionDetails>
+          </Accordion>
+        ))}
+      </CardContent>
+    </Card>
+  );
+};
+
+const TabelaOperador = ({
+  data,
+}: {
+  data: Operador[];
+}) => {
+  const theme = useTheme();
+
+  const mobile = useMediaQuery(
+    theme.breakpoints.down("sm")
+  );
+
+  const money = (v: number) =>
+    v.toLocaleString("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    });
+
+  return (
+    <Card sx={{ borderRadius: 2, boxShadow: 1 }}>
+      <CardContent>
+        <Typography
+          variant="h6"
+          fontWeight={800}
+          mb={2}
+        >
+          Recargas por Operador
+        </Typography>
+
+        {(data ?? []).map((op, i) => (
+          <Accordion
+            key={i}
+            disableGutters
+          >
+            <AccordionSummary
+              expandIcon={<ExpandMoreIcon />}
+              sx={{
+                "& .MuiAccordionSummary-content":
+                {
+                  minWidth: 0,
+                },
+              }}
+            >
+              <Box
+                display="flex"
+                flexDirection={{
+                  xs: "column",
+                  sm: "row",
+                }}
+                gap={1}
+                justifyContent="space-between"
+                alignItems={{
+                  xs: "flex-start",
+                  sm: "center",
+                }}
+                width="100%"
+              >
+                <Box minWidth={0}>
+                  <Typography
+                    fontWeight={700}
+                    sx={{
+                      wordBreak:
+                        "break-word",
+                      overflowWrap:
+                        "anywhere",
+                    }}
+                  >
+                    {op.operador_nome}
+                  </Typography>
+
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                  >
+                    {op.qtd_recargas}{" "}
+                    recargas •{" "}
+                    {op.cartoes_utilizados ??
+                      0}{" "}
+                    cartões
+                  </Typography>
+                </Box>
+
+                <Typography
+                  fontWeight={700}
+                  color="success.main"
+                >
+                  {money(
+                    op.total_recargas
+                  )}
+                </Typography>
+              </Box>
+            </AccordionSummary>
+
+            <AccordionDetails
+              sx={{
+                px: { xs: 1, sm: 2 },
+              }}
+            >
+              {mobile ? (
+                <Stack spacing={1.2}>
+                  {(op.formas_pagamento ??
+                    []).map((fp, idx) => (
+                      <Card
+                        key={idx}
+                        variant="outlined"
+                        sx={{
+                          borderRadius: 1,
+                        }}
+                      >
+                        <CardContent
+                          sx={{
+                            py: 1.5,
+                            "&:last-child":
+                            {
+                              pb: 1.5,
+                            },
+                          }}
+                        >
+                          <Box
+                            display="flex"
+                            justifyContent="space-between"
+                            alignItems="center"
+                            gap={1}
+                          >
+                            <Typography
+                              variant="body2"
+                              fontWeight={600}
+                              sx={{
+                                wordBreak:
+                                  "break-word",
+                              }}
+                            >
+                              {fp.forma}
+                            </Typography>
+
+                            <Typography
+                              fontWeight={700}
+                            >
+                              {money(
+                                fp.total
+                              )}
+                            </Typography>
+                          </Box>
+                        </CardContent>
+                      </Card>
+                    ))}
+                </Stack>
+              ) : (
+                  <Box
+  component="table"
+  sx={{
+    width: "100%",
+    borderCollapse: "separate",
+    borderSpacing: 0,
+
+    "& thead th": {
+      fontSize: 12,
+      fontWeight: 700,
+      color: "text.secondary",
+      backgroundColor: "action.hover",
+      borderBottom: "1px solid",
+      borderColor: "divider",
+    },
+
+    "& tbody td": {
+      borderBottom: "1px solid",
+      borderColor: "divider",
+    },
+
+    "& tbody tr:last-child td": {
+      borderBottom: "none",
+    },
+
+    "& tbody tr:hover": {
+      backgroundColor: "action.hover",
+    },
+  }}
+>
+                    <thead>
+                      <tr>
+                        <th
+                          style={{
+                            textAlign:
+                              "left",
+                            padding: 8,
+                          }}
+                        >
+                          Forma
+                        </th>
+
+                        <th
+                          style={{
+                            textAlign:
+                              "right",
+                            padding: 8,
+                          }}
+                        >
+                          Total
+                        </th>
+                      </tr>
+                    </thead>
+
+                    <tbody>
+                      {(op.formas_pagamento ??
+                        []).map(
+                          (fp, idx) => (
+                            <tr key={idx}>
+                              <td
+                                style={{
+                                  padding: 8,
+                                }}
+                              >
+                                {
+                                  fp.forma
+                                }
+                              </td>
+
+                              <td
+                                style={{
+                                  padding: 8,
+                                  textAlign:
+                                    "right",
+                                  fontWeight: 700,
+                                }}
+                              >
+                                {money(
+                                  fp.total
+                                )}
+                              </td>
+                            </tr>
+                          )
+                        )}
+                    </tbody>
+                  </Box>
+              )}
+            </AccordionDetails>
+          </Accordion>
+        ))}
+      </CardContent>
+    </Card>
+  );
+};
 
 // ============================
 // Últimas transações
 // ============================
 
-const badgeColor = (tipo: string) => (tipo === "recarga" ? "success" : "error");
+const badgeColor = (tipo: string) =>
+  tipo === "recarga" ? "success" : "error";
 
-const TabelaUltimas = ({ data }: { data: UltimaTransacao[] }) => (
-  <Card sx={{ borderRadius: 4, boxShadow: 1 }}>
-    <CardContent>
-      <Typography variant="h6" fontWeight={800} mb={2}>
-        Movimentações Recentes
-      </Typography>
+const TabelaUltimas = ({
+  data,
+}: {
+  data: UltimaTransacao[];
+}) => {
+  const theme = useTheme();
 
-      <Box component="table" width="100%" sx={{ borderCollapse: "collapse" }}>
-        <thead>
-          <tr>
-            <th style={{ padding: 8, textAlign: "left" }}>Tipo</th>
-            <th style={{ padding: 8 }}>PDV</th>
-            <th style={{ padding: 8 }}>Caixa</th>
-            <th style={{ padding: 8 }}>Operador</th>
-            <th style={{ padding: 8 }}>Data</th>
-            <th style={{ padding: 8, textAlign: "right" }}>Valor</th>
-          </tr>
-        </thead>
-        <tbody>
-          {(data ?? []).map((t, i) => (
-            <tr key={i}>
-              <td style={{ padding: 8 }}>
-                <Chip label={t.tipo} color={badgeColor(t.tipo)} size="small" />
-              </td>
-              <td style={{ padding: 8 }}>{t.pdv_nome ?? "—"}</td>
-              <td style={{ padding: 8 }}>{t.caixa_nome ?? "—"}</td>
-              <td style={{ padding: 8 }}>{t.operador_nome ?? "—"}</td>
-              <td style={{ padding: 8 }}>{new Date(t.criado_em).toLocaleString("pt-BR")}</td>
-              <td style={{ padding: 8, textAlign: "right", fontWeight: 800 }}>
-                {t.valor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </Box>
-    </CardContent>
-  </Card>
-);
+  const mobile = useMediaQuery(
+    theme.breakpoints.down("sm")
+  );
+
+  const money = (v: number) =>
+    v.toLocaleString("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    });
+
+  return (
+    <Card sx={{ borderRadius: 2, boxShadow: 1 }}>
+      <CardContent>
+        <Typography
+          variant="h6"
+          fontWeight={800}
+          mb={2}
+        >
+          Movimentações Recentes
+        </Typography>
+
+        {/* MOBILE */}
+        {mobile ? (
+          <Stack spacing={1.5}>
+            {(data ?? []).map((t, i) => (
+              <Card
+                key={i}
+                variant="outlined"
+                sx={{
+                  borderRadius: 1,
+                }}
+              >
+                <CardContent
+                  sx={{
+                    "&:last-child": {
+                      pb: 2,
+                    },
+                  }}
+                >
+                  <Stack spacing={1.2}>
+                    <Box
+                      display="flex"
+                      justifyContent="space-between"
+                      alignItems="center"
+                      gap={1}
+                      flexWrap="wrap"
+                    >
+                      <Chip
+                        label={t.tipo}
+                        color={badgeColor(t.tipo)}
+                        size="small"
+                      />
+
+                      <Typography
+                        fontWeight={800}
+                        color={
+                          t.valor >= 0
+                            ? "success.main"
+                            : "error.main"
+                        }
+                      >
+                        {money(t.valor)}
+                      </Typography>
+                    </Box>
+
+                    <Typography variant="body2">
+                      <strong>PDV:</strong>{" "}
+                      {t.pdv_nome ?? "—"}
+                    </Typography>
+
+                    <Typography variant="body2">
+                      <strong>Caixa:</strong>{" "}
+                      {t.caixa_nome ?? "—"}
+                    </Typography>
+
+                    <Typography variant="body2">
+                      <strong>Operador:</strong>{" "}
+                      {t.operador_nome ?? "—"}
+                    </Typography>
+
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                    >
+                      {new Date(
+                        t.criado_em
+                      ).toLocaleString("pt-BR")}
+                    </Typography>
+                  </Stack>
+                </CardContent>
+              </Card>
+            ))}
+          </Stack>
+        ) : (
+          /* DESKTOP */
+          <Box
+  component="table"
+  sx={{
+    width: "100%",
+    borderCollapse: "separate",
+    borderSpacing: 0,
+
+    "& thead th": {
+      fontSize: 12,
+      fontWeight: 700,
+      color: "text.secondary",
+      backgroundColor: "action.hover",
+      borderBottom: "1px solid",
+      borderColor: "divider",
+    },
+
+    "& tbody td": {
+      borderBottom: "1px solid",
+      borderColor: "divider",
+    },
+
+    "& tbody tr:last-child td": {
+      borderBottom: "none",
+    },
+
+    "& tbody tr:hover": {
+      backgroundColor: "action.hover",
+    },
+  }}
+>
+            <thead>
+              <tr>
+                <th
+                  style={{
+                    padding: 8,
+                    textAlign: "left",
+                  }}
+                >
+                  Tipo
+                </th>
+
+                <th style={{ padding: 8 }}>
+                  PDV
+                </th>
+
+                <th style={{ padding: 8 }}>
+                  Caixa
+                </th>
+
+                <th style={{ padding: 8 }}>
+                  Operador
+                </th>
+
+                <th style={{ padding: 8 }}>
+                  Data
+                </th>
+
+                <th
+                  style={{
+                    padding: 8,
+                    textAlign: "right",
+                  }}
+                >
+                  Valor
+                </th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {(data ?? []).map((t, i) => (
+                <tr key={i}>
+                  <td style={{ padding: 8 }}>
+                    <Chip
+                      label={t.tipo}
+                      color={badgeColor(t.tipo)}
+                      size="small"
+                    />
+                  </td>
+
+                  <td style={{ padding: 8 }}>
+                    {t.pdv_nome ?? "—"}
+                  </td>
+
+                  <td style={{ padding: 8 }}>
+                    {t.caixa_nome ?? "—"}
+                  </td>
+
+                  <td style={{ padding: 8 }}>
+                    {t.operador_nome ?? "—"}
+                  </td>
+
+                  <td style={{ padding: 8 }}>
+                    {new Date(
+                      t.criado_em
+                    ).toLocaleString("pt-BR")}
+                  </td>
+
+                  <td
+                    style={{
+                      padding: 8,
+                      textAlign: "right",
+                      fontWeight: 800,
+                    }}
+                  >
+                    {money(t.valor)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </Box>
+        )}
+      </CardContent>
+    </Card>
+  );
+};
 
 // ============================
 // Página principal
@@ -873,19 +1787,37 @@ export const DashboardFinanceiroEvento = () => {
     );
 
   return (
-    <Box p={3} minHeight="100vh">
+    <Box
+      p={{ xs: 1.5, md: 3 }}
+      minHeight="100vh"
+      width="100%"
+    >
       <Box
         display="flex"
+        flexDirection={{ xs: "column", sm: "row" }}
+        gap={2}
         justifyContent="space-between"
-        alignItems="center"
+        alignItems={{ xs: "stretch", sm: "center" }}
         mb={2}
       >
-        <Typography variant="h5" fontWeight={900}>
+        <Typography
+          variant="h5"
+          fontWeight={900}
+          sx={{
+            fontSize: {
+              xs: "1.4rem",
+              md: "2rem",
+            }
+          }}
+        >
           Relatório Financeiro
         </Typography>
 
         <Button
           variant="outlined"
+          sx={{
+            width: { xs: "100%", sm: "auto" }
+          }}
           onClick={() => setExportDialogOpen(true)}
         >
           Exportar
@@ -895,7 +1827,7 @@ export const DashboardFinanceiroEvento = () => {
       <Card
         sx={{
           mb: 3,
-          borderRadius: 3,
+          borderRadius: 2,
           border: "1px solid",
           borderColor: "divider",
         }}
