@@ -185,6 +185,8 @@ export const PontoDeVendaList = () => {
 
     return (
         <List
+            disableSyncWithLocation
+            sort={{ field: 'nome', order: 'ASC' }}
             actions={<PdvListActions isSmall={isSmall} />}
             queryOptions={
                 !isGlobal(permissions, "listar.pdv")

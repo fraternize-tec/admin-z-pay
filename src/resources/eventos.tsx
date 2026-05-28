@@ -76,7 +76,9 @@ export const EventoList = () => {
   const isSmall = useMediaQuery('(max-width:600px)');
 
   return (
-    <List>
+    <List 
+        disableSyncWithLocation
+        sort={{ field: 'nome', order: 'ASC' }}>
       {isSmall ? (
         <SimpleList
           primaryText={(record) => record.nome}

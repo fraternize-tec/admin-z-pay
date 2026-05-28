@@ -185,6 +185,8 @@ export const CaixaList = () => {
 
     return (
         <List
+            disableSyncWithLocation
+            sort={{ field: 'nome', order: 'ASC' }}
             actions={<CaixaListActions isSmall={isSmall} />}
             queryOptions={
                 !isGlobal(permissions, "listar.caixa")
