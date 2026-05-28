@@ -13,11 +13,11 @@ import {
   AccordionDetails,
   Stack,
   useTheme,
-  ToggleButton,
-  ToggleButtonGroup,
   useMediaQuery,
+  Tooltip,
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import { LocalizationProvider, DateTimePicker } from "@mui/x-date-pickers";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { ptBR } from "date-fns/locale";
@@ -44,22 +44,20 @@ type FinanceiroResumo = {
 };
 
 type CartoesStats = {
-  total_cartoes_utilizados: number;
-  cartoes_evento: number;
-  cartoes_emergenciais: number;
+  total_cartoes: number;
+
+  cartoes_utilizados: number;
+  cartoes_disponiveis: number;
+
+  cartoes_evento_total: number;
+  cartoes_evento_utilizados: number;
+
+  cartoes_emergenciais_total: number;
+  cartoes_emergenciais_utilizados: number;
 };
 
 type TaxasStats = {
   total_taxas: number;
-};
-
-type UltimaTransacao = {
-  tipo: string;
-  criado_em: string;
-  valor: number;
-  pdv_nome?: string;
-  caixa_nome?: string;
-  operador_nome?: string;
 };
 
 type ItemPDV = {
@@ -104,14 +102,13 @@ type DashboardData = {
   financeiro: FinanceiroResumo;
   cartoes: CartoesStats;
   taxas: TaxasStats;
-  ultimas_transacoes: UltimaTransacao[];
   itens_por_pdv: PDV[];
   recargas_por_caixa: Caixa[];
   recargas_por_operador: Operador[];
 };
 
 
-const atalhos = [
+export const atalhos = [
   {
     label: "Hoje",
     getRange: () => {
@@ -199,38 +196,42 @@ const CardsOperacionais = ({
 }: {
   cartoes: CartoesStats;
 }) => {
-  const money = (v: number) =>
-    v.toLocaleString("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-    });
-
   return (
     <Box
       display="grid"
       gridTemplateColumns={{
         xs: "1fr",
         sm: "repeat(2,1fr)",
-        md: "repeat(3,1fr)",
+        md: "repeat(4,1fr)",
       }}
       gap={2}
       mb={2}
     >
       <CardMetrica
         titulo="Cartões Utilizados"
-        valor={cartoes.total_cartoes_utilizados}
+        valor={`${cartoes.cartoes_utilizados} / ${cartoes.total_cartoes}`}
+        subtitulo="cartões operacionalizados"
         cor="#6a1b9a"
       />
 
       <CardMetrica
+        titulo="Cartões Disponíveis"
+        valor={cartoes.cartoes_disponiveis}
+        subtitulo="ainda sem utilização"
+        cor="#2e7d32"
+      />
+
+      <CardMetrica
         titulo="Cartões do Evento"
-        valor={cartoes.cartoes_evento}
+        valor={`${cartoes.cartoes_evento_utilizados} / ${cartoes.cartoes_evento_total}`}
+        subtitulo="utilizados do lote do evento"
         cor="#00838f"
       />
 
       <CardMetrica
         titulo="Cartões Emergenciais"
-        valor={cartoes.cartoes_emergenciais}
+        valor={`${cartoes.cartoes_emergenciais_utilizados} / ${cartoes.cartoes_emergenciais_total}`}
+        subtitulo="utilizados emergenciais"
         cor="#ef6c00"
       />
     </Box>
@@ -244,10 +245,12 @@ const CardsOperacionais = ({
 const CardMetrica = ({
   titulo,
   valor,
+  subtitulo,
   cor,
 }: {
   titulo: string;
-  valor: number;
+  valor: number | string;
+  subtitulo?: string;
   cor: string;
 }) => (
   <Card
@@ -263,13 +266,13 @@ const CardMetrica = ({
       position: "relative",
       overflow: "hidden",
       transition: "all .2s",
+
       "&:hover": {
         transform: "translateY(-2px)",
         boxShadow: 2,
       },
     }}
   >
-    {/* accent bar */}
     <Box
       sx={{
         position: "absolute",
@@ -282,13 +285,34 @@ const CardMetrica = ({
     />
 
     <CardContent sx={{ py: 2, pl: 3 }}>
-      <Typography variant="caption" sx={{ opacity: 0.7 }}>
+      <Typography
+        variant="caption"
+        sx={{
+          opacity: 0.7,
+          lineHeight: 1.2,
+        }}
+      >
         {titulo}
       </Typography>
 
-      <Typography variant="h5" fontWeight={800} mt={0.5}>
-        {valor.toLocaleString("pt-BR")}
+      <Typography
+        variant="h5"
+        fontWeight={800}
+        mt={0.5}
+      >
+        {typeof valor === "number"
+          ? valor.toLocaleString("pt-BR")
+          : valor}
       </Typography>
+
+      {subtitulo && (
+        <Typography
+          variant="caption"
+          color="text.secondary"
+        >
+          {subtitulo}
+        </Typography>
+      )}
     </CardContent>
   </Card>
 );
@@ -304,40 +328,60 @@ const ResumoFinanceiro = ({ data }: { data: FinanceiroResumo }) => {
 
   const items = [
     {
-      label: "Recebido Bruto",
+      label: "Taxas Arrecadadas",
+      tooltip:
+        "Total arrecadado em taxas de ativação somando todas as formas de pagamento.",
+      value: data.taxas_arrecadadas,
+      color: theme.palette.warning.main,
+      oculto: data.taxas_arrecadadas === 0,
+    },
+
+    {
+      label: "Valor Recebido em Recargas",
+      tooltip:
+        "Total recebido em recargas pagas, somando todas a formas de pagamento e desconsiderando taxas de ativação.",
       value: data.valor_bruto_recebido,
       color: theme.palette.info.main,
     },
-    {
-      label: "Taxas do Evento",
-      value: data.taxas_arrecadadas,
-      color: theme.palette.warning.main,
-      oculto: data.taxas_arrecadadas === 0, // esconde se for zero
-    },
+
     {
       label: "Cortesias",
+      tooltip:
+        "Créditos emitidos sem cobrança para clientes ou convidados.",
       value: data.cortesias,
       color: theme.palette.success.main,
       oculto: data.cortesias === 0,
     },
+
     {
-      label: "Carregado em Cartões",
+      label: "Créditos Emitidos",
+      tooltip:
+        "Total de saldo de créditos disponibilizados nos cartões, incluindo cortesias.",
       value: data.valor_liquido_cartoes,
       color: theme.palette.primary.main,
     },
+
     {
-      label: "Consumido",
+      label: "Valor Consumido",
+      tooltip:
+        "Total consumido em vendas realizados no evento.",
       value: data.total_consumido,
       color: theme.palette.error.main,
     },
+
     {
       label: "Devoluções",
+      tooltip:
+        "Valores devolvidos aos clientes após solicitações de estorno.",
       value: data.devolucoes,
       color: theme.palette.error.light,
       oculto: data.devolucoes === 0,
     },
+
     {
       label: "Saldo em Circulação",
+      tooltip:
+        "Saldo ainda disponível nos cartões e não consumido no evento.",
       value: data.saldo_evento,
       color: theme.palette.success.main,
       destaque: true,
@@ -390,12 +434,44 @@ const ResumoFinanceiro = ({ data }: { data: FinanceiroResumo }) => {
                   borderLeft: `3px solid ${item.color}`
                 }}
               >
-                <Typography
-                  variant="caption"
-                  sx={{ color: "text.secondary" }}
+                <Box
+                  display="flex"
+                  alignItems="center"
+                  gap={0.5}
+                  mb={0.5}
                 >
-                  {item.label}
-                </Typography>
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      color: "text.secondary",
+                      lineHeight: 1.2,
+                    }}
+                  >
+                    {item.label}
+                  </Typography>
+
+                  <Tooltip
+                    title={item.tooltip}
+                    arrow
+                    placement="top"
+                  >
+                    <InfoOutlinedIcon
+                      sx={{
+                        fontSize: 14,
+                        color: "text.disabled",
+                        cursor: "help",
+                        opacity: 0.8,
+
+                        transition: "all .2s",
+
+                        "&:hover": {
+                          opacity: 1,
+                          color: item.color,
+                        },
+                      }}
+                    />
+                  </Tooltip>
+                </Box>
 
                 <Typography
                   variant={item.destaque ? "h5" : "h6"}
@@ -420,7 +496,7 @@ const ResumoFinanceiro = ({ data }: { data: FinanceiroResumo }) => {
 // Filtro de período brasileiro
 // ============================
 
-const FiltroPeriodo = ({
+export const FiltroPeriodo = ({
   evento,
   inicio,
   fim,
@@ -860,35 +936,35 @@ const TabelaPDV = ({
                   </Stack>
                 ) : (
                   <Box
-  component="table"
-  sx={{
-    width: "100%",
-    borderCollapse: "separate",
-    borderSpacing: 0,
+                    component="table"
+                    sx={{
+                      width: "100%",
+                      borderCollapse: "separate",
+                      borderSpacing: 0,
 
-    "& thead th": {
-      fontSize: 12,
-      fontWeight: 700,
-      color: "text.secondary",
-      backgroundColor: "action.hover",
-      borderBottom: "1px solid",
-      borderColor: "divider",
-    },
+                      "& thead th": {
+                        fontSize: 12,
+                        fontWeight: 700,
+                        color: "text.secondary",
+                        backgroundColor: "action.hover",
+                        borderBottom: "1px solid",
+                        borderColor: "divider",
+                      },
 
-    "& tbody td": {
-      borderBottom: "1px solid",
-      borderColor: "divider",
-    },
+                      "& tbody td": {
+                        borderBottom: "1px solid",
+                        borderColor: "divider",
+                      },
 
-    "& tbody tr:last-child td": {
-      borderBottom: "none",
-    },
+                      "& tbody tr:last-child td": {
+                        borderBottom: "none",
+                      },
 
-    "& tbody tr:hover": {
-      backgroundColor: "action.hover",
-    },
-  }}
->
+                      "& tbody tr:hover": {
+                        backgroundColor: "action.hover",
+                      },
+                    }}
+                  >
                     <thead>
                       <tr>
                         <th
@@ -1175,35 +1251,35 @@ const TabelaCaixa = ({
                 </Stack>
               ) : (
                 <Box
-  component="table"
-  sx={{
-    width: "100%",
-    borderCollapse: "separate",
-    borderSpacing: 0,
+                  component="table"
+                  sx={{
+                    width: "100%",
+                    borderCollapse: "separate",
+                    borderSpacing: 0,
 
-    "& thead th": {
-      fontSize: 12,
-      fontWeight: 700,
-      color: "text.secondary",
-      backgroundColor: "action.hover",
-      borderBottom: "1px solid",
-      borderColor: "divider",
-    },
+                    "& thead th": {
+                      fontSize: 12,
+                      fontWeight: 700,
+                      color: "text.secondary",
+                      backgroundColor: "action.hover",
+                      borderBottom: "1px solid",
+                      borderColor: "divider",
+                    },
 
-    "& tbody td": {
-      borderBottom: "1px solid",
-      borderColor: "divider",
-    },
+                    "& tbody td": {
+                      borderBottom: "1px solid",
+                      borderColor: "divider",
+                    },
 
-    "& tbody tr:last-child td": {
-      borderBottom: "none",
-    },
+                    "& tbody tr:last-child td": {
+                      borderBottom: "none",
+                    },
 
-    "& tbody tr:hover": {
-      backgroundColor: "action.hover",
-    },
-  }}
->
+                    "& tbody tr:hover": {
+                      backgroundColor: "action.hover",
+                    },
+                  }}
+                >
                   <thead>
                     <tr>
                       <th
@@ -1408,321 +1484,96 @@ const TabelaOperador = ({
                     ))}
                 </Stack>
               ) : (
-                  <Box
-  component="table"
-  sx={{
-    width: "100%",
-    borderCollapse: "separate",
-    borderSpacing: 0,
+                <Box
+                  component="table"
+                  sx={{
+                    width: "100%",
+                    borderCollapse: "separate",
+                    borderSpacing: 0,
 
-    "& thead th": {
-      fontSize: 12,
-      fontWeight: 700,
-      color: "text.secondary",
-      backgroundColor: "action.hover",
-      borderBottom: "1px solid",
-      borderColor: "divider",
-    },
+                    "& thead th": {
+                      fontSize: 12,
+                      fontWeight: 700,
+                      color: "text.secondary",
+                      backgroundColor: "action.hover",
+                      borderBottom: "1px solid",
+                      borderColor: "divider",
+                    },
 
-    "& tbody td": {
-      borderBottom: "1px solid",
-      borderColor: "divider",
-    },
+                    "& tbody td": {
+                      borderBottom: "1px solid",
+                      borderColor: "divider",
+                    },
 
-    "& tbody tr:last-child td": {
-      borderBottom: "none",
-    },
+                    "& tbody tr:last-child td": {
+                      borderBottom: "none",
+                    },
 
-    "& tbody tr:hover": {
-      backgroundColor: "action.hover",
-    },
-  }}
->
-                    <thead>
-                      <tr>
-                        <th
-                          style={{
-                            textAlign:
-                              "left",
-                            padding: 8,
-                          }}
-                        >
-                          Forma
-                        </th>
+                    "& tbody tr:hover": {
+                      backgroundColor: "action.hover",
+                    },
+                  }}
+                >
+                  <thead>
+                    <tr>
+                      <th
+                        style={{
+                          textAlign:
+                            "left",
+                          padding: 8,
+                        }}
+                      >
+                        Forma
+                      </th>
 
-                        <th
-                          style={{
-                            textAlign:
-                              "right",
-                            padding: 8,
-                          }}
-                        >
-                          Total
-                        </th>
-                      </tr>
-                    </thead>
+                      <th
+                        style={{
+                          textAlign:
+                            "right",
+                          padding: 8,
+                        }}
+                      >
+                        Total
+                      </th>
+                    </tr>
+                  </thead>
 
-                    <tbody>
-                      {(op.formas_pagamento ??
-                        []).map(
-                          (fp, idx) => (
-                            <tr key={idx}>
-                              <td
-                                style={{
-                                  padding: 8,
-                                }}
-                              >
-                                {
-                                  fp.forma
-                                }
-                              </td>
+                  <tbody>
+                    {(op.formas_pagamento ??
+                      []).map(
+                        (fp, idx) => (
+                          <tr key={idx}>
+                            <td
+                              style={{
+                                padding: 8,
+                              }}
+                            >
+                              {
+                                fp.forma
+                              }
+                            </td>
 
-                              <td
-                                style={{
-                                  padding: 8,
-                                  textAlign:
-                                    "right",
-                                  fontWeight: 700,
-                                }}
-                              >
-                                {money(
-                                  fp.total
-                                )}
-                              </td>
-                            </tr>
-                          )
-                        )}
-                    </tbody>
-                  </Box>
+                            <td
+                              style={{
+                                padding: 8,
+                                textAlign:
+                                  "right",
+                                fontWeight: 700,
+                              }}
+                            >
+                              {money(
+                                fp.total
+                              )}
+                            </td>
+                          </tr>
+                        )
+                      )}
+                  </tbody>
+                </Box>
               )}
             </AccordionDetails>
           </Accordion>
         ))}
-      </CardContent>
-    </Card>
-  );
-};
-
-// ============================
-// Últimas transações
-// ============================
-
-const badgeColor = (tipo: string) =>
-  tipo === "recarga" ? "success" : "error";
-
-const TabelaUltimas = ({
-  data,
-}: {
-  data: UltimaTransacao[];
-}) => {
-  const theme = useTheme();
-
-  const mobile = useMediaQuery(
-    theme.breakpoints.down("sm")
-  );
-
-  const money = (v: number) =>
-    v.toLocaleString("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-    });
-
-  return (
-    <Card sx={{ borderRadius: 2, boxShadow: 1 }}>
-      <CardContent>
-        <Typography
-          variant="h6"
-          fontWeight={800}
-          mb={2}
-        >
-          Movimentações Recentes
-        </Typography>
-
-        {/* MOBILE */}
-        {mobile ? (
-          <Stack spacing={1.5}>
-            {(data ?? []).map((t, i) => (
-              <Card
-                key={i}
-                variant="outlined"
-                sx={{
-                  borderRadius: 1,
-                }}
-              >
-                <CardContent
-                  sx={{
-                    "&:last-child": {
-                      pb: 2,
-                    },
-                  }}
-                >
-                  <Stack spacing={1.2}>
-                    <Box
-                      display="flex"
-                      justifyContent="space-between"
-                      alignItems="center"
-                      gap={1}
-                      flexWrap="wrap"
-                    >
-                      <Chip
-                        label={t.tipo}
-                        color={badgeColor(t.tipo)}
-                        size="small"
-                      />
-
-                      <Typography
-                        fontWeight={800}
-                        color={
-                          t.valor >= 0
-                            ? "success.main"
-                            : "error.main"
-                        }
-                      >
-                        {money(t.valor)}
-                      </Typography>
-                    </Box>
-
-                    <Typography variant="body2">
-                      <strong>PDV:</strong>{" "}
-                      {t.pdv_nome ?? "—"}
-                    </Typography>
-
-                    <Typography variant="body2">
-                      <strong>Caixa:</strong>{" "}
-                      {t.caixa_nome ?? "—"}
-                    </Typography>
-
-                    <Typography variant="body2">
-                      <strong>Operador:</strong>{" "}
-                      {t.operador_nome ?? "—"}
-                    </Typography>
-
-                    <Typography
-                      variant="caption"
-                      color="text.secondary"
-                    >
-                      {new Date(
-                        t.criado_em
-                      ).toLocaleString("pt-BR")}
-                    </Typography>
-                  </Stack>
-                </CardContent>
-              </Card>
-            ))}
-          </Stack>
-        ) : (
-          /* DESKTOP */
-          <Box
-  component="table"
-  sx={{
-    width: "100%",
-    borderCollapse: "separate",
-    borderSpacing: 0,
-
-    "& thead th": {
-      fontSize: 12,
-      fontWeight: 700,
-      color: "text.secondary",
-      backgroundColor: "action.hover",
-      borderBottom: "1px solid",
-      borderColor: "divider",
-    },
-
-    "& tbody td": {
-      borderBottom: "1px solid",
-      borderColor: "divider",
-    },
-
-    "& tbody tr:last-child td": {
-      borderBottom: "none",
-    },
-
-    "& tbody tr:hover": {
-      backgroundColor: "action.hover",
-    },
-  }}
->
-            <thead>
-              <tr>
-                <th
-                  style={{
-                    padding: 8,
-                    textAlign: "left",
-                  }}
-                >
-                  Tipo
-                </th>
-
-                <th style={{ padding: 8 }}>
-                  PDV
-                </th>
-
-                <th style={{ padding: 8 }}>
-                  Caixa
-                </th>
-
-                <th style={{ padding: 8 }}>
-                  Operador
-                </th>
-
-                <th style={{ padding: 8 }}>
-                  Data
-                </th>
-
-                <th
-                  style={{
-                    padding: 8,
-                    textAlign: "right",
-                  }}
-                >
-                  Valor
-                </th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {(data ?? []).map((t, i) => (
-                <tr key={i}>
-                  <td style={{ padding: 8 }}>
-                    <Chip
-                      label={t.tipo}
-                      color={badgeColor(t.tipo)}
-                      size="small"
-                    />
-                  </td>
-
-                  <td style={{ padding: 8 }}>
-                    {t.pdv_nome ?? "—"}
-                  </td>
-
-                  <td style={{ padding: 8 }}>
-                    {t.caixa_nome ?? "—"}
-                  </td>
-
-                  <td style={{ padding: 8 }}>
-                    {t.operador_nome ?? "—"}
-                  </td>
-
-                  <td style={{ padding: 8 }}>
-                    {new Date(
-                      t.criado_em
-                    ).toLocaleString("pt-BR")}
-                  </td>
-
-                  <td
-                    style={{
-                      padding: 8,
-                      textAlign: "right",
-                      fontWeight: 800,
-                    }}
-                  >
-                    {money(t.valor)}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </Box>
-        )}
       </CardContent>
     </Card>
   );
@@ -1868,8 +1719,6 @@ export const DashboardFinanceiroEvento = () => {
       </Box>
 
       <Divider sx={{ my: 4 }} />
-
-      <TabelaUltimas data={data.ultimas_transacoes} />
 
       <ExportDialog
         open={exportDialogOpen}

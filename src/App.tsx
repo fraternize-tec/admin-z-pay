@@ -32,16 +32,16 @@ import CreditCardIcon from '@mui/icons-material/CreditCard';
 import { i18nProvider } from './i18n/i18nProvider';
 import { lightTheme, darkTheme } from './theme/theme';
 import { PapelPermissaoCreate } from './resources/papelPermissoes';
-import { LoteCartaoCreate, LoteCartaoEdit, LoteCartaoListEvento, LoteCartaoProprioCreate, LoteCartaoProprioList } from './resources/lotesCartoes';
+import { LoteCartaoCreate, LoteCartaoEdit, LoteCartaoListEvento, LoteCartaoProprioList } from './resources/lotesCartoes';
 import { Route } from 'react-router';
 import { CartaoList } from './resources/cartoes';
-import { CartaoProprioShow, CartoesPropriosList } from './resources/cartoesProprios';
 import { CartoesPropriosEventoList } from './resources/cartoesEmergenciais';
 import HistoricoCartaoOperacional from './pages/historicoCartaoOperacional';
 import { ItemPdvCreate, ItemPdvEdit } from './resources/itemPdv';
 import { DashboardFinanceiroEvento } from './resources/dashboard';
 import MobileLoginPage from './pages/MobileLoginPage';
 import BingoTelao from './pages/bingo/BingoTelao';
+import { UltimasMovimentacoesPage } from './pages/ultimasMovimentacoesPage';
 
 export const App = () => (
     <Admin
@@ -78,6 +78,11 @@ export const App = () => (
             <Route
                 path="/operacao/cartoes"
                 element={<HistoricoCartaoOperacional />}
+            />
+
+            <Route
+                path="/operacao/movimentacoes"
+                element={<UltimasMovimentacoesPage />}
             />
 
             <Route

@@ -9,6 +9,7 @@ import CreditCardIcon from "@mui/icons-material/CreditCard";
 import VpnKeyIcon from "@mui/icons-material/VpnKey";
 import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
 import AssessmentIcon from "@mui/icons-material/Assessment";
+import ReceiptLongIcon from "@mui/icons-material/ReceiptLong";
 import { can } from "../auth/useCan";
 
 export const MyMenu = () => {
@@ -59,11 +60,19 @@ export const MyMenu = () => {
 
 
       {can(permissions, "visualizar.relatorio") && (
-        <MenuItemLink
-          to="/dashboard-financeiro/"
-          primaryText="Relatório Financeiro"
-          leftIcon={<AssessmentIcon />}
-        />
+        <>
+          <MenuItemLink
+            to="/dashboard-financeiro/"
+            primaryText="Relatório Financeiro"
+            leftIcon={<AssessmentIcon />}
+          />
+
+          <MenuItemLink
+            to="/operacao/movimentacoes"
+            primaryText="Últimas Movimentações"
+            leftIcon={<ReceiptLongIcon />}
+          />
+        </>
       )}
 
 

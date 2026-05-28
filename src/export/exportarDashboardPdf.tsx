@@ -147,20 +147,26 @@ export const exportarDashboardPdf = async (
     const possuiCortesias = (f.cortesias ?? 0) > 0;
 
     // fluxo financeiro
-    flowLine("Recebido Bruto", f.valor_bruto_recebido);
     if (possuiTaxa) {
-      flowLine("Taxas do Evento", f.taxas_arrecadadas, "minus");
+      flowLine("Taxas Arrecadadas", f.taxas_arrecadadas, "result");
+      y += 2;
     }
+
+    flowLine(
+      "Valor Recebido em Recargas",
+      f.valor_bruto_recebido
+    );
+
 
     if (possuiCortesias) {
       flowLine("Cortesias", f.cortesias);
     }
 
-    flowLine("Carregado em Cartões", f.valor_liquido_cartoes, "result");
+    flowLine("Créditos Emitidos", f.valor_liquido_cartoes, "result");
 
     y += 2;
 
-    flowLine("Consumido", f.total_consumido, "minus");
+    flowLine("Valor Consumido", f.total_consumido, "minus");
 
     if ((f.devolucoes ?? 0) > 0) {
       flowLine("Devoluções", f.devolucoes, "minus");
@@ -184,20 +190,29 @@ export const exportarDashboardPdf = async (
   ) {
     section("Indicadores Operacionais");
 
+    const c = data.cartoes;
+
     line(
       "Cartões Utilizados",
-      number(data.cartoes.total_cartoes_utilizados),
+      `${number(c.cartoes_utilizados)} / ${number(c.total_cartoes)}`,
       true
     );
 
+    subLine(
+      "Cartões disponíveis",
+      number(c.cartoes_disponiveis)
+    );
+
+    y += 2;
+
     line(
       "Cartões do Evento",
-      number(data.cartoes.cartoes_evento)
+      `${number(c.cartoes_evento_utilizados)} / ${number(c.cartoes_evento_total)}`
     );
 
     line(
       "Cartões Emergenciais",
-      number(data.cartoes.cartoes_emergenciais)
+      `${number(c.cartoes_emergenciais_utilizados)} / ${number(c.cartoes_emergenciais_total)}`
     );
 
     y += 6;
