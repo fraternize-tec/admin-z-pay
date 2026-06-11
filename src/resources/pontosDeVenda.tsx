@@ -30,7 +30,7 @@ import AddIcon from '@mui/icons-material/Add';
 import PersonAddIcon from "@mui/icons-material/PersonAdd";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 
-import { Autocomplete, Box, Button, TextField as MuiTextField } from '@mui/material';
+import { Autocomplete, Box, Button, TextField as MuiTextField, Pagination } from '@mui/material';
 import { useTheme, useMediaQuery } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { useEffect, useMemo, useState } from 'react';
@@ -42,7 +42,7 @@ import { EventoReferenceInput } from '../components/EventoReferenceInput';
 import { SmartToolbar } from '../components/SmartToolbar';
 import { InfoReferenceField } from '../components/InfoReferenceField';
 import { ItensDoPdv } from './itemPdv';
-import { ReenviarConviteButton, ToggleUsuarioButton } from './usuarios';
+import { ReenviarConviteButton, RemoverPermissaoButton, ToggleUsuarioButton } from './usuarios';
 
 import { debounce } from "lodash";
 
@@ -405,11 +405,20 @@ const UsuariosDoPdvTab = () => {
         <ReferenceManyField
             reference="usuarios_por_escopo"
             target="pdv_id"
+            perPage={isSmall ? 1000 : 25}
+            pagination={isSmall ? false : <Pagination />}
         >
             {isSmall ? (
                 <WithListContext
                     render={({ data }) => (
-                        <Box>
+                                                <Box
+                            sx={{
+                                pb: {
+                                    xs: 14,
+                                    sm: 0,
+                                },
+                            }}
+                        >
                             {data?.map((user) => (
                                 <Box
                                     key={user.id}
@@ -439,6 +448,7 @@ const UsuariosDoPdvTab = () => {
                                         <RecordContextProvider
                                             value={user}
                                         >
+                                            <RemoverPermissaoButton />
                                             <ToggleUsuarioButton />
                                             <ReenviarConviteButton />
                                         </RecordContextProvider>

@@ -6,7 +6,7 @@ import {
 } from "react-admin";
 
 import { Chip, Box } from "@mui/material";
-import { ToggleUsuarioButton, ReenviarConviteButton } from "../resources/usuarios";
+import { ToggleUsuarioButton, ReenviarConviteButton, RemoverPermissaoButton } from "../resources/usuarios";
 
 
 type UsuariosDatagridProps = {
@@ -50,6 +50,7 @@ export const UsuariosDatagrid = ({
             label="Ações"
             render={() => (
                 <Box display="flex" gap={1}>
+                    <RemoverPermissaoButton />
                     <ToggleUsuarioButton />
                     <ReenviarConviteButton />
                 </Box>

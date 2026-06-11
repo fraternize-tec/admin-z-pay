@@ -72,11 +72,17 @@ const EventoEditActions = () => {
   );
 };
 
+const eventoFilters = [
+  <TextInput source="nome" label="Nome" alwaysOn />,
+];
+
 export const EventoList = () => {
   const isSmall = useMediaQuery('(max-width:600px)');
 
   return (
-    <List 
+    <List
+        filters={eventoFilters}
+        perPage={25}
         disableSyncWithLocation
         sort={{ field: 'nome', order: 'ASC' }}>
       {isSmall ? (

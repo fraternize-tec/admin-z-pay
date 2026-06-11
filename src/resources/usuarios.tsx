@@ -26,6 +26,8 @@ import {
   useUpdate,
   useRefresh,
   useRedirect,
+  useDelete,
+  Confirm,
 } from 'react-admin';
 
 import { UsuarioPermissoesTab } from './usuarioPermissoesTab';
@@ -35,6 +37,8 @@ import { BackToListButtonNavigate } from '../components/BackToListButton';
 import { Box, Chip, Button } from '@mui/material';
 import { UsuariosDatagrid } from '../components/UsuariosDatagrid';
 import { SmartToolbar } from '../components/SmartToolbar';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import { useState } from 'react';
 
 
 const usuarioFilters = [
@@ -202,44 +206,91 @@ const ReferenceFieldWithEscopoSelector = (props: any) => {
     </ReferenceField>
   );
 };
-
 export const ToggleUsuarioButton = () => {
-  const record = useRecordContext();
-  const [update, { isLoading }] = useUpdate();
-  const notify = useNotify();
-  const refresh = useRefresh();
+    const record = useRecordContext();
 
-  if (!record) return null;
+    const [open, setOpen] = useState(false);
 
-  const handleClick = () => {
-    update(
-      "usuarios",
-      {
-        id: record.id,
-        data: {
-          ativo: !record.ativo
-        },
-        previousData: record
-      },
-      {
-        onSuccess: () => {
-          notify("Usuário atualizado");
-          refresh();
-        }
-      }
+    const [update, { isPending }] = useUpdate();
+
+    const notify = useNotify();
+    const refresh = useRefresh();
+
+    if (!record) return null;
+
+    const handleConfirm = () => {
+        update(
+            'usuarios',
+            {
+                id: record.id,
+                data: {
+                    ativo: !record.ativo,
+                },
+                previousData: record,
+            },
+            {
+                onSuccess: () => {
+                    notify('Usuário atualizado');
+                    refresh();
+                    setOpen(false);
+                },
+                onError: (error) => {
+                    notify(
+                        error instanceof Error
+                            ? error.message
+                            : 'Erro ao atualizar usuário',
+                        { type: 'error' }
+                    );
+
+                    setOpen(false);
+                },
+            }
+        );
+    };
+
+    const ativando = !record.ativo;
+
+    return (
+        <>
+            <Button
+                color={record.ativo ? 'warning' : 'success'}
+                onClick={() => setOpen(true)}
+                disabled={isPending}
+                size="small"
+            >
+                {record.ativo
+                    ? 'Desativar Usuário'
+                    : 'Ativar Usuário'}
+            </Button>
+
+            <Confirm
+                isOpen={open}
+                title={
+                    ativando
+                        ? 'Ativar usuário'
+                        : 'Desativar usuário'
+                }
+                content={
+                    <>
+                        <strong>{record.nome}</strong>
+                        <br />
+                        <br />
+
+                        {ativando
+                            ? 'O usuário será reativado e poderá acessar o sistema novamente.'
+                            : 'O usuário será desativado e perderá acesso ao sistema.'}
+
+                        <br />
+                        <br />
+                        Deseja continuar?
+                    </>
+                }
+                onConfirm={handleConfirm}
+                onClose={() => setOpen(false)}
+                loading={isPending}
+            />
+        </>
     );
-  };
-
-return (
-  <Button
-    color={record.ativo ? "error" : "success"}
-    onClick={handleClick}
-    disabled={isLoading}
-    size="small"
-  >
-    {record.ativo ? "Desativar" : "Ativar"}
-  </Button>
-);
 };
 
 export const ReenviarConviteButton = () => {
@@ -278,6 +329,84 @@ return (
   </Button>
 );
 }
+export const RemoverPermissaoButton = () => {
+    const record = useRecordContext();
+
+    const [open, setOpen] = useState(false);
+
+    const [deleteOne, { isPending }] = useDelete();
+
+    const notify = useNotify();
+    const refresh = useRefresh();
+
+    if (!record?.papel_contexto_id) {
+        return null;
+    }
+
+    const handleConfirm = () => {
+        deleteOne(
+            'papel_contexto',
+            {
+                id: record.papel_contexto_id,
+            },
+            {
+                onSuccess: () => {
+                    notify('Permissão removida com sucesso', { type: 'success' });
+                    refresh();
+                    setOpen(false);
+                },
+                onError: (error) => {
+                    const message =
+                        error instanceof Error
+                            ? error.message
+                            : undefined;
+
+                    notify(
+                        message ?? 'Erro ao remover acesso',
+                        { type: 'error' }
+                    );
+
+                    setOpen(false);
+                },
+            }
+        );
+    };
+
+    return (
+        <>
+            <Button
+                size="small"
+                color="error"
+                startIcon={<DeleteOutlineIcon />}
+                onClick={() => setOpen(true)}
+                disabled={isPending}
+            >
+                Remover Permissão
+            </Button>
+
+            <Confirm
+                isOpen={open}
+                title="Remover permissão"
+                content={
+                    <>
+                        <strong>Atenção!</strong>
+                        <br />
+                        O vínculo deste operador com esta permissão será removido.
+                        <br />
+                        <br />
+                        Operador: <strong>{record.nome}</strong>
+                        <br />
+                        <br />
+                        Deseja continuar?
+                    </>
+                }
+                onConfirm={handleConfirm}
+                onClose={() => setOpen(false)}
+                loading={isPending}
+            />
+        </>
+    );
+};
 
 /* ================= EDIT ================= */
 export const UsuarioEdit = () => (
@@ -302,6 +431,7 @@ export const UsuarioEdit = () => (
         </Box>
 
         <Box mt={1} display="flex" gap={1}>
+          <RemoverPermissaoButton />
           <ToggleUsuarioButton />
           <ReenviarConviteButton />
         </Box>

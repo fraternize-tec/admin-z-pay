@@ -21,7 +21,8 @@ import {
     CreateButton,
     FilterLiveSearch,
     RecordContextProvider,
-    WithListContext
+    WithListContext,
+    Pagination
 } from 'react-admin';
 
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
@@ -39,7 +40,7 @@ import { useEffect } from 'react';
 import { can } from '../auth/useCan';
 import { EventoReferenceInput } from '../components/EventoReferenceInput';
 import { SmartToolbar } from '../components/SmartToolbar';
-import { ReenviarConviteButton, ToggleUsuarioButton } from './usuarios';
+import { ReenviarConviteButton, RemoverPermissaoButton, ToggleUsuarioButton } from './usuarios';
 import { InfoReferenceField } from '../components/InfoReferenceField';
 import { InfoTextField } from '../components/InfoTextField';
 import { EventoFilterInline } from './pontosDeVenda';
@@ -445,11 +446,20 @@ const UsuariosDoCaixaTab = () => {
         <ReferenceManyField
             reference="usuarios_por_escopo"
             target="caixa_id"
+            perPage={isSmall ? 1000 : 25}
+            pagination={isSmall ? false : <Pagination />}
         >
             {isSmall ? (
                 <WithListContext
                     render={({ data }) => (
-                        <Box>
+                        <Box
+                            sx={{
+                                pb: {
+                                    xs: 14,
+                                    sm: 0,
+                                },
+                            }}
+                        >
                             {data?.map((user) => (
                                 <Box
                                     key={user.id}
@@ -477,6 +487,7 @@ const UsuariosDoCaixaTab = () => {
                                         flexWrap="wrap"
                                     >
                                         <RecordContextProvider value={user}>
+                                            <RemoverPermissaoButton />
                                             <ToggleUsuarioButton />
                                             <ReenviarConviteButton />
                                         </RecordContextProvider>
