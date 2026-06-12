@@ -303,6 +303,21 @@ export const supabaseDataProvider: DataProvider = {
       };
     }
 
+    if (resource === 'alterar-status-pdv') {
+      const { data, error } = await supabase.functions.invoke(
+        'alterar-status-pdv',
+        {
+          body: params.data,
+        }
+      );
+
+      if (error) throw error;
+
+      return {
+        data: data?.data ?? data,
+      };
+    }
+
     if (resource === 'dividir-lote-cartoes') {
       const { data, error } =
         await supabase.functions.invoke(

@@ -189,6 +189,7 @@ export const CaixaList = () => {
             disableSyncWithLocation
             sort={{ field: 'nome', order: 'ASC' }}
             actions={<CaixaListActions isSmall={isSmall} />}
+            perPage={25}
             queryOptions={
                 !isGlobal(permissions, "listar.caixa")
                     ? {

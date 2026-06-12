@@ -3,14 +3,31 @@ import { InfoBox } from "./InfoBox";
 
 export const InfoTextField = ({
     label,
-    source
+    source,
+    render,
 }: any) => {
     const record = useRecordContext();
+
+     if (!record) return null;
+
+    if (render) {
+        return (
+            <InfoBox label={label}>
+                {render(record)}
+            </InfoBox>
+        );
+    }
 
     const value = record?.[source];
 
     const formatValue = () => {
-        if (!value) return '-';
+        if (value === null || value === undefined) {
+            return '-';
+        }
+
+        if (typeof value === 'boolean') {
+            return value ? 'Sim' : 'Não';
+        }
 
         const isDate =
             typeof value === 'string' &&
@@ -21,12 +38,12 @@ export const InfoTextField = ({
                 'pt-BR',
                 {
                     dateStyle: 'short',
-                    timeStyle: 'short'
+                    timeStyle: 'short',
                 }
             );
         }
 
-        return value;
+        return String(value);
     };
 
     return (

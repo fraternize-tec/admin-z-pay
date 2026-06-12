@@ -24,13 +24,18 @@ import {
     WithListContext,
     RecordContextProvider,
     useListContext,
-    useGetList} from 'react-admin';
+    useGetList,
+    Confirm,
+    useDataProvider,
+    useNotify,
+    useRefresh
+} from 'react-admin';
 
 import AddIcon from '@mui/icons-material/Add';
 import PersonAddIcon from "@mui/icons-material/PersonAdd";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 
-import { Autocomplete, Box, Button, TextField as MuiTextField, Pagination } from '@mui/material';
+import { Autocomplete, Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, TextField as MuiTextField, Pagination } from '@mui/material';
 import { useTheme, useMediaQuery } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { useEffect, useMemo, useState } from 'react';
@@ -45,6 +50,7 @@ import { ItensDoPdv } from './itemPdv';
 import { ReenviarConviteButton, RemoverPermissaoButton, ToggleUsuarioButton } from './usuarios';
 
 import { debounce } from "lodash";
+import { InfoTextField } from '../components/InfoTextField';
 
 const mobileButtonSx = {
     minWidth: 0,
@@ -188,6 +194,7 @@ export const PontoDeVendaList = () => {
             disableSyncWithLocation
             sort={{ field: 'nome', order: 'ASC' }}
             actions={<PdvListActions isSmall={isSmall} />}
+            perPage={25}
             queryOptions={
                 !isGlobal(permissions, "listar.pdv")
                     ? {
@@ -329,7 +336,7 @@ const CriarUsuarioPdvButton = () => {
 
     return (
         <Button
- variant="contained"            startIcon={<PersonAddIcon />}
+            variant="contained" startIcon={<PersonAddIcon />}
             onClick={() =>
                 navigate(
                     `/usuarios/create?pdv_id=${record.id}`
@@ -337,8 +344,8 @@ const CriarUsuarioPdvButton = () => {
             }
             sx={mobileButtonSx}
         >
-{isSmall ? 'Operador' : 'Adicionar Operador'}
-</Button>
+            {isSmall ? 'Operador' : 'Adicionar Operador'}
+        </Button>
     );
 };
 
@@ -347,7 +354,7 @@ const VoltarButton = () => {
 
     return (
         <Button
-                    variant="outlined"
+            variant="outlined"
 
             startIcon={<ArrowBackIcon />}
             onClick={() => navigate(-1)}
@@ -387,9 +394,9 @@ const PdvToolbar = () => (
 
 const PdvItensTab = () => (
     <>
-    <Box mb={2} display="flex" justifyContent="flex-end">
-        <AddItemToPdvButton />
-    </Box>
+        <Box mb={2} display="flex" justifyContent="flex-end">
+            <AddItemToPdvButton />
+        </Box>
         <ItensDoPdv />
     </>
 );
@@ -411,7 +418,7 @@ const UsuariosDoPdvTab = () => {
             {isSmall ? (
                 <WithListContext
                     render={({ data }) => (
-                                                <Box
+                        <Box
                             sx={{
                                 pb: {
                                     xs: 14,
@@ -492,7 +499,17 @@ export const PontoDeVendaEdit = () => (
                     reference="eventos"
                 />
 
-                <BooleanInput source="ativo" label="Ativo" />
+                <InfoTextField
+                    label="Status"
+                    render={(record: any) =>
+                        record.ativo ? 'Ativo' : 'Inativo'
+                    }
+                />
+
+                <Box mt={2}>
+                    <AlterarStatusPdvButton />
+                </Box>
+
             </FormTab>
 
             <FormTab label="Cardápio">
@@ -516,8 +533,8 @@ export const AddItemToPdvButton = () => {
 
     return (
         <Button
-             variant="contained"
-             startIcon={<AddIcon />}
+            variant="contained"
+            startIcon={<AddIcon />}
             onClick={() =>
                 redirect(
                     `/item_pdv/create?source=${encodeURIComponent(
@@ -529,7 +546,165 @@ export const AddItemToPdvButton = () => {
                 )
             }
         >
-            Adicionar Item 
+            Adicionar Item
         </Button>
+    );
+};
+
+export const AlterarStatusPdvButton = () => {
+    const record = useRecordContext();
+
+    const dataProvider = useDataProvider();
+    const notify = useNotify();
+    const refresh = useRefresh();
+
+    const [openDesativar, setOpenDesativar] =
+        useState(false);
+
+    const [openAtivar, setOpenAtivar] =
+        useState(false);
+
+    const [loading, setLoading] =
+        useState(false);
+
+    if (!record) return null;
+
+    const alterarStatus = async (
+        ativo: boolean,
+        ativarItens = false
+    ) => {
+        try {
+            setLoading(true);
+
+            await dataProvider.create(
+                'alterar-status-pdv',
+                {
+                    data: {
+                        pdv_id: record.id,
+                        ativo,
+                        ativar_itens: ativarItens,
+                    },
+                }
+            );
+
+            notify(
+                ativo
+                    ? 'PDV ativado'
+                    : 'PDV desativado',
+                { type: 'success' }
+            );
+
+            refresh();
+
+        } catch (e) {
+
+            notify(
+                e instanceof Error
+                    ? e.message
+                    : 'Erro ao alterar status',
+                { type: 'error' }
+            );
+
+        } finally {
+
+            setLoading(false);
+            setOpenAtivar(false);
+            setOpenDesativar(false);
+
+        }
+    };
+
+    return (
+        <>
+            <Button
+                variant="contained"
+                color={
+                    record.ativo
+                        ? 'warning'
+                        : 'success'
+                }
+                disabled={loading}
+                onClick={() =>
+                    record.ativo
+                        ? setOpenDesativar(true)
+                        : setOpenAtivar(true)
+                }
+            >
+                {record.ativo
+                    ? 'Desativar PDV'
+                    : 'Ativar PDV'}
+            </Button>
+
+            <Confirm
+                isOpen={openDesativar}
+                title="Desativar PDV"
+                content={
+                    <>
+                        <strong>Atenção!</strong>
+                        <br />
+                        Todos os itens deste PDV
+                        também serão desativados.
+                        <br />
+                        Deseja continuar?
+                    </>
+                }
+                onConfirm={() =>
+                    alterarStatus(false)
+                }
+                onClose={() =>
+                    setOpenDesativar(false)
+                }
+                loading={loading}
+            />
+
+            <Dialog
+                open={openAtivar}
+                onClose={() =>
+                    setOpenAtivar(false)
+                }
+            >
+                <DialogTitle>
+                    Ativar PDV
+                </DialogTitle>
+
+                <DialogContent>
+                    Deseja também ativar os
+                    itens deste PDV?
+                </DialogContent>
+
+                <DialogActions>
+                    <Button
+                        onClick={() =>
+                            setOpenAtivar(false)
+                        }
+                    >
+                        Cancelar
+                    </Button>
+
+                    <Button
+                        onClick={() =>
+                            alterarStatus(
+                                true,
+                                false
+                            )
+                        }
+                    >
+                        Somente PDV
+                    </Button>
+
+                    <Button
+                        variant="contained"
+                        onClick={() =>
+                            alterarStatus(
+                                true,
+                                true
+                            )
+                        }
+                    >
+                        PDV + Itens
+                    </Button>
+                </DialogActions>
+            </Dialog>
+        </>
     );
 };
