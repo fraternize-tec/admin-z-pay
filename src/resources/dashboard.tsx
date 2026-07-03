@@ -29,6 +29,10 @@ import { filtrarDashboardData } from "../export/filtrarDashboardData";
 import { exportarDashboardCsv } from "../export/exportarDashboardCsv";
 import { exportarDashboardExcel } from "../export/exportarDashboardExcel";
 import ExportDialog, { ExportOptions } from "../export/ExportDialog";
+import { TabelaItens } from "../dashboard/components/TabelaItens";
+import { ResumoFinanceiro } from "../dashboard/components/ResumoFinanceiro";
+import { CardsOperacionais } from "../dashboard/components/CardsOperacionais";
+import { atalhos, rangesIguais } from "../dashboard/constants";
 
 // ============================
 // Tipagens
@@ -108,136 +112,6 @@ type DashboardData = {
 };
 
 
-export const atalhos = [
-  {
-    label: "Hoje",
-    getRange: () => {
-      const now = new Date();
-
-      const inicio = new Date(now);
-      inicio.setHours(0, 0, 0, 0);
-
-      const fim = new Date(now);
-      fim.setHours(23, 59, 59, 999);
-
-      return { inicio, fim };
-    },
-  },
-  {
-    label: "Última hora",
-    getRange: () => {
-      const now = new Date();
-
-      return {
-        inicio: new Date(now.getTime() - 60 * 60 * 1000),
-        fim: now,
-      };
-    },
-  },
-  {
-    label: "Últimas 12 horas",
-    getRange: () => {
-      const now = new Date();
-
-      return {
-        inicio: new Date(now.getTime() - 12 * 60 * 60 * 1000),
-        fim: now,
-      };
-    },
-  },
-  {
-    label: "Últimos 7 dias",
-    getRange: () => {
-      const now = new Date();
-
-      const inicio = new Date(now);
-      inicio.setDate(now.getDate() - 7);
-      inicio.setHours(0, 0, 0, 0);
-
-      const fim = new Date(now);
-      fim.setHours(23, 59, 59, 999);
-
-      return { inicio, fim };
-    },
-  },
-  {
-    label: "Últimos 30 dias",
-    getRange: () => {
-      const now = new Date();
-
-      const inicio = new Date(now);
-      inicio.setDate(now.getDate() - 30);
-      inicio.setHours(0, 0, 0, 0);
-
-      const fim = new Date(now);
-      fim.setHours(23, 59, 59, 999);
-
-      return { inicio, fim };
-    },
-  },
-];
-
-const rangesIguais = (
-  aInicio: Date | null,
-  aFim: Date | null,
-  bInicio: Date,
-  bFim: Date
-) => {
-  if (!aInicio || !aFim) return false;
-
-  return (
-    Math.abs(aInicio.getTime() - bInicio.getTime()) < 1000 &&
-    Math.abs(aFim.getTime() - bFim.getTime()) < 1000
-  );
-};
-
-const CardsOperacionais = ({
-  cartoes,
-}: {
-  cartoes: CartoesStats;
-}) => {
-  return (
-    <Box
-      display="grid"
-      gridTemplateColumns={{
-        xs: "1fr",
-        sm: "repeat(2,1fr)",
-        md: "repeat(4,1fr)",
-      }}
-      gap={2}
-      mb={2}
-    >
-      <CardMetrica
-        titulo="Cartões Utilizados"
-        valor={`${cartoes.cartoes_utilizados} / ${cartoes.total_cartoes}`}
-        subtitulo="cartões operacionalizados"
-        cor="#6a1b9a"
-      />
-
-      <CardMetrica
-        titulo="Cartões Disponíveis"
-        valor={cartoes.cartoes_disponiveis}
-        subtitulo="ainda sem utilização"
-        cor="#2e7d32"
-      />
-
-      <CardMetrica
-        titulo="Cartões do Evento"
-        valor={`${cartoes.cartoes_evento_utilizados} / ${cartoes.cartoes_evento_total}`}
-        subtitulo="utilizados do lote do evento"
-        cor="#00838f"
-      />
-
-      <CardMetrica
-        titulo="Cartões Emergenciais"
-        valor={`${cartoes.cartoes_emergenciais_utilizados} / ${cartoes.cartoes_emergenciais_total}`}
-        subtitulo="utilizados emergenciais"
-        cor="#ef6c00"
-      />
-    </Box>
-  );
-};
-
 // ============================
 // Cards
 // ============================
@@ -316,181 +190,6 @@ const CardMetrica = ({
     </CardContent>
   </Card>
 );
-
-const ResumoFinanceiro = ({ data }: { data: FinanceiroResumo }) => {
-  const theme = useTheme();
-
-  const money = (v: number) =>
-    v.toLocaleString("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-    });
-
-  const items = [
-    {
-      label: "Taxas Arrecadadas",
-      tooltip:
-        "Total arrecadado em taxas de ativação somando todas as formas de pagamento.",
-      value: data.taxas_arrecadadas,
-      color: theme.palette.warning.main,
-      oculto: data.taxas_arrecadadas === 0,
-    },
-
-    {
-      label: "Valor Recebido em Recargas",
-      tooltip:
-        "Total recebido em recargas pagas, somando todas a formas de pagamento e desconsiderando taxas de ativação.",
-      value: data.valor_bruto_recebido,
-      color: theme.palette.info.main,
-    },
-
-    {
-      label: "Cortesias",
-      tooltip:
-        "Créditos emitidos sem cobrança para clientes ou convidados.",
-      value: data.cortesias,
-      color: theme.palette.success.main,
-      oculto: data.cortesias === 0,
-    },
-
-    {
-      label: "Créditos Emitidos",
-      tooltip:
-        "Total de saldo de créditos disponibilizados nos cartões, incluindo cortesias.",
-      value: data.valor_liquido_cartoes,
-      color: theme.palette.primary.main,
-    },
-
-    {
-      label: "Valor Consumido",
-      tooltip:
-        "Total consumido em vendas realizados no evento.",
-      value: data.total_consumido,
-      color: theme.palette.error.main,
-    },
-
-    {
-      label: "Devoluções",
-      tooltip:
-        "Valores devolvidos aos clientes após solicitações de estorno.",
-      value: data.devolucoes,
-      color: theme.palette.error.light,
-      oculto: data.devolucoes === 0,
-    },
-
-    {
-      label: "Saldo em Circulação",
-      tooltip:
-        "Saldo ainda disponível nos cartões e não consumido no evento.",
-      value: data.saldo_evento,
-      color: theme.palette.success.main,
-      destaque: true,
-    },
-  ];
-
-  return (
-    <Card
-      sx={{
-        borderRadius: 2,
-        mb: 3,
-        bgcolor: "background.paper", // ✅ adapta ao tema
-        border: "1px solid",
-        borderColor: "divider",
-      }}
-    >
-      <CardContent>
-        <Typography
-          variant="overline"
-          sx={{ color: "text.secondary" }}
-        >
-          Resumo Financeiro
-        </Typography>
-
-        <Box
-          mt={3}
-          display="grid"
-          gridTemplateColumns={{
-            xs: "1fr",
-            sm: "repeat(2,1fr)",
-            md: "repeat(auto-fit, minmax(180px,1fr))"
-          }}
-          gap={{ xs: 1.5, md: 2 }}
-        >
-          {items.map((item, i) => (
-            !item.oculto && (
-              <Box
-                key={i}
-                sx={{
-                  p: 2,
-                  borderRadius: 2,
-                  bgcolor: "background.default",
-                  border: "1px solid",
-                  borderColor: "divider",
-                  transition: "all .2s ease",
-                  "&:hover": {
-                    transform: "translateY(-2px)",
-                    boxShadow: theme.shadows[2],
-                  },
-                  borderLeft: `3px solid ${item.color}`
-                }}
-              >
-                <Box
-                  display="flex"
-                  alignItems="center"
-                  gap={0.5}
-                  mb={0.5}
-                >
-                  <Typography
-                    variant="caption"
-                    sx={{
-                      color: "text.secondary",
-                      lineHeight: 1.2,
-                    }}
-                  >
-                    {item.label}
-                  </Typography>
-
-                  <Tooltip
-                    title={item.tooltip}
-                    arrow
-                    placement="top"
-                  >
-                    <InfoOutlinedIcon
-                      sx={{
-                        fontSize: 14,
-                        color: "text.disabled",
-                        cursor: "help",
-                        opacity: 0.8,
-
-                        transition: "all .2s",
-
-                        "&:hover": {
-                          opacity: 1,
-                          color: item.color,
-                        },
-                      }}
-                    />
-                  </Tooltip>
-                </Box>
-
-                <Typography
-                  variant={item.destaque ? "h5" : "h6"}
-                  fontWeight={800}
-                  sx={{
-                    color: item.color,
-                    mt: 0.5,
-                  }}
-                >
-                  {money(item.value)}
-                </Typography>
-              </Box>
-            )
-          ))}
-        </Box>
-      </CardContent>
-    </Card>
-  );
-};
 
 // ============================
 // Filtro de período brasileiro
@@ -1715,7 +1414,14 @@ export const DashboardFinanceiroEvento = () => {
       <Box display="flex" flexDirection="column" gap={4}>
         <TabelaCaixa data={data.recargas_por_caixa} />
         <TabelaOperador data={data.recargas_por_operador} />
-        <TabelaPDV data={data.itens_por_pdv} />
+        <TabelaItens titulo="Vendas por PDV"
+          grupos={
+            data.itens_por_pdv.map(pdv => ({
+              titulo: pdv.nome_pdv,
+              total: pdv.total_vendas,
+              itens: pdv.itens,
+            }))
+          } />
       </Box>
 
       <Divider sx={{ my: 4 }} />

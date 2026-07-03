@@ -51,6 +51,7 @@ import { ReenviarConviteButton, RemoverPermissaoButton, ToggleUsuarioButton } fr
 
 import { debounce } from "lodash";
 import { InfoTextField } from '../components/InfoTextField';
+import { PdvDashboardTab } from './pdvDashboard';
 
 const mobileButtonSx = {
     minWidth: 0,
@@ -518,6 +519,10 @@ export const PontoDeVendaEdit = () => (
 
             <FormTab label="Operadores">
                 <UsuariosDoPdvTab />
+            </FormTab>
+
+            <FormTab label="Relatório">
+                <PdvDashboardTab />
             </FormTab>
         </TabbedForm>
     </Edit>

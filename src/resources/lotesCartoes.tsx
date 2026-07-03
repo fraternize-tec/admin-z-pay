@@ -437,10 +437,11 @@ const EditActions = () => {
     <SmartToolbar>
       <BackToEventoLotesButton record={view} />
 
+      <DividirLoteButton record={view} />
+
       {view.tipo_lote === 'proprio' && (
         <>
           <BackToListButtonNavigate />
-          <DividirLoteButton record={view} />
         </>
       )}
 

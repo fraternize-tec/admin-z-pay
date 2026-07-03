@@ -3,7 +3,8 @@ import { useState, useEffect } from "react";
 import { EventoSelector } from "../components/EventoSelector";
 import { useEvento } from "../context/EventoContext";
 import { supabase } from "../lib/supabaseClient";
-import { atalhos, FiltroPeriodo } from "../resources/dashboard";
+import { FiltroPeriodo } from "../resources/dashboard";
+import { atalhos } from "../dashboard/constants";
 
 type Movimentacao = {
   id: string;
