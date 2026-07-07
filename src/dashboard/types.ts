@@ -128,3 +128,26 @@ export interface DashboardPdv {
 
 }
 
+export interface DashboardCaixa {
+
+    resumo: {
+
+        valor_recebido: number;
+
+        taxas: number;
+
+        devolucoes: number;
+
+        saldo_emitido: number;
+
+        cartoes_utilizados: number;
+
+        recargas: number;
+
+    };
+
+    formas_pagamento: FormaPagamentoResumo[];
+
+    operadores: OperadorResumo[];
+
+}

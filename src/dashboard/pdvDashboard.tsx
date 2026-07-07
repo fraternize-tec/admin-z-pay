@@ -64,7 +64,7 @@ type PeriodoProps = {
 
 };
 
-const PeriodoSelector = ({
+export const PeriodoSelector = ({
     inicio,
     fim,
     setInicio,

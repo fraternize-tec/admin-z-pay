@@ -44,6 +44,7 @@ import { ReenviarConviteButton, RemoverPermissaoButton, ToggleUsuarioButton } fr
 import { InfoReferenceField } from '../components/InfoReferenceField';
 import { InfoTextField } from '../components/InfoTextField';
 import { EventoFilterInline } from './pontosDeVenda';
+import { CaixaDashboardTab } from '../dashboard/caixaDashboard';
 
 const mobileButtonSx = {
     minWidth: 0,
@@ -427,6 +428,10 @@ export const CaixaEdit = () => (
 
             <FormTab label="Operadores">
                 <UsuariosDoCaixaTab />
+            </FormTab>
+
+            <FormTab label="Relatório">
+                <CaixaDashboardTab />
             </FormTab>
         </TabbedForm>
     </Edit>
