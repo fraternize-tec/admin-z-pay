@@ -7,9 +7,8 @@ import {
     Typography,
 } from "@mui/material";
 
-import { NumberField } from "react-admin";
-
 import { FormaPagamentoResumo } from "../types";
+import { formatMoney } from "../formatters";
 
 interface Props {
     formas: FormaPagamentoResumo[];
@@ -71,16 +70,14 @@ export const TabelaFormasPagamento = ({
 
                         <TableCell align="right">
 
-                            <NumberField
-                                record={{
-                                    total: forma.total,
-                                }}
-                                source="total"
-                                options={{
-                                    style: "currency",
-                                    currency: "BRL",
-                                }}
-                            />
+                                    <Typography
+                                        fontWeight={700}
+                                    >
+                                        {formatMoney(
+                                            forma.total
+                                        )}
+                                    </Typography>
+                           
 
                         </TableCell>
 

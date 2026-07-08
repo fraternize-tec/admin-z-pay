@@ -64,14 +64,27 @@ export interface OperadorResumo {
 }
 
 export interface CaixaResumo {
-    nome_caixa: string;
 
-    total_recargas?: number;
-    total_taxas?: number;
+    taxas_arrecadadas: number;
 
-    cartoes_utilizados?: number;
+    valor_recargas: number;
+
+    devolucoes: number;
+
+    saldo_caixa: number;
+
+    cortesias: number;
+
+}
+
+export interface DashboardCaixa {
+
+    resumo: CaixaResumo;
 
     formas_pagamento: FormaPagamentoResumo[];
+
+    operadores: OperadorResumo[];
+
 }
 
 export interface PdvResumo {
@@ -128,26 +141,3 @@ export interface DashboardPdv {
 
 }
 
-export interface DashboardCaixa {
-
-    resumo: {
-
-        valor_recebido: number;
-
-        taxas: number;
-
-        devolucoes: number;
-
-        saldo_emitido: number;
-
-        cartoes_utilizados: number;
-
-        recargas: number;
-
-    };
-
-    formas_pagamento: FormaPagamentoResumo[];
-
-    operadores: OperadorResumo[];
-
-}

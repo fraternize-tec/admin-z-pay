@@ -88,8 +88,6 @@ export const CaixaDashboardTab = () => {
                     }
                 );
 
-                console.log("RPC Dashboard Caixa:", data, error);
-
                 if (error) {
                     throw error;
                 }
@@ -178,60 +176,45 @@ export const CaixaDashboardTab = () => {
             {!loading && dashboard && (
 
                 <>
-                    <Grid
-                        container
-                        spacing={2}
-                        mt={1}
-                    >
+                    <Grid container spacing={2} mt={1}>
 
-                        <Grid size={{ xs: 12, sm: 6, md: 4, lg: 2 }}>
+                        <Grid size={{ xs: 12, sm: 6, md: 4, lg: 2.4 }}>
                             <MetricCard
-                                titulo="Valor Recebido"
-                                valor={formatMoney(dashboard.resumo.valor_recebido)}
-                                cor="#2e7d32"
-                            />
-                        </Grid>
-
-                        <Grid size={{ xs: 12, sm: 6, md: 4, lg: 2 }}>
-                            <MetricCard
-                                titulo="Taxas"
-                                valor={formatMoney(dashboard.resumo.taxas)}
+                                titulo="Taxas Arrecadadas"
+                                valor={formatMoney(dashboard.resumo.taxas_arrecadadas)}
                                 cor="#1976d2"
                             />
                         </Grid>
 
-                        <Grid size={{ xs: 12, sm: 6, md: 4, lg: 2 }}>
+                        <Grid size={{ xs: 12, sm: 6, md: 4, lg: 2.4 }}>
                             <MetricCard
-                                titulo="Devoluções"
-                                valor={formatMoney(dashboard.resumo.devolucoes)}
-                                cor="#6a1b9a"
+                                titulo="Valor em Recargas"
+                                valor={formatMoney(dashboard.resumo.valor_recargas)}
+                                cor="#2e7d32"
                             />
                         </Grid>
 
-                        <Grid size={{ xs: 12, sm: 6, md: 4, lg: 2 }}>
+                        <Grid size={{ xs: 12, sm: 6, md: 4, lg: 2.4 }}>
                             <MetricCard
-                                titulo="Saldo Emitido"
-                                valor={formatMoney(dashboard.resumo.saldo_emitido)}
+                                titulo="Devoluções"
+                                valor={formatMoney(dashboard.resumo.devolucoes)}
+                                cor="#8e24aa"
+                            />
+                        </Grid>
+
+                        <Grid size={{ xs: 12, sm: 6, md: 4, lg: 2.4 }}>
+                            <MetricCard
+                                titulo="Saldo do Caixa"
+                                valor={formatMoney(dashboard.resumo.saldo_caixa)}
                                 cor="#ef6c00"
                             />
                         </Grid>
 
-                        <Grid size={{ xs: 12, sm: 6, md: 4, lg: 2 }}>
+                        <Grid size={{ xs: 12, sm: 6, md: 4, lg: 2.4 }}>
                             <MetricCard
-                                titulo="Recargas"
-                                valor={dashboard.resumo.recargas}
-                                cor="#00838f"
-                            />
-                        </Grid>
-
-                        <Grid size={{ xs: 12, sm: 6, md: 4, lg: 2 }}>
-                            <MetricCard
-                                titulo="Cartões Utilizados"
-                                valor={
-                                    dashboard.resumo
-                                        .cartoes_utilizados
-                                }
-                                cor="#e53935"
+                                titulo="Cortesias"
+                                valor={formatMoney(dashboard.resumo.cortesias)}
+                                cor="#00897b"
                             />
                         </Grid>
 
@@ -239,7 +222,7 @@ export const CaixaDashboardTab = () => {
 
                     <Box mt={3}>
 
-                        <SectionCard title="Formas de Pagamento">
+                        <SectionCard title="Detalhamento">
 
                             <TabelaFormasPagamento
                                 formas={
@@ -257,7 +240,7 @@ export const CaixaDashboardTab = () => {
 
                             <TabelaOperadores
                                 data={dashboard.operadores}
-                                titulo="Operadores"
+                                titulo=""
                                 labelQuantidade="recargas"
                                 labelCartoes="cartões"
                                 renderDetails={(op) => (
