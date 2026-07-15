@@ -14,13 +14,8 @@ import {
   Stack,
   useTheme,
   useMediaQuery,
-  Tooltip,
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
-import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
-import { LocalizationProvider, DateTimePicker } from "@mui/x-date-pickers";
-import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
-import { ptBR } from "date-fns/locale";
 import { supabase } from "../lib/supabaseClient";
 import { exportarDashboardPdf } from "../export/exportarDashboardPdf";
 import { useEvento } from "../context/EventoContext";
@@ -32,7 +27,8 @@ import ExportDialog, { ExportOptions } from "../export/ExportDialog";
 import { TabelaItens } from "../dashboard/components/TabelaItens";
 import { ResumoFinanceiro } from "../dashboard/components/ResumoFinanceiro";
 import { CardsOperacionais } from "../dashboard/components/CardsOperacionais";
-import { atalhos, rangesIguais } from "../dashboard/constants";
+import { atalhos } from "../dashboard/constants";
+import { FiltroDashboard } from "../dashboard/components/FiltroDashboard";
 
 // ============================
 // Tipagens
@@ -190,200 +186,6 @@ const CardMetrica = ({
     </CardContent>
   </Card>
 );
-
-// ============================
-// Filtro de período brasileiro
-// ============================
-
-export const FiltroPeriodo = ({
-  evento,
-  inicio,
-  fim,
-  setInicio,
-  setFim,
-  onAplicar,
-}: any) => {
-  const { isAdmin } = useEvento();
-
-  const inicioEvento = evento?.inicio
-    ? new Date(evento.inicio)
-    : undefined;
-
-  const [atalhoSelecionado, setAtalhoSelecionado] =
-    useState("Hoje");
-
-  return (
-    <LocalizationProvider
-      dateAdapter={AdapterDateFns}
-      adapterLocale={ptBR}
-    >
-      <Card
-        sx={{
-          mb: 3,
-          borderRadius: 2,
-          boxShadow: 1,
-        }}
-      >
-        <CardContent>
-          <Typography
-            variant="subtitle2"
-            fontWeight={700}
-            mb={2}
-          >
-            Período de análise
-          </Typography>
-
-          <Box
-            display="grid"
-            gridTemplateColumns={{
-              xs: "1fr",
-              md: "repeat(3,minmax(0,1fr)) auto",
-            }}
-            gap={2}
-            mb={2}
-            alignItems="start"
-          >
-            <DateTimePicker
-              label="Data inicial"
-              value={inicio}
-              onChange={(v) => {
-                setAtalhoSelecionado("");
-
-                if (
-                  !isAdmin &&
-                  inicioEvento &&
-                  v &&
-                  v < inicioEvento
-                ) {
-                  setInicio(inicioEvento);
-                  return;
-                }
-
-                setInicio(v);
-              }}
-              minDateTime={
-                !isAdmin ? inicioEvento : undefined
-              }
-              slotProps={{
-                textField: {
-                  size: "small",
-                  fullWidth: true,
-                  sx: {
-                    minWidth: 0,
-                  },
-                },
-              }}
-            />
-
-            <DateTimePicker
-              label="Data final"
-              value={fim}
-              onChange={(v) => {
-                setAtalhoSelecionado("");
-                setFim(v);
-              }}
-              slotProps={{
-                textField: {
-                  size: "small",
-                  fullWidth: true,
-                  sx: {
-                    minWidth: 0,
-                  },
-                },
-              }}
-            />
-
-            <Button
-              variant="contained"
-              onClick={onAplicar}
-              fullWidth
-              sx={{
-                height: 40,
-                minWidth: 0,
-              }}
-            >
-              Aplicar
-            </Button>
-          </Box>
-
-          <Box
-            sx={{
-              overflowX: "auto",
-              WebkitOverflowScrolling: "touch",
-              pb: 1,
-            }}
-          >
-            <Box
-              display="flex"
-              flexWrap="wrap"
-              gap={1}
-            >
-              {atalhos.map((a) => {
-                const range = a.getRange();
-
-                const ativo =
-                  atalhoSelecionado === a.label ||
-                  rangesIguais(
-                    inicio,
-                    fim,
-                    range.inicio,
-                    range.fim
-                  );
-
-                return (
-                  <Button
-                    key={a.label}
-                    size="small"
-                    variant={
-                      ativo
-                        ? "contained"
-                        : "text"
-                    }
-                    color={
-                      ativo
-                        ? "primary"
-                        : "inherit"
-                    }
-                    onClick={() => {
-                      const r = a.getRange();
-
-                      setInicio(r.inicio);
-                      setFim(r.fim);
-                      setAtalhoSelecionado(a.label);
-                    }}
-                    sx={{
-                      textTransform: "none",
-                      borderRadius: 999,
-                      flexShrink: 0,
-
-                      minWidth: "unset",
-
-                      px: 1.5,
-                      py: 0.5,
-
-                      fontSize: "0.8rem",
-                      fontWeight: 600,
-
-                      boxShadow: "none",
-
-                      opacity: ativo ? 1 : 0.8,
-
-                      "&:hover": {
-                        boxShadow: "none",
-                      },
-                    }}
-                  >
-                    {a.label}
-                  </Button>
-                );
-              })}
-            </Box>
-          </Box>
-        </CardContent>
-      </Card>
-    </LocalizationProvider>
-  );
-};
 
 // ============================
 // PDV → Accordion detalhado
@@ -1393,7 +1195,7 @@ export const DashboardFinanceiroEvento = () => {
         </CardContent>
       </Card>
 
-      <FiltroPeriodo evento={eventoAtual} inicio={inicio} fim={fim} setInicio={setInicio} setFim={setFim} onAplicar={carregar} />
+      <FiltroDashboard evento={eventoAtual} inicio={inicio} fim={fim} setInicio={setInicio} setFim={setFim} onAplicar={carregar} />
 
       <ResumoFinanceiro data={data.financeiro} />
 

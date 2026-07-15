@@ -1,10 +1,14 @@
-import { Box, Typography, Card, CardContent, Stack, CircularProgress, useMediaQuery, Chip, useTheme } from "@mui/material";
+import { Box, Typography, Card, CardContent, Stack, CircularProgress, useMediaQuery, Chip, useTheme, Grid, Autocomplete, TextField, Button } from "@mui/material";
 import { useState, useEffect } from "react";
 import { EventoSelector } from "../components/EventoSelector";
 import { useEvento } from "../context/EventoContext";
 import { supabase } from "../lib/supabaseClient";
-import { FiltroPeriodo } from "../resources/dashboard";
 import { atalhos } from "../dashboard/constants";
+import { exportarMovimentacoesPdf } from "../export/exportarMovimentacoesPdf";
+import { exportarMovimentacoesCsv } from "../export/exportarMovimentacoesCsv";
+import { exportarMovimentacoesExcel } from "../export/exportarMovimentacoesExcel";
+import ExportMovimentacoesDialog, { ExportMovimentacoesOptions } from "../export/exportMovimentacoesDialog";
+import { FiltroDashboard } from "../dashboard/components/FiltroDashboard";
 
 type Movimentacao = {
   id: string;
@@ -24,6 +28,29 @@ type Movimentacao = {
   forma_pagamento?: string;
 };
 
+type OpcaoFiltro = {
+  id: string;
+  nome: string;
+};
+
+type FiltrosMovimentacao = {
+  tipos: OpcaoFiltro[];
+  formas_pagamento: OpcaoFiltro[];
+  pdvs: OpcaoFiltro[];
+  caixas: OpcaoFiltro[];
+  operadores: OpcaoFiltro[];
+};
+
+type BuscaMovimentacoes = {
+  inicio: Date | null;
+  fim: Date | null;
+
+  tipo: OpcaoFiltro | null;
+  formaPagamento: OpcaoFiltro | null;
+  pdv: OpcaoFiltro | null;
+  caixa: OpcaoFiltro | null;
+  operador: OpcaoFiltro | null;
+};
 
 // ============================================
 // Página
@@ -38,38 +65,122 @@ export const UltimasMovimentacoesPage = () => {
     Movimentacao[]
   >([]);
 
+  const [filtros, setFiltros] =
+    useState<FiltrosMovimentacao>({
+      tipos: [],
+      formas_pagamento: [],
+      pdvs: [],
+      caixas: [],
+      operadores: [],
+    });
+
   const rangeInicial = atalhos[0].getRange();
 
-  const [inicio, setInicio] = useState<Date | null>(
-    rangeInicial.inicio
-  );
+  const [filtrosPendentes, setFiltrosPendentes] =
+    useState<BuscaMovimentacoes>({
+      inicio: rangeInicial.inicio,
+      fim: rangeInicial.fim,
 
-  const [fim, setFim] = useState<Date | null>(
-    rangeInicial.fim
-  );
+      tipo: null,
+      formaPagamento: null,
+      pdv: null,
+      caixa: null,
+      operador: null,
+    });
 
-  const carregar = async () => {
+  const [filtrosAplicados, setFiltrosAplicados] =
+    useState<BuscaMovimentacoes>({
+      inicio: rangeInicial.inicio,
+      fim: rangeInicial.fim,
+
+      tipo: null,
+      formaPagamento: null,
+      pdv: null,
+      caixa: null,
+      operador: null,
+    });
+
+  useEffect(() => {
+    carregarFiltros();
+  }, [eventoAtual?.id]);
+
+  const carregarFiltros = async (
+    busca: BuscaMovimentacoes = filtrosPendentes
+  ) => {
     if (!eventoAtual) return;
-    if (!inicio || !fim) return;
 
-    setLoading(true);
-
-    const { data, error } = await supabase.rpc(
-      "rpc_dashboard_ultimas_movimentacoes",
+    const { data } = await supabase.rpc(
+      "rpc_dashboard_ultimas_movimentacoes_filtros",
       {
         p_evento: eventoAtual.id,
-        p_inicio: inicio.toISOString(),
-        p_fim: fim.toISOString(),
-        p_limite: 200,
+        p_tipo: busca.tipo?.id ?? null,
+        p_forma_pagamento:
+          busca.formaPagamento?.id ?? null,
+        p_pdv: busca.pdv?.id ?? null,
+        p_caixa: busca.caixa?.id ?? null,
       }
     );
 
-    if (!error) {
-      setMovimentacoes(data ?? []);
+    if (data) {
+      setFiltros(data);
+    }
+  };
+
+  const [exportDialogOpen, setExportDialogOpen] =
+    useState(false);
+
+  const buscarMovimentacoes = async (
+    limite?: number | null
+  ) => {
+    if (!eventoAtual) return [];
+
+    if (
+      !filtrosAplicados.inicio ||
+      !filtrosAplicados.fim
+    ) {
+      return [];
     }
 
-    setLoading(false);
+    const { data, error } = await supabase.rpc(
+      "rpc_dashboard_ultimas_movimentacoes_v2",
+      {
+        p_evento: eventoAtual.id,
+        p_inicio: filtrosAplicados.inicio.toISOString(),
+        p_fim: filtrosAplicados.fim.toISOString(),
+        p_tipo: filtrosAplicados.tipo?.id ?? null,
+        p_forma_pagamento:
+          filtrosAplicados.formaPagamento?.id ?? null,
+        p_pdv:
+          filtrosAplicados.pdv?.id ?? null,
+        p_caixa:
+          filtrosAplicados.caixa?.id ?? null,
+        p_operador:
+          filtrosAplicados.operador?.id ?? null,
+        p_limite: limite,
+      }
+    );
+
+    if (error) {
+      throw error;
+    }
+
+    return data ?? [];
   };
+
+  const carregar = async () => {
+    setLoading(true);
+
+    try {
+      setMovimentacoes(
+        await buscarMovimentacoes(200)
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const carregarTodasMovimentacoes = () =>
+    buscarMovimentacoes(null);
 
   useEffect(() => {
     carregar();
@@ -132,7 +243,11 @@ export const UltimasMovimentacoesPage = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [eventoAtual?.id, inicio, fim]);
+  }, [
+    eventoAtual?.id,
+    filtrosAplicados
+  ]);
+
 
   return (
     <Box
@@ -159,6 +274,13 @@ export const UltimasMovimentacoesPage = () => {
         >
           Últimas Movimentações
         </Typography>
+
+        <Button
+          variant="outlined"
+          onClick={() => setExportDialogOpen(true)}
+        >
+          Exportar
+        </Button>
       </Box>
 
       <Card
@@ -183,13 +305,206 @@ export const UltimasMovimentacoesPage = () => {
         </CardContent>
       </Card>
 
-      <FiltroPeriodo
+      <FiltroDashboard
         evento={eventoAtual}
-        inicio={inicio}
-        fim={fim}
-        setInicio={setInicio}
-        setFim={setFim}
-        onAplicar={carregar}
+        inicio={filtrosPendentes.inicio}
+        fim={filtrosPendentes.fim}
+        setInicio={(inicio: any) =>
+          setFiltrosPendentes((old) => ({
+            ...old,
+            inicio,
+          }))
+        }
+        setFim={(fim: any) =>
+          setFiltrosPendentes((old) => ({
+            ...old,
+            fim,
+          }))
+        }
+        onAplicar={() =>
+          setFiltrosAplicados(
+            filtrosPendentes
+          )
+        }
+        actions={
+          <Button
+            color="inherit"
+            onClick={() => {
+              const novo = {
+              ...filtrosPendentes,
+
+              tipo: null,
+              formaPagamento: null,
+              pdv: null,
+              caixa: null,
+              operador: null,
+            };
+
+              setFiltrosPendentes(novo);
+
+              carregarFiltros(novo);
+            }}
+          >
+            Limpar filtros
+          </Button>
+        }
+        filters={
+          <Grid container spacing={2}>
+
+            {/* Tipo */}
+            <Grid size={{ xs: 12, md: 3 }}>
+              <Autocomplete
+                options={filtros.tipos}
+                value={filtrosPendentes.tipo}
+
+                onChange={(_, v) => {
+
+                  const novo = {
+                    ...filtrosPendentes,
+
+                    tipo: v,
+
+                    formaPagamento:
+                      v?.id === "recarga"
+                        ? filtrosPendentes.formaPagamento
+                        : null,
+
+                    pdv:
+                      v?.id === "consumo"
+                        ? filtrosPendentes.pdv
+                        : null,
+
+                    caixa:
+                      v?.id === "recarga" ||
+                        v?.id === "devolucao"
+                        ? filtrosPendentes.caixa
+                        : null,
+
+                    operador: null,
+                  };
+
+                  setFiltrosPendentes(novo);
+
+                  carregarFiltros(novo);
+                }}
+                getOptionLabel={(o) => o.nome}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label="Tipo"
+                  />
+                )}
+              />
+            </Grid>
+
+            {/* Forma de pagamento */}
+            {(!filtrosPendentes.tipo || filtrosPendentes.tipo.id === "recarga") && (
+              <Grid size={{ xs: 12, md: 3 }}>
+                <Autocomplete
+                  options={filtros.formas_pagamento}
+                  value={filtrosPendentes.formaPagamento}
+                  onChange={(_, v) => {
+
+                    const novo = {
+                      ...filtrosPendentes,
+                      formaPagamento: v,
+                      operador: null,
+                    };
+
+                    setFiltrosPendentes(novo);
+
+                    carregarFiltros(novo);
+                  }}
+                  getOptionLabel={(o) => o.nome}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      label="Forma de pagamento"
+                    />
+                  )}
+                />
+              </Grid>
+            )}
+
+            {/* PDV */}
+            {(!filtrosPendentes.tipo ||
+              filtrosPendentes.tipo.id === "consumo") && (
+                <Grid size={{ xs: 12, md: 3 }}>
+                  <Autocomplete
+                    options={filtros.pdvs}
+                    value={filtrosPendentes.pdv}
+                    onChange={(_, v) => {
+
+                      const novo = {
+                        ...filtrosPendentes,
+                        pdv: v,
+                        operador: null,
+                      };
+
+                      setFiltrosPendentes(novo);
+
+                      carregarFiltros(novo);
+                    }}
+                    getOptionLabel={(o) => o.nome}
+                    renderInput={(params) => (
+                      <TextField
+                        {...params}
+                        label="PDV"
+                      />
+                    )}
+                  />
+                </Grid>
+              )}
+
+            {/* Caixa */}
+            {(!filtrosPendentes.tipo ||
+              filtrosPendentes.tipo.id === "recarga" ||
+              filtrosPendentes.tipo.id === "devolucao") && (
+                <Grid size={{ xs: 12, md: 3 }}>
+                  <Autocomplete
+                    options={filtros.caixas}
+                    value={filtrosPendentes.caixa}
+                    onChange={(_, v) => {
+
+                      const novo = {
+                        ...filtrosPendentes,
+                        caixa: v,
+                        operador: null,
+                      };
+
+                      setFiltrosPendentes(novo);
+
+                      carregarFiltros(novo);
+                    }}
+                    getOptionLabel={(o) => o.nome}
+                    renderInput={(params) => (
+                      <TextField
+                        {...params}
+                        label="Caixa"
+                      />
+                    )}
+                  />
+                </Grid>
+              )}
+
+            {/* Operador */}
+            <Grid size={{ xs: 12, md: 3 }}>
+              <Autocomplete
+                options={filtros.operadores}
+                value={filtrosPendentes.operador}
+                onChange={(_, v) => setFiltrosPendentes((old) => ({ ...old, operador: v }))}
+                getOptionLabel={(o) => o.nome}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label="Operador"
+                  />
+                )}
+              />
+            </Grid>
+
+          </Grid>
+        }
       />
 
       {loading ? (
@@ -205,7 +520,65 @@ export const UltimasMovimentacoesPage = () => {
           data={movimentacoes}
         />
       )}
+      <ExportMovimentacoesDialog
+        open={exportDialogOpen}
+        onClose={() => setExportDialogOpen(false)}
+        onExport={async (
+          options: ExportMovimentacoesOptions
+        ) => {
+
+          const movimentacoes =
+            await carregarTodasMovimentacoes();
+
+          if (!movimentacoes.length) {
+            return;
+          }
+
+          switch (options.format) {
+
+            case "pdf":
+              await exportarMovimentacoesPdf(
+                movimentacoes,
+                filtrosAplicados.inicio!,
+                filtrosAplicados.fim!,
+                eventoAtual?.nome ?? "",
+                {
+                  tipo:
+                    filtrosAplicados.tipo?.nome,
+
+                  operador:
+                    filtrosAplicados.operador?.nome,
+
+                  caixa:
+                    filtrosAplicados.caixa?.nome,
+
+                  pdv:
+                    filtrosAplicados.pdv?.nome,
+
+                  formaPagamento:
+                    filtrosAplicados.formaPagamento?.nome,
+                }
+              );
+              break;
+
+            case "csv":
+              await exportarMovimentacoesCsv(
+                movimentacoes,
+                eventoAtual?.nome ?? ""
+              );
+              break;
+
+            case "xlsx":
+              await exportarMovimentacoesExcel(
+                movimentacoes,
+                eventoAtual?.nome ?? ""
+              );
+              break;
+          }
+        }}
+      />
     </Box>
+
   );
 };
 
@@ -500,9 +873,9 @@ const TabelaMovimentacoes = ({
                     color:
                       m.valor >= 0
                         ? theme.palette
-                            .success.main
+                          .success.main
                         : theme.palette
-                            .error.main,
+                          .error.main,
                   }}
                 >
                   {money(m.valor)}
@@ -513,5 +886,6 @@ const TabelaMovimentacoes = ({
         </Box>
       </CardContent>
     </Card>
+
   );
 };
