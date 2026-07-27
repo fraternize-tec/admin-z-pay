@@ -401,6 +401,14 @@ export const PdvDashboardTab = () => {
                 gap={2}
                 mb={3}
             >
+                <MetricCard
+                    titulo="Itens Vendidos"
+                    valor={
+                        data.resumo
+                            .itens_vendidos
+                    }
+                    cor="#ef6c00"
+                />
 
                 <MetricCard
                     titulo="Valor Vendido"
@@ -411,7 +419,7 @@ export const PdvDashboardTab = () => {
                 />
 
                 <MetricCard
-                    titulo="Vendas"
+                    titulo="Quantidade de Operações"
                     valor={
                         data.resumo
                             .quantidade_vendas
@@ -425,15 +433,6 @@ export const PdvDashboardTab = () => {
                         data.resumo.ticket_medio
                     )}
                     cor="#6a1b9a"
-                />
-
-                <MetricCard
-                    titulo="Itens"
-                    valor={
-                        data.resumo
-                            .itens_vendidos
-                    }
-                    cor="#ef6c00"
                 />
 
                 <MetricCard

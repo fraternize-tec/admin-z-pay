@@ -486,6 +486,7 @@ export const PontoDeVendaEdit = () => (
                     source="nome"
                     label="Nome"
                     fullWidth
+                    validate={required()}
                 />
 
                 <TextInput
