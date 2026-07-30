@@ -6,14 +6,23 @@ import { CurrencyInput } from "../components/CurrencyInputRA";
 import { SmartToolbar } from "../components/SmartToolbar";
 
 
+import { Pagination } from "react-admin";
+
 export const ItensDoPdv = () => (
     <ReferenceManyField
         reference="item_pdv"
         target="pdv_id"
         label="Itens deste PDV"
+        perPage={25}
+        pagination={<Pagination rowsPerPageOptions={[10, 25, 50, 100]} />}
     >
         <Datagrid bulkActionButtons={false}>
-            <ReferenceField source="item_id" reference="itens" label="Item" link={false}>
+            <ReferenceField
+                source="item_id"
+                reference="itens"
+                label="Item"
+                link={false}
+            >
                 <TextField source="nome" />
             </ReferenceField>
 
