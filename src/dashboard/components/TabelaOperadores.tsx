@@ -115,8 +115,6 @@ export const TabelaOperadores = ({
     expandable = true,
 }: Props) => {
 
-    console.log("TabelaOperadores", data);
-
     const theme = useTheme();
 
     const mobile = useMediaQuery(

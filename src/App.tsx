@@ -169,7 +169,7 @@ export const App = () => (
                         icon={PointOfSaleIcon}
                         options={{ label: 'Caixas' }}
                         list={CaixaList}
-                        create={CaixaCreate}
+                        create={can(permissions, 'criar.caixa') ? CaixaCreate : undefined}
                         edit={CaixaEdit}
                     />
                 )}

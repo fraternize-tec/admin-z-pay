@@ -347,12 +347,16 @@ const VoltarButton = () => {
     );
 };
 
-const CaixaActions = () => (
-    <SmartToolbar>
-        <CriarUsuarioCaixaButton />
-        <VoltarButton />
-    </SmartToolbar>
-);
+const CaixaActions = () => {
+    const { permissions } = usePermissions();
+
+    return (
+        <SmartToolbar>
+            {can(permissions, 'adicionar.operador.caixa') && <CriarUsuarioCaixaButton />}
+            <VoltarButton />
+        </SmartToolbar>
+    );
+}
 
 const CaixaEditToolbar = () => (
     <Toolbar
@@ -381,61 +385,75 @@ const CaixaEditToolbar = () => (
     </Toolbar>
 );
 
-export const CaixaEdit = () => (
-    <Edit
-        actions={<CaixaActions />}
+export const CaixaEdit = () => {
+    const { permissions } = usePermissions();
 
-    >
-        <TabbedForm
-            toolbar={<CaixaEditToolbar />}
+    return (
+        <Edit
+            actions={<CaixaActions />}
 
         >
-            <FormTab label="Dados">
-                <TextInput
-                    source="nome"
-                    label="Nome do Caixa"
-                    validate={required()}
-                    fullWidth
-                />
+            <TabbedForm
+                toolbar={can(permissions, 'editar.caixa') && <CaixaEditToolbar />}
 
-                <InfoReferenceField
-                    label="Evento"
-                    source="evento_id"
-                    reference="eventos"
-                />
+            >
+                <FormTab label="Dados">
+                    {can(permissions, 'editar.caixa') ?
+                        <TextInput
+                            source="nome"
+                            label="Nome do Caixa"
+                            validate={required()}
+                            fullWidth
+                        /> :
+                        <InfoTextField
+                            label="Nome do Caixa"
+                            source="nome"
+                        />
+                    }
 
-                <InfoReferenceField
-                    label="PDV"
-                    source="pdv_id"
-                    reference="pontos_de_venda"
-                />
+                    <InfoReferenceField
+                        label="Evento"
+                        source="evento_id"
+                        reference="eventos"
+                    />
 
-                <InfoTextField
-                    label="Status"
-                    source="status"
-                />
+                    <InfoReferenceField
+                        label="PDV"
+                        source="pdv_id"
+                        reference="pontos_de_venda"
+                    />
 
-                <InfoTextField
-                    label="Aberto em"
-                    source="aberto_em"
-                />
+                    <InfoTextField
+                        label="Status"
+                        source="status"
+                    />
 
-                <InfoTextField
-                    label="Fechado em"
-                    source="fechado_em"
-                />
-            </FormTab>
+                    <InfoTextField
+                        label="Aberto em"
+                        source="aberto_em"
+                    />
 
-            <FormTab label="Operadores">
-                <UsuariosDoCaixaTab />
-            </FormTab>
+                    <InfoTextField
+                        label="Fechado em"
+                        source="fechado_em"
+                    />
+                </FormTab>
 
-            <FormTab label="Relatório">
-                <CaixaDashboardTab />
-            </FormTab>
-        </TabbedForm>
-    </Edit>
-);
+                {can(permissions, 'adicionar.operador.caixa') &&
+                    <FormTab label="Operadores">
+                        <UsuariosDoCaixaTab />
+                    </FormTab>
+                }
+
+                {can(permissions, 'visualizar.relatorio.caixa') &&
+                    <FormTab label="Relatório">
+                        <CaixaDashboardTab />
+                    </FormTab>
+                }
+            </TabbedForm>
+        </Edit>
+    );
+}
 
 const UsuariosDoCaixaTab = () => {
     const record = useRecordContext();
