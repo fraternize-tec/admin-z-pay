@@ -13,10 +13,12 @@ import {
 } from '@mui/material';
 import { useState } from 'react';
 
+type ModoExportacao = 'pdf' | 'zip' | 'qr-zip';
+
 interface Props {
   open: boolean;
   onClose: () => void;
-  onConfirm: (modo: 'pdf' | 'zip') => void;
+  onConfirm: (modo: ModoExportacao) => void;
 }
 
 export const ExportarCartoesPdfDialog = ({
@@ -24,7 +26,7 @@ export const ExportarCartoesPdfDialog = ({
   onClose,
   onConfirm,
 }: Props) => {
-  const [modo, setModo] = useState<'pdf' | 'zip'>('pdf');
+  const [modo, setModo] = useState<ModoExportacao>('pdf');
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
@@ -49,6 +51,11 @@ export const ExportarCartoesPdfDialog = ({
               value="zip"
               control={<Radio />}
               label="ZIP com todos os PDFs"
+            />
+            <FormControlLabel
+              value="qr-zip"
+              control={<Radio />}
+              label="ZIP com QR Codes em PNG"
             />
           </RadioGroup>
         </Stack>

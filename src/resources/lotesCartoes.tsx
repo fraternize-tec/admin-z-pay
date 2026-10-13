@@ -292,7 +292,7 @@ export const LoteCartaoCreate = () => {
 
 const ExportarPdfButton = ({ record }: ActionProps) => {
   const [open, setOpen] = useState(false);
-  const [modo, setModo] = useState<'pdf' | 'zip' | null>(null);
+  const [modo, setModo] = useState<'pdf' | 'zip' | 'qr-zip' | null>(null);
 
   if (!record) return null;
   if (record.status_lote === 'criado') return null;
@@ -321,7 +321,7 @@ const ExportarPdfButton = ({ record }: ActionProps) => {
         <ExportarCartoesPdf
           tipo="lote"
           loteId={record.id}
-          zip={modo === 'zip'}
+          modo={modo}
           onClose={() => setModo(null)}
         />
       )}
