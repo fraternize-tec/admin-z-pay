@@ -39,7 +39,7 @@ import { Autocomplete, Button, Checkbox, Chip, Dialog, DialogActions, DialogCont
 import { CartoesDoLoteButton } from './cartoes';
 import { ExportarCartoesPdf } from './exportarCartoesPdf';
 import { supabase } from '../lib/supabaseClient';
-import { ExportarCartoesPdfDialog } from './exportarCartoesPdfDialog';
+import { ExportarCartoesPdfDialog, type ConfiguracaoExportacao } from './exportarCartoesPdfDialog';
 import { BackToListButtonNavigate } from '../components/BackToListButton';
 import { SmartToolbar } from '../components/SmartToolbar';
 
@@ -292,7 +292,8 @@ export const LoteCartaoCreate = () => {
 
 const ExportarPdfButton = ({ record }: ActionProps) => {
   const [open, setOpen] = useState(false);
-  const [modo, setModo] = useState<'pdf' | 'zip' | 'qr-zip' | null>(null);
+  const [exportacao, setExportacao] =
+    useState<ConfiguracaoExportacao | null>(null);
 
   if (!record) return null;
   if (record.status_lote === 'criado') return null;
@@ -300,7 +301,8 @@ const ExportarPdfButton = ({ record }: ActionProps) => {
   return (
     <>
       <Button
-        variant="outlined" startIcon={<PictureAsPdfIcon />}
+        variant="outlined"
+        startIcon={<PictureAsPdfIcon />}
         onClick={() => setOpen(true)}
       >
         Exportar cartões
@@ -308,26 +310,36 @@ const ExportarPdfButton = ({ record }: ActionProps) => {
 
       {open && (
         <ExportarCartoesPdfDialog
-          open
+          open={open}
           onClose={() => setOpen(false)}
-          onConfirm={(m) => {
-            setModo(m);
+          arteFrenteUrl={record.arte_frente_url}
+          onConfirm={(configuracao) => {
+            setExportacao(configuracao);
             setOpen(false);
           }}
         />
       )}
 
-      {modo && (
+      {exportacao && (
         <ExportarCartoesPdf
           tipo="lote"
           loteId={record.id}
-          modo={modo}
-          onClose={() => setModo(null)}
+          modo={exportacao.modo}
+          larguraMm={exportacao.larguraMm}
+          alturaMm={exportacao.alturaMm}
+          qrSizeMm={exportacao.qrSizeMm}
+          qrXmm={exportacao.qrXmm}
+          qrYmm={exportacao.qrYmm}
+          codigoFontSizePt={exportacao.codigoFontSizePt}
+          codigoXmm={exportacao.codigoXmm}
+          codigoYmm={exportacao.codigoYmm}
+          onClose={() => setExportacao(null)}
         />
       )}
     </>
   );
 };
+
 
 const DeleteLoteButton = ({ record }: ActionProps) => {
   const notify = useNotify();

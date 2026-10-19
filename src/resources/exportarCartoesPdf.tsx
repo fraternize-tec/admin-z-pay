@@ -16,25 +16,30 @@ import { PoppinsBold } from '../fonts/Poppins-Bold';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 import { gerarQrCodePng } from '../utils/gerarQrCodePng';
-
-type ModoExportacao = 'pdf' | 'zip' | 'qr-zip';
+import { ModoExportacao } from './exportarCartoesPdfDialog';
 
 interface Props {
   tipo: 'lote' | 'proprio';
   loteId?: Identifier;
   zip?: boolean;
   modo?: ModoExportacao;
+  larguraMm?: number;
+  alturaMm?: number;
+  qrSizeMm?: number;
+  qrXmm?: number;
+  qrYmm?: number;
+  codigoFontSizePt?: number;
+  codigoXmm?: number;
+  codigoYmm?: number;
   onClose: () => void;
 }
 
 const CARTOES_POR_PDF = 50;
 const PAGE_SIZE = 1000;
 
-const CUT_WIDTH = 86;
-const CUT_HEIGHT = 54;
+const LARGURA_PADRAO = 86;
+const ALTURA_PADRAO = 54;
 const BLEED = 3;
-const PAGE_WIDTH = CUT_WIDTH + BLEED * 2;
-const PAGE_HEIGHT = CUT_HEIGHT + BLEED * 2;
 const SAFE_MARGIN = 4;
 
 const ARTE_PROPRIO_URL =
@@ -88,6 +93,14 @@ export const ExportarCartoesPdf = ({
   loteId,
   zip = false,
   modo,
+  larguraMm = LARGURA_PADRAO,
+  alturaMm = ALTURA_PADRAO,
+  qrSizeMm,
+  qrXmm,
+  qrYmm,
+  codigoFontSizePt,
+  codigoXmm,
+  codigoYmm,
   onClose,
 }: Props) => {
   const notify = useNotify();
@@ -99,7 +112,8 @@ export const ExportarCartoesPdf = ({
 
   const modoAtual: ModoExportacao = modo ?? (zip ? 'zip' : 'pdf');
 
-  console.log('modoAtual', modoAtual);
+  const pageWidth = larguraMm + BLEED * 2;
+  const pageHeight = alturaMm + BLEED * 2;
 
   useEffect(() => {
     if (gerouRef.current) return;
@@ -205,6 +219,24 @@ export const ExportarCartoesPdf = ({
     const grupos = chunkArray(cartoes, CARTOES_POR_PDF);
     const zipFile = modoAtual === 'zip' ? new JSZip() : null;
 
+    // Mantém a proporção dos elementos em relação ao menor lado.
+    // No tamanho padrão, scale = 1 e os valores originais são preservados.
+    const scale = Math.min(
+      larguraMm / LARGURA_PADRAO,
+      alturaMm / ALTURA_PADRAO,
+    );
+
+    const qrSize = qrSizeMm ?? 20;
+    const qrPosX = qrXmm ?? SAFE_MARGIN;
+    const qrPosY = qrYmm ?? alturaMm - qrSize - SAFE_MARGIN;
+    const safeMargin = Math.min(SAFE_MARGIN * scale, larguraMm * 0.08, alturaMm * 0.08);
+    const codeBoxWidth = Math.min(30, larguraMm);
+    const codeBoxHeight = Math.min(5, alturaMm * 0.15);
+    const codePosX = codigoXmm ?? larguraMm - codeBoxWidth - SAFE_MARGIN;
+    const codePosY = codigoYmm ?? alturaMm - codeBoxHeight - SAFE_MARGIN;
+    const cornerRadius = Math.min(2 * scale, codeBoxHeight / 2);
+    const fontSize = codigoFontSizePt ?? Math.max(6, 10 * scale);
+
     let parte = 1;
     let processados = 0;
 
@@ -213,8 +245,8 @@ export const ExportarCartoesPdf = ({
 
       const pdf = new jsPDF({
         unit: 'mm',
-        format: [PAGE_WIDTH, PAGE_HEIGHT],
-        orientation: 'landscape',
+        format: [pageWidth, pageHeight],
+        orientation: pageWidth >= pageHeight ? 'landscape' : 'portrait',
         compress: false,
       });
 
@@ -227,26 +259,30 @@ export const ExportarCartoesPdf = ({
 
         const cartao = grupo[i];
 
-        if (i > 0) pdf.addPage();
+        if (i > 0) pdf.addPage([pageWidth, pageHeight]);
 
         const url = `${QR_BASE_URL}${cartao.nano_id}`;
 
-        pdf.addImage(frente, 'PNG', 0, 0, PAGE_WIDTH, PAGE_HEIGHT);
+        // Arte ocupando toda a página, incluindo a sangria.
+        pdf.addImage(frente, 'PNG', 0, 0, pageWidth, pageHeight);
 
         const baseX = BLEED;
         const baseY = BLEED;
-        const qrSize = 20;
-        const qrX = baseX + SAFE_MARGIN;
-        const qrY = baseY + CUT_HEIGHT - qrSize - SAFE_MARGIN;
+
+        // Posição X/Y medida a partir do canto superior esquerdo da área final,
+        // sem contar a sangria. A prévia utiliza o mesmo sistema de coordenadas.
+        const qrX = baseX + qrPosX;
+        const qrY = baseY + qrPosY;
+        const qrPadding = 1;
 
         pdf.setFillColor(255, 255, 255);
         pdf.roundedRect(
-          qrX - 1,
-          qrY - 1,
-          qrSize + 2,
-          qrSize + 2,
-          2,
-          2,
+          qrX - qrPadding,
+          qrY - qrPadding,
+          qrSize + qrPadding * 2,
+          qrSize + qrPadding * 2,
+          Math.min(cornerRadius, qrSize / 8),
+          Math.min(cornerRadius, qrSize / 8),
           'F',
         );
 
@@ -254,14 +290,16 @@ export const ExportarCartoesPdf = ({
           margin: 0,
           width: 300,
           errorCorrectionLevel: 'M',
+          color: {
+            dark: '#000000',
+            light: '#FFFFFF',
+          },
         });
 
         pdf.addImage(qr, 'PNG', qrX, qrY, qrSize, qrSize);
 
-        const codeBoxWidth = 30;
-        const codeBoxHeight = 5;
-        const codeX = baseX + CUT_WIDTH - codeBoxWidth - SAFE_MARGIN;
-        const codeY = baseY + CUT_HEIGHT - codeBoxHeight - SAFE_MARGIN;
+        const codeX = baseX + codePosX;
+        const codeY = baseY + codePosY;
 
         pdf.setFillColor(255, 255, 255);
         pdf.roundedRect(
@@ -269,18 +307,23 @@ export const ExportarCartoesPdf = ({
           codeY,
           codeBoxWidth,
           codeBoxHeight,
-          2,
-          2,
+          cornerRadius,
+          cornerRadius,
           'F',
         );
 
-        pdf.setFontSize(10);
+        pdf.setFontSize(fontSize);
         pdf.setTextColor(0, 0, 0);
+
         pdf.text(
           cartao.codigo_unico,
           codeX + codeBoxWidth / 2,
-          codeY + 3.5,
-          { align: 'center' },
+          codeY + codeBoxHeight * 0.7,
+          {
+            align: 'center',
+            baseline: 'alphabetic',
+            maxWidth: Math.max(1, codeBoxWidth - 2 * scale),
+          },
         );
 
         processados++;
