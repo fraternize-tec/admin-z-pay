@@ -16,11 +16,13 @@ import {
   useSimpleFormIterator,
   useSimpleFormIteratorItem,
   useNotify,
+  usePermissions,
 } from 'react-admin';
 import { useLocation } from 'react-router-dom';
 import { BackToListButtonNavigate } from '../components/BackToListButton';
 import { EscopoSelector } from '../components/EscopoSelector';
 import { VigenciaFromEvento } from '../components/VigenciaFromEvento';
+import { isGlobal } from '../utils/permissionUtils';
 import { Box, Button, Chip, Divider, Typography } from '@mui/material';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
@@ -98,75 +100,85 @@ const AdicionarPapelButton = () => {
   );
 };
 
-export const PapeisArrayInput = () => (
-  <ArrayInput
-    source="papeis"
-    label="Papéis e Permissões"
-    validate={required()}
-  >
-    <SimpleFormIterator
-      inline={false}
-      disableReordering
-      disableClear
-      fullWidth
-      addButton={<AdicionarPapelButton />}
-      sx={{
-        mt: 1,
-        '& .RaSimpleFormIterator-list': {
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 2.5,
-        },
-        '& .RaSimpleFormIterator-line': {
-          border: 1,
-          borderColor: 'divider',
-          borderBottom: 1,
-          borderBottomColor: 'divider',
-          borderRadius: 3,
-          p: 2.5,
-          bgcolor: 'action.hover',
-        },
-        '& .RaSimpleFormIterator-line:last-child': {
-          borderBottom: 1,
-          borderBottomColor: 'divider',
-        },
-        '& .RaSimpleFormIterator-action': {
-          display: 'none',
-        },
-        '& .RaSimpleFormIterator-index': {
-          display: 'none',
-        },
-      }}
+export const PapeisArrayInput = () => {
+  const { permissions } = usePermissions();
+  const global = isGlobal(permissions, "usuarios.write");
+
+  return (
+    <ArrayInput
+      source="papeis"
+      label="Papéis e Permissões"
+      validate={required()}
     >
-      <FormDataConsumer>
-        {({ scopedFormData }) => (
-          <PapelItemHeader papelId={scopedFormData?.papel_id} />
-        )}
-      </FormDataConsumer>
-
-      <ReferenceInput
-        source="papel_id"
-        reference="funcoes_sistema"
-        perPage={50}
+      <SimpleFormIterator
+        inline={false}
+        disableReordering
+        disableClear
+        fullWidth
+        addButton={<AdicionarPapelButton />}
+        sx={{
+          mt: 1,
+          '& .RaSimpleFormIterator-list': {
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 2.5,
+          },
+          '& .RaSimpleFormIterator-line': {
+            border: 1,
+            borderColor: 'divider',
+            borderBottom: 1,
+            borderBottomColor: 'divider',
+            borderRadius: 3,
+            p: 2.5,
+            bgcolor: 'action.hover',
+          },
+          '& .RaSimpleFormIterator-line:last-child': {
+            borderBottom: 1,
+            borderBottomColor: 'divider',
+          },
+          '& .RaSimpleFormIterator-action': {
+            display: 'none',
+          },
+          '& .RaSimpleFormIterator-index': {
+            display: 'none',
+          },
+        }}
       >
-        <AutocompleteInput
-          optionText="codigo"
-          label="Papel"
-          validate={required()}
-          fullWidth
-        />
-      </ReferenceInput>
+        <FormDataConsumer>
+          {({ scopedFormData }) => (
+            <PapelItemHeader papelId={scopedFormData?.papel_id} />
+          )}
+        </FormDataConsumer>
 
-      <FormDataConsumer>
-        {({ scopedFormData }) =>
-          scopedFormData?.papel_id ? (
-            <EscopoFromPapel papelId={scopedFormData.papel_id} />
-          ) : null
-        }
-      </FormDataConsumer>
-    </SimpleFormIterator>
-  </ArrayInput>
-);
+        <ReferenceInput
+          source="papel_id"
+          reference="funcoes_sistema"
+          perPage={50}
+          filter={
+            !global
+              ? { escopo_tipo: ["evento", "pdv", "caixa"] }
+              : undefined
+          }
+        >
+          <AutocompleteInput
+            optionText="codigo"
+            label="Papel"
+            validate={required()}
+            fullWidth
+          />
+        </ReferenceInput>
+
+        <FormDataConsumer>
+          {({ scopedFormData }) =>
+            scopedFormData?.papel_id ? (
+              <EscopoFromPapel papelId={scopedFormData.papel_id} />
+            ) : null
+          }
+        </FormDataConsumer>
+      </SimpleFormIterator>
+    </ArrayInput>
+  );
+};
 
 export const PapelContextoCreate = () => {
   const { state } = useLocation();

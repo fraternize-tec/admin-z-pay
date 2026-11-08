@@ -6,10 +6,12 @@ import {
   AutocompleteInput,
   useGetOne,
   useSourceContext,
+  usePermissions,
 } from "react-admin";
 import { useFormContext } from "react-hook-form";
 import { VigenciaFromEvento } from "./VigenciaFromEvento";
 import { useEffect, useRef } from "react";
+import { getEscopos, isGlobal } from "../utils/permissionUtils";
 
 type EscopoSelectorProps = {
   fixedEscopo?: "global" | "evento" | "pdv" | "caixa";
@@ -23,11 +25,21 @@ export const EscopoSelector = ({
   fixedEventoId,
 }: EscopoSelectorProps) => {
 
-  const { setValue } = useFormContext();
+  const { setValue, getValues } = useFormContext();
+  const { permissions } = usePermissions();
   const sourceContext = useSourceContext();
   const getSource = (field: string) =>
     sourceContext ? sourceContext.getSource(field) : field;
   const prevFixedEscopoRef = useRef(fixedEscopo);
+
+  const global = isGlobal(permissions, "usuarios.write");
+  const eventosPermitidos = (
+    getEscopos(permissions, "usuarios.write", "evento") || []
+  ).filter(Boolean) as string[];
+  const eventoFilter =
+    !global && eventosPermitidos.length > 0
+      ? { id: eventosPermitidos }
+      : undefined;
 
   useEffect(() => {
     const escopoChanged = prevFixedEscopoRef.current !== fixedEscopo;
@@ -50,10 +62,26 @@ export const EscopoSelector = ({
 
         if (fixedEventoId) {
           setValue(getSource("evento_id"), fixedEventoId);
+        } else if (!global && eventosPermitidos.length === 1 && !fixedEscopoId) {
+          if (fixedEscopo === "evento") {
+            const current = getValues(getSource("escopo_id"));
+            if (!current || escopoChanged) {
+              setValue(getSource("escopo_id"), eventosPermitidos[0], {
+                shouldDirty: true,
+              });
+            }
+          } else if (fixedEscopo === "pdv" || fixedEscopo === "caixa") {
+            const current = getValues(getSource("evento_id"));
+            if (!current || escopoChanged) {
+              setValue(getSource("evento_id"), eventosPermitidos[0], {
+                shouldDirty: true,
+              });
+            }
+          }
         }
       });
     }
-  }, [fixedEscopo, fixedEscopoId, fixedEventoId]);
+  }, [fixedEscopo, fixedEscopoId, fixedEventoId, global, eventosPermitidos.join(",")]);
 
 
   const { data: caixa } = useGetOne(
@@ -120,7 +148,11 @@ export const EscopoSelector = ({
     <>
       {fixedEscopo === "evento" && (
         <>
-          <ReferenceInput source="escopo_id" reference="eventos">
+          <ReferenceInput
+            source="escopo_id"
+            reference="eventos"
+            filter={eventoFilter}
+          >
             <AutocompleteInput
               optionText="nome"
               label="Evento"
@@ -147,7 +179,11 @@ export const EscopoSelector = ({
 
       {fixedEscopo === "pdv" && (
         <>
-          <ReferenceInput source="evento_id" reference="eventos">
+          <ReferenceInput
+            source="evento_id"
+            reference="eventos"
+            filter={eventoFilter}
+          >
             <AutocompleteInput optionText="nome" fullWidth />
           </ReferenceInput>
 
@@ -180,7 +216,11 @@ export const EscopoSelector = ({
 
       {fixedEscopo === "caixa" && (
         <>
-          <ReferenceInput source="evento_id" reference="eventos">
+          <ReferenceInput
+            source="evento_id"
+            reference="eventos"
+            filter={eventoFilter}
+          >
             <AutocompleteInput optionText="nome" fullWidth />
           </ReferenceInput>
 

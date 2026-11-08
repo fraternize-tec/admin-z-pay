@@ -175,26 +175,37 @@ export const App = () => (
                 )}
 
                 {can(permissions, 'usuarios.write') && (
-                    <Resource
-                        name="usuarios"
-                        icon={PeopleIcon}
-                        options={{ label: 'Usuários' }}
-                        list={UsuarioList}
-                        create={UsuarioCreate}
-                        edit={can(permissions, 'usuarios.write') ? UsuarioEdit : undefined}
-                    />
+                    <>
+                        <Resource
+                            name="usuarios"
+                            icon={PeopleIcon}
+                            options={{ label: 'Usuários' }}
+                            list={UsuarioList}
+                            create={UsuarioCreate}
+                            edit={can(permissions, 'usuarios.write') ? UsuarioEdit : undefined}
+                        />
+                        <Resource
+                            name="funcoes_sistema"
+                            options={{ label: 'Papéis' }}
+                            list={can(permissions, 'rbac.manage') ? FuncaoList : undefined}
+                            create={can(permissions, 'rbac.manage') ? FuncaoCreate : undefined}
+                            edit={can(permissions, 'rbac.manage') ? FuncaoEdit : undefined}
+                        />
+                        <Resource
+                            name="papel_contexto"
+                            options={{ label: 'Papéis por Contexto' }}
+                            create={PapelContextoCreate}
+                            edit={PapelContextoEdit}
+                        />
+                        <Resource
+                            name="vw_usuario_permissoes_detalhe"
+                            options={{ label: 'Permissões Efetivas' }}
+                        />
+                    </>
                 )}
 
                 {can(permissions, 'rbac.manage') && (
                     <>
-
-                        <Resource
-                            name="funcoes_sistema"
-                            options={{ label: 'Papéis' }}
-                            list={FuncaoList}
-                            create={FuncaoCreate}
-                            edit={FuncaoEdit}
-                        />
                         <Resource
                             name="permissoes"
                             options={{ label: 'Permissões' }}
@@ -207,17 +218,6 @@ export const App = () => (
                             options={{ label: 'Permissões por Papel' }}
                             create={PapelPermissaoCreate}
                         />
-                        <Resource
-                            name="papel_contexto"
-                            options={{ label: 'Papéis por Contexto' }}
-                            create={PapelContextoCreate}
-                            edit={PapelContextoEdit}
-                        />
-                        <Resource
-                            name="vw_usuario_permissoes_detalhe"
-                            options={{ label: 'Permissões Efetivas' }}
-                        />
-
                     </>
                 )}
             </>
