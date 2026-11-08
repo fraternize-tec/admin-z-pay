@@ -169,10 +169,25 @@ export const supabaseDataProvider: DataProvider = {
     // AÇÕES CUSTOMIZADAS (Edge)
     // =============================
     if (resource === "usuarios") {
+      const hasMultiplePapeis = Array.isArray(params.data.papeis);
+      const [primeiroPapel, ...demaisPapeis] = hasMultiplePapeis
+        ? params.data.papeis
+        : [];
+
+      if (hasMultiplePapeis && !primeiroPapel?.papel_id) {
+        throw new Error("Selecione ao menos um papel");
+      }
+
+      const bodyPayload = hasMultiplePapeis
+        ? {
+          email: params.data.email,
+          ...primeiroPapel,
+        }
+        : params.data;
 
       const { data, error } = await supabase.functions.invoke(
         "criar-usuario",
-        { body: params.data }
+        { body: bodyPayload }
       );
 
       if (error) {
@@ -191,6 +206,23 @@ export const supabaseDataProvider: DataProvider = {
 
       if (!result?.id) {
         throw new Error("Resposta inválida da função criar-usuario");
+      }
+
+      if (demaisPapeis.length > 0) {
+        const novosContextos = demaisPapeis.map(({ evento_id, ...papel }: any) => ({
+          ...papel,
+          usuario_id: result.id,
+        }));
+
+        const { error: papelError } = await supabase
+          .from("papel_contexto")
+          .insert(novosContextos);
+
+        if (papelError) {
+          throw new Error(
+            papelError.message || "Usuário criado, mas houve erro ao vincular papéis adicionais"
+          );
+        }
       }
 
       return {
@@ -414,6 +446,24 @@ export const supabaseDataProvider: DataProvider = {
         data: { id: params.data.cartao_id },
       };
     }
+    if (resource === 'papel_contexto' && Array.isArray(params.data.papeis)) {
+      const novosContextos = params.data.papeis.map(({ evento_id, ...papel }: any) => ({
+        ...papel,
+        usuario_id: params.data.usuario_id,
+      }));
+
+      const { data, error } = await supabase
+        .from('papel_contexto')
+        .insert(novosContextos)
+        .select();
+
+      if (error) {
+        throw error;
+      }
+
+      return { data: data[0] };
+    }
+
     // =============================
     // CREATE PADRÃO (CRUD)
     // =============================

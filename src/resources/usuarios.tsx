@@ -16,11 +16,8 @@ import {
   BulkDeleteButton,
   Create,
   required,
-  ReferenceInput,
-  FormDataConsumer,
   useDataProvider,
   useNotify,
-  AutocompleteInput,
   useGetOne,
   FunctionField,
   useUpdate,
@@ -32,6 +29,7 @@ import {
 
 import { UsuarioPermissoesTab } from './usuarioPermissoesTab';
 import { EscopoSelector } from '../components/EscopoSelector';
+import { PapeisArrayInput } from './papelContexto';
 import { useSearchParams } from 'react-router-dom';
 import { BackToListButtonNavigate } from '../components/BackToListButton';
 import { Box, Chip, Button } from '@mui/material';
@@ -515,8 +513,10 @@ export const UsuarioCreate = () => {
           }),
           ...(eventoId && {
             evento_id: eventoId
+          }),
+          ...(!caixa_id && !pdv_id && {
+            papeis: [{}]
           })
-
         }}
       >
 
@@ -539,6 +539,11 @@ export const UsuarioCreate = () => {
               disabled
               fullWidth
             />
+            <EscopoSelector
+              fixedEscopo="caixa"
+              fixedEscopoId={caixa?.id}
+              fixedEventoId={eventoId}
+            />
           </>
         ) : pdv_id ? (
           <>
@@ -549,39 +554,15 @@ export const UsuarioCreate = () => {
               disabled
               fullWidth
             />
+            <EscopoSelector
+              fixedEscopo="pdv"
+              fixedEscopoId={pdv?.id}
+              fixedEventoId={eventoId}
+            />
           </>
         ) : (
-          <ReferenceInput
-            source="papel_id"
-            reference="funcoes_sistema"
-            perPage={50}
-          >
-            <AutocompleteInput optionText="codigo" fullWidth />
-          </ReferenceInput>
+          <PapeisArrayInput />
         )}
-
-        <FormDataConsumer>
-          {({ formData }) => {
-
-            const papel_id = formData?.papel_id;
-
-            const { data: funcao } = useGetOne(
-              "funcoes_sistema",
-              { id: papel_id },
-              { enabled: !!papel_id }
-            );
-
-            const escopoFromFuncao = funcao?.escopo_tipo;
-
-            return (
-              <EscopoSelector
-                fixedEscopo={caixa ? "caixa" : pdv ? "pdv" : escopoFromFuncao}
-                fixedEscopoId={caixa?.id ?? pdv?.id}
-                fixedEventoId={eventoId}
-              />
-            );
-          }}
-        </FormDataConsumer>
 
       </SimpleForm>
     </Create>

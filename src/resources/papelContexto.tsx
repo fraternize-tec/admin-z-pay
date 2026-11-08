@@ -5,22 +5,25 @@ import {
   required,
   FormDataConsumer,
   useRedirect,
-  TopToolbar,
   AutocompleteInput,
   useGetOne,
   Edit,
-  DateField,
   TextField,
   ReferenceField,
   useRecordContext,
-  Identifier,
-  RaRecord,
+  ArrayInput,
+  SimpleFormIterator,
+  useSimpleFormIterator,
+  useSimpleFormIteratorItem,
+  useNotify,
 } from 'react-admin';
 import { useLocation } from 'react-router-dom';
 import { BackToListButtonNavigate } from '../components/BackToListButton';
 import { EscopoSelector } from '../components/EscopoSelector';
 import { VigenciaFromEvento } from '../components/VigenciaFromEvento';
-import { Box, Chip, Divider, Typography } from '@mui/material';
+import { Box, Button, Chip, Divider, Typography } from '@mui/material';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import { useMemo } from 'react';
 import { SmartToolbar } from '../components/SmartToolbar';
 
@@ -30,9 +33,145 @@ const PapelContextoActions = () => (
   </SmartToolbar>
 );
 
+const PapelItemHeader = ({ papelId }: { papelId?: string | number }) => {
+  const { index, remove } = useSimpleFormIteratorItem();
+  const { total } = useSimpleFormIterator();
+
+  const { data: funcao } = useGetOne(
+    "funcoes_sistema",
+    { id: papelId },
+    { enabled: !!papelId }
+  );
+
+  return (
+    <Box mb={2}>
+      <Box
+        display="flex"
+        justifyContent="space-between"
+        alignItems="center"
+        mb={1}
+      >
+        <Box display="flex" alignItems="center" gap={1}>
+          <Typography variant="subtitle1" fontWeight={600} color="primary">
+            Papel #{index + 1}
+          </Typography>
+          {funcao?.escopo_tipo && (
+            <Chip
+              label={`Escopo: ${funcao.escopo_tipo.toUpperCase()}`}
+              size="small"
+              variant="outlined"
+            />
+          )}
+        </Box>
+
+        {total > 1 && (
+          <Button
+            variant="outlined"
+            color="error"
+            size="small"
+            startIcon={<DeleteOutlineIcon />}
+            onClick={() => remove()}
+            sx={{ py: 0.5, px: 1.5 }}
+          >
+            Remover
+          </Button>
+        )}
+      </Box>
+      <Divider />
+    </Box>
+  );
+};
+
+const AdicionarPapelButton = () => {
+  const { add } = useSimpleFormIterator();
+
+  return (
+    <Button
+      variant="outlined"
+      color="primary"
+      startIcon={<AddCircleOutlineIcon />}
+      onClick={() => add()}
+      sx={{ mt: 1 }}
+    >
+      Adicionar outro papel
+    </Button>
+  );
+};
+
+export const PapeisArrayInput = () => (
+  <ArrayInput
+    source="papeis"
+    label="Papéis e Permissões"
+    validate={required()}
+  >
+    <SimpleFormIterator
+      inline={false}
+      disableReordering
+      disableClear
+      fullWidth
+      addButton={<AdicionarPapelButton />}
+      sx={{
+        mt: 1,
+        '& .RaSimpleFormIterator-list': {
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 2.5,
+        },
+        '& .RaSimpleFormIterator-line': {
+          border: 1,
+          borderColor: 'divider',
+          borderBottom: 1,
+          borderBottomColor: 'divider',
+          borderRadius: 3,
+          p: 2.5,
+          bgcolor: 'action.hover',
+        },
+        '& .RaSimpleFormIterator-line:last-child': {
+          borderBottom: 1,
+          borderBottomColor: 'divider',
+        },
+        '& .RaSimpleFormIterator-action': {
+          display: 'none',
+        },
+        '& .RaSimpleFormIterator-index': {
+          display: 'none',
+        },
+      }}
+    >
+      <FormDataConsumer>
+        {({ scopedFormData }) => (
+          <PapelItemHeader papelId={scopedFormData?.papel_id} />
+        )}
+      </FormDataConsumer>
+
+      <ReferenceInput
+        source="papel_id"
+        reference="funcoes_sistema"
+        perPage={50}
+      >
+        <AutocompleteInput
+          optionText="codigo"
+          label="Papel"
+          validate={required()}
+          fullWidth
+        />
+      </ReferenceInput>
+
+      <FormDataConsumer>
+        {({ scopedFormData }) =>
+          scopedFormData?.papel_id ? (
+            <EscopoFromPapel papelId={scopedFormData.papel_id} />
+          ) : null
+        }
+      </FormDataConsumer>
+    </SimpleFormIterator>
+  </ArrayInput>
+);
+
 export const PapelContextoCreate = () => {
   const { state } = useLocation();
   const redirect = useRedirect();
+  const notify = useNotify();
 
   return (
     <Create
@@ -44,40 +183,23 @@ export const PapelContextoCreate = () => {
       })}
       mutationOptions={{
         onSuccess: () => {
+          notify("Papéis vinculados com sucesso", { type: "success" });
           redirect(`/usuarios/${state?.usuario_id}`);
         },
       }}
     >
-      <SimpleForm>
+      <SimpleForm
+        defaultValues={{
+          papeis: [{}],
+        }}
+      >
 
         {/* USUÁRIO */}
         <div style={{ marginBottom: '1em' }}>
           <b>Usuário:</b> {state?.email ?? ''}
         </div>
 
-        {/* PAPEL */}
-        <ReferenceInput
-          source="papel_id"
-          reference="funcoes_sistema"
-        >
-          <AutocompleteInput
-            optionText="codigo"
-            validate={required()}
-            fullWidth
-          />
-        </ReferenceInput>
-
-        {/* ESCOPOS DINÂMICOS */}
-        <FormDataConsumer>
-          {({ formData }) => {
-
-            if (!formData.papel_id) return null;
-
-            return (
-              <EscopoFromPapel papelId={formData.papel_id} />
-            );
-          }}
-        </FormDataConsumer>
+        <PapeisArrayInput />
 
       </SimpleForm>
     </Create>

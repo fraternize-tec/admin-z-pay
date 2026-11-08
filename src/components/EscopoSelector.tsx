@@ -2,14 +2,14 @@ import {
   ReferenceField,
   TextField,
   ReferenceInput,
-  SelectInput,
   FormDataConsumer,
   AutocompleteInput,
   useGetOne,
+  useSourceContext,
 } from "react-admin";
 import { useFormContext } from "react-hook-form";
 import { VigenciaFromEvento } from "./VigenciaFromEvento";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 type EscopoSelectorProps = {
   fixedEscopo?: "global" | "evento" | "pdv" | "caixa";
@@ -23,21 +23,33 @@ export const EscopoSelector = ({
   fixedEventoId,
 }: EscopoSelectorProps) => {
 
-  const { setValue } = useFormContext(); // 👈 adicionar isso
+  const { setValue } = useFormContext();
+  const sourceContext = useSourceContext();
+  const getSource = (field: string) =>
+    sourceContext ? sourceContext.getSource(field) : field;
+  const prevFixedEscopoRef = useRef(fixedEscopo);
 
   useEffect(() => {
+    const escopoChanged = prevFixedEscopoRef.current !== fixedEscopo;
+    prevFixedEscopoRef.current = fixedEscopo;
+
     if (fixedEscopo || fixedEscopoId) {
       requestAnimationFrame(() => {
         if (fixedEscopo) {
-          setValue("escopo_tipo", fixedEscopo);
+          setValue(getSource("escopo_tipo"), fixedEscopo);
         }
 
         if (fixedEscopoId) {
-          setValue("escopo_id", fixedEscopoId);
+          setValue(getSource("escopo_id"), fixedEscopoId);
+        } else if (escopoChanged || fixedEscopo === "global") {
+          setValue(getSource("escopo_id"), undefined);
+          setValue(getSource("evento_id"), undefined);
+          setValue(getSource("inicio"), undefined);
+          setValue(getSource("fim"), undefined);
         }
 
         if (fixedEventoId) {
-          setValue("evento_id", fixedEventoId);
+          setValue(getSource("evento_id"), fixedEventoId);
         }
       });
     }
@@ -66,9 +78,9 @@ export const EscopoSelector = ({
 
   if (fixedEscopo && fixedEscopoId) {
 
-    const eventoId = fixedEventoId ? 
-    fixedEventoId
-     : fixedEscopo === "evento"
+    const eventoId = fixedEventoId ?
+      fixedEventoId
+      : fixedEscopo === "evento"
         ? fixedEscopoId
         : fixedEscopo === "caixa"
           ? caixa?.evento_id
@@ -117,11 +129,18 @@ export const EscopoSelector = ({
           </ReferenceInput>
 
           <FormDataConsumer>
-            {({ formData }) =>
-              formData.escopo_id && (
-                <VigenciaFromEvento key={formData.escopo_id} eventoId={formData.escopo_id} restrictToEvento={false} />
-              )
-            }
+            {({ formData, scopedFormData }) => {
+              const currentData = scopedFormData ?? formData;
+              return (
+                currentData?.escopo_id && (
+                  <VigenciaFromEvento
+                    key={currentData.escopo_id}
+                    eventoId={currentData.escopo_id}
+                    restrictToEvento={false}
+                  />
+                )
+              );
+            }}
           </FormDataConsumer>
         </>
       )}
@@ -133,25 +152,28 @@ export const EscopoSelector = ({
           </ReferenceInput>
 
           <FormDataConsumer>
-            {({ formData }) =>
-              formData.evento_id && (
-                <>
-                  <ReferenceInput
-                    source="escopo_id"
-                    reference="pontos_de_venda"
-                    filter={{ evento_id: formData.evento_id }}
-                  >
-                    <AutocompleteInput
-                      optionText="nome"
-                      label="PDV"
-                      fullWidth
-                    />
-                  </ReferenceInput>
+            {({ formData, scopedFormData }) => {
+              const currentData = scopedFormData ?? formData;
+              return (
+                currentData?.evento_id && (
+                  <>
+                    <ReferenceInput
+                      source="escopo_id"
+                      reference="pontos_de_venda"
+                      filter={{ evento_id: currentData.evento_id }}
+                    >
+                      <AutocompleteInput
+                        optionText="nome"
+                        label="PDV"
+                        fullWidth
+                      />
+                    </ReferenceInput>
 
-                  <VigenciaFromEvento key={formData.escopo_id} eventoId={formData.evento_id} />
-                </>
-              )
-            }
+                    <VigenciaFromEvento key={currentData.escopo_id} eventoId={currentData.evento_id} />
+                  </>
+                )
+              );
+            }}
           </FormDataConsumer>
         </>
       )}
@@ -163,25 +185,28 @@ export const EscopoSelector = ({
           </ReferenceInput>
 
           <FormDataConsumer>
-            {({ formData }) =>
-              formData.evento_id && (
-                <>
-                  <ReferenceInput
-                    source="escopo_id"
-                    reference="caixas"
-                    filter={{ evento_id: formData.evento_id }}
-                  >
-                    <AutocompleteInput
-                      optionText="nome"
-                      label="Caixa"
-                      fullWidth
-                    />
-                  </ReferenceInput>
+            {({ formData, scopedFormData }) => {
+              const currentData = scopedFormData ?? formData;
+              return (
+                currentData?.evento_id && (
+                  <>
+                    <ReferenceInput
+                      source="escopo_id"
+                      reference="caixas"
+                      filter={{ evento_id: currentData.evento_id }}
+                    >
+                      <AutocompleteInput
+                        optionText="nome"
+                        label="Caixa"
+                        fullWidth
+                      />
+                    </ReferenceInput>
 
-                  <VigenciaFromEvento key={formData.escopo_id} eventoId={formData.evento_id} />
-                </>
-              )
-            }
+                    <VigenciaFromEvento key={currentData.escopo_id} eventoId={currentData.evento_id} />
+                  </>
+                )
+              );
+            }}
           </FormDataConsumer>
         </>
       )}

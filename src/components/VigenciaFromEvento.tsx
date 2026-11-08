@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { useGetOne } from "react-admin";
+import { useGetOne, useSourceContext } from "react-admin";
 import { useFormContext, Controller, useWatch } from "react-hook-form";
 
 import { DateTimePicker } from "@mui/x-date-pickers/DateTimePicker";
@@ -28,8 +28,12 @@ export const VigenciaFromEvento = ({
     );
 
     const { setValue, control, getValues } = useFormContext();
-    const inicio = useWatch({ control, name: "inicio" });
-    const fim = useWatch({ control, name: "fim" });
+    const sourceContext = useSourceContext();
+    const inicioSource = sourceContext ? sourceContext.getSource("inicio") : "inicio";
+    const fimSource = sourceContext ? sourceContext.getSource("fim") : "fim";
+
+    const inicio = useWatch({ control, name: inicioSource });
+    const fim = useWatch({ control, name: fimSource });
 
     const initializedRef = useRef(false);
 
@@ -39,14 +43,14 @@ export const VigenciaFromEvento = ({
         initializedRef.current = false;
 
         if (inicio && typeof inicio === "string") {
-            setValue("inicio", new Date(inicio));
+            setValue(inicioSource, new Date(inicio));
         }
 
         if (fim && typeof fim === "string") {
-            setValue("fim", new Date(fim));
+            setValue(fimSource, new Date(fim));
         }
 
-        if (!getValues("inicio") && !getValues("fim")) {
+        if (!getValues(inicioSource) && !getValues(fimSource)) {
 
             const now = new Date();
 
@@ -59,12 +63,12 @@ export const VigenciaFromEvento = ({
                 : new Date(now.getTime() + DEFAULT_DAYS * 24 * 60 * 60 * 1000);
 
             requestAnimationFrame(() => {
-                setValue("inicio", inicioEvento);
-                setValue("fim", fimEvento);
+                setValue(inicioSource, inicioEvento);
+                setValue(fimSource, fimEvento);
             });
         }
 
-    }, [evento]);
+    }, [evento, inicioSource, fimSource]);
 
     if (!evento) return null;
 
@@ -73,7 +77,7 @@ export const VigenciaFromEvento = ({
         if (!value) return;
 
         const inicio = new Date(value);
-        const fim = getValues("fim");
+        const fim = getValues(fimSource);
 
         // restrição evento
         if (restrictToEvento && evento.inicio && evento.fim) {
@@ -105,7 +109,7 @@ export const VigenciaFromEvento = ({
         if (!value) return;
 
         const fim = new Date(value);
-        const inicio = getValues("inicio");
+        const inicio = getValues(inicioSource);
 
         // restrição evento
         if (restrictToEvento && evento.inicio && evento.fim) {
@@ -160,7 +164,7 @@ export const VigenciaFromEvento = ({
                 mt={2}
             >
                 <Controller
-                    name="inicio"
+                    name={inicioSource}
                     control={control}
                     defaultValue={null}
                     rules={{ validate: validateInicio }}
@@ -175,7 +179,7 @@ export const VigenciaFromEvento = ({
                                     : null
                             }
                             onChange={(value) => {
-                                setValue("inicio", value, {
+                                setValue(inicioSource, value, {
                                     shouldDirty: true,
                                     shouldValidate: true,
                                 });
@@ -194,7 +198,7 @@ export const VigenciaFromEvento = ({
                 />
 
                 <Controller
-                    name="fim"
+                    name={fimSource}
                     control={control}
                     defaultValue={null}
                     rules={{ validate: validateFim }}
@@ -209,7 +213,7 @@ export const VigenciaFromEvento = ({
                                     : null
                             }
                             onChange={(value) => {
-                                setValue("fim", value, {
+                                setValue(fimSource, value, {
                                     shouldDirty: true,
                                     shouldValidate: true,
                                 });
