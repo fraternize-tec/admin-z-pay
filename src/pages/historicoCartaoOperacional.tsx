@@ -29,6 +29,15 @@ import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import CancelIcon from "@mui/icons-material/Cancel";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import QrCodeScannerIcon from "@mui/icons-material/QrCodeScanner";
+import PaymentsIcon from "@mui/icons-material/Payments";
+import StorefrontIcon from "@mui/icons-material/Storefront";
+import PointOfSaleIcon from "@mui/icons-material/PointOfSale";
+import PersonIcon from "@mui/icons-material/Person";
+import AddCircleIcon from "@mui/icons-material/AddCircle";
+import RemoveCircleIcon from "@mui/icons-material/RemoveCircle";
+import PercentIcon from "@mui/icons-material/Percent";
+import UndoIcon from "@mui/icons-material/Undo";
+import RestartAltIcon from "@mui/icons-material/RestartAlt";
 import { useEffect, useState } from "react";
 import { CancelarDialog } from "../components/CancelarDialog";
 import { supabase } from "../lib/supabaseClient";
@@ -49,6 +58,8 @@ export default function HistoricoCartaoOperacional() {
   const [extrato, setExtrato] = useState<any[]>([]);
   const [cancelar, setCancelar] = useState<any>(null);
   const [opcoes, setOpcoes] = useState<any[]>([]);
+  const [textoBusca, setTextoBusca] = useState("");
+  const [listaAberta, setListaAberta] = useState(false);
   const [devolverOpen, setDevolverOpen] = useState(false);
   const [cortesiaOpen, setCortesiaOpen] = useState(false);
   const [resetConfirm, setResetConfirm] = useState(false);
@@ -69,6 +80,15 @@ export default function HistoricoCartaoOperacional() {
     <Box display="flex" flexDirection="column" gap={0.5} width="100%">
       <Typography variant="caption">{label}</Typography>
       {children}
+    </Box>
+  );
+
+  const InfoLine = ({ icon, label, value }: any) => (
+    <Box display="flex" alignItems="center" gap={0.5}>
+      {icon}
+      <Typography variant="body2" component="span">
+        <strong>{label}:</strong> {value}
+      </Typography>
     </Box>
   );
   // ============================
@@ -205,9 +225,15 @@ export default function HistoricoCartaoOperacional() {
 
           <Autocomplete
             options={opcoes}
+            inputValue={textoBusca}
+            open={listaAberta}
+            onOpen={() => setListaAberta(true)}
+            onClose={() => setListaAberta(false)}
             getOptionLabel={(option: any) => option.codigo_unico}
             onChange={(_, value) => setMeioId(value?.id ?? null)}
             onInputChange={async (_, value) => {
+              setTextoBusca(value);
+
               if (value.length < 3) return;
 
               const { data } = await supabase
@@ -220,6 +246,20 @@ export default function HistoricoCartaoOperacional() {
                 {...params}
                 label="Código do cartão"
                 placeholder="Digite ou escaneie"
+                inputProps={{
+                  ...params.inputProps,
+                  onKeyDown: (event) => {
+                    if (event.key === "Enter" && opcoes.length === 1) {
+                      event.preventDefault();
+                      setMeioId(opcoes[0].id);
+                      setTextoBusca("");
+                      setOpcoes([]);
+                      setListaAberta(false);
+                      return;
+                    }
+                    params.inputProps.onKeyDown?.(event);
+                  },
+                }}
                 InputProps={{
                   ...params.InputProps,
                   endAdornment: (
@@ -382,9 +422,10 @@ export default function HistoricoCartaoOperacional() {
             <Divider sx={{ my: 1 }} />
 
             <List>
-              {extrato.map((item) => (
+              {extrato.map((item, index) => (
                 <ListItem
                   key={`${item.tipo}-${item.operacao_id}`}
+                  divider={index < extrato.length - 1}
                   sx={{
                     opacity:
                       item.cancelado && item.valor === 0
@@ -414,24 +455,87 @@ export default function HistoricoCartaoOperacional() {
                   }
                 >
                   <ListItemText
-                    primary={`${labelTipo(item.tipo)} • ${formatDate(item.criado_em)}`}
+                    primary={
+                      <Box
+                        component="span"
+                        display="flex"
+                        alignItems="center"
+                        gap={0.75}
+                      >
+                        {iconTipo(item.tipo)}
+                        <span>
+                          {labelTipo(item.tipo)} • {formatDate(item.criado_em)}
+                        </span>
+                      </Box>
+                    }
                     secondary={
-                      item.cancelado && (
-                        <Chip
-                          label={
-                            item.cancelamento_tipo === 'parcial'
-                              ? 'Cancelado parcialmente'
-                              : 'Cancelado'
-                          }
-                          size="small"
-                          color={
-                            item.cancelamento_tipo === 'parcial'
-                              ? 'warning'
-                              : 'default'
-                          }
-                          sx={{ mt: 0.5 }}
-                        />
-                      )
+                      <Box
+                        component="span"
+                        sx={{
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: 0.25,
+                          mt: 0.5,
+                        }}
+                      >
+                        {item.forma_pagamento && (
+                          <InfoLine
+                            icon={
+                              <PaymentsIcon fontSize="small" color="action" />
+                            }
+                            label="Forma"
+                            value={item.forma_pagamento}
+                          />
+                        )}
+
+                        {item.pdv_nome && labelTipo(item.tipo) !== "Recarga" && (
+                          <InfoLine
+                            icon={
+                              <StorefrontIcon fontSize="small" color="action" />
+                            }
+                            label="PDV"
+                            value={item.pdv_nome}
+                          />
+                        )}
+
+                        {item.caixa_nome && (
+                          <InfoLine
+                            icon={
+                              <PointOfSaleIcon
+                                fontSize="small"
+                                color="action"
+                              />
+                            }
+                            label="Caixa"
+                            value={item.caixa_nome}
+                          />
+                        )}
+
+                        {item.operador_nome && (
+                          <InfoLine
+                            icon={<PersonIcon fontSize="small" color="action" />}
+                            label="Operador"
+                            value={item.operador_nome}
+                          />
+                        )}
+
+                        {item.cancelado && (
+                          <Chip
+                            label={
+                              item.cancelamento_tipo === 'parcial'
+                                ? 'Cancelado parcialmente'
+                                : 'Cancelado'
+                            }
+                            size="small"
+                            color={
+                              item.cancelamento_tipo === 'parcial'
+                                ? 'warning'
+                                : 'default'
+                            }
+                            sx={{ width: "fit-content" }}
+                          />
+                        )}
+                      </Box>
                     }
                   />
 
@@ -592,6 +696,23 @@ function labelTipo(tipo: string) {
     devolucao: "Devolução",
     reset: "Reset de cartão",
   }[tipo] || tipo;
+}
+
+function iconTipo(tipo: string) {
+  switch (tipo) {
+    case "recarga":
+      return <AddCircleIcon fontSize="small" color="success" />;
+    case "consumo":
+      return <RemoveCircleIcon fontSize="small" color="error" />;
+    case "taxa":
+      return <PercentIcon fontSize="small" color="warning" />;
+    case "devolucao":
+      return <UndoIcon fontSize="small" color="info" />;
+    case "reset":
+      return <RestartAltIcon fontSize="small" color="action" />;
+    default:
+      return null;
+  }
 }
 
 function formatDate(date: string) {
